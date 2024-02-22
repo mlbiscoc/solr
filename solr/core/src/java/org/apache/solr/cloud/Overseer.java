@@ -78,6 +78,7 @@ import org.apache.solr.handler.component.HttpShardHandler;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
+import org.apache.solr.metrics.SolrPrometheusMetricManager;
 import org.apache.solr.update.UpdateShardHandler;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -730,6 +731,7 @@ public class Overseer implements SolrCloseable {
     this.solrMetricsContext =
         new SolrMetricsContext(
             zkController.getCoreContainer().getMetricManager(),
+            new SolrPrometheusMetricManager(),
             SolrInfoBean.Group.overseer.toString(),
             metricTag);
   }

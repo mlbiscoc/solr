@@ -26,6 +26,8 @@ import com.codahale.metrics.Timer;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+
+import io.prometheus.metrics.model.registry.PrometheusRegistry;
 import org.apache.solr.util.stats.MetricUtils;
 
 /**
@@ -38,13 +40,15 @@ import org.apache.solr.util.stats.MetricUtils;
 public class SolrMetricsContext {
   private final String registryName;
   private final SolrMetricManager metricManager;
+  private final SolrPrometheusMetricManager prometheusMetricManager;
   private final String tag;
   private final Set<String> metricNames = ConcurrentHashMap.newKeySet();
 
-  public SolrMetricsContext(SolrMetricManager metricManager, String registryName, String tag) {
+  public SolrMetricsContext(SolrMetricManager metricManager, SolrPrometheusMetricManager prometheusMetricManager, String registryName, String tag) {
     this.registryName = registryName;
     this.metricManager = metricManager;
     this.tag = tag;
+    this.prometheusMetricManager = prometheusMetricManager;
   }
 
   /** See {@link SolrMetricManager#nullNumber()}. */
@@ -108,7 +112,7 @@ public class SolrMetricsContext {
   public SolrMetricsContext getChildContext(Object child) {
     SolrMetricsContext childContext =
         new SolrMetricsContext(
-            metricManager, registryName, SolrMetricProducer.getUniqueMetricTag(child, tag));
+            metricManager, prometheusMetricManager, registryName, SolrMetricProducer.getUniqueMetricTag(child, tag));
     return childContext;
   }
 
@@ -141,6 +145,10 @@ public class SolrMetricsContext {
    */
   public Counter counter(String metricName, String... metricPath) {
     return metricManager.counter(this, registryName, metricName, metricPath);
+  }
+
+  public io.prometheus.metrics.core.metrics.Counter counterPrometheus(String metricName) {
+    return prometheusMetricManager.registerCounter(registryName, metricName);
   }
 
   /**
@@ -182,4 +190,6 @@ public class SolrMetricsContext {
   public MetricRegistry getMetricRegistry() {
     return metricManager.registry(registryName);
   }
+
+  public PrometheusRegistry getPrometheusMetricRegistry() { return prometheusMetricManager.getRegistry(registryName); }
 }

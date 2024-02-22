@@ -57,6 +57,8 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import javax.inject.Singleton;
+
+import io.prometheus.metrics.core.metrics.Counter;
 import org.apache.http.auth.AuthSchemeProvider;
 import org.apache.http.client.CredentialsProvider;
 import org.apache.http.config.Lookup;
@@ -130,10 +132,7 @@ import org.apache.solr.jersey.InjectionFactories;
 import org.apache.solr.jersey.JerseyAppHandlerCache;
 import org.apache.solr.logging.LogWatcher;
 import org.apache.solr.logging.MDCLoggingContext;
-import org.apache.solr.metrics.SolrCoreMetricManager;
-import org.apache.solr.metrics.SolrMetricManager;
-import org.apache.solr.metrics.SolrMetricProducer;
-import org.apache.solr.metrics.SolrMetricsContext;
+import org.apache.solr.metrics.*;
 import org.apache.solr.pkg.SolrPackageLoader;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.request.SolrRequestInfo;
@@ -268,6 +267,7 @@ public class CoreContainer {
   protected volatile String metricTag = SolrMetricProducer.getUniqueMetricTag(this, null);
 
   protected volatile SolrMetricsContext solrMetricsContext;
+  protected volatile SolrPrometheusMetricManager solrPrometheusMetricManager;
 
   protected volatile Tracer tracer;
 
@@ -782,7 +782,10 @@ public class CoreContainer {
 
     metricManager = new SolrMetricManager(loader, cfg.getMetricsConfig());
     String registryName = SolrMetricManager.getRegistryName(SolrInfoBean.Group.node);
-    solrMetricsContext = new SolrMetricsContext(metricManager, registryName, metricTag);
+
+    solrPrometheusMetricManager = new SolrPrometheusMetricManager();
+//    Counter solrCounter = solrPrometheusMetricManager.registerCounter(registryName);
+    solrMetricsContext = new SolrMetricsContext(metricManager, solrPrometheusMetricManager, registryName, metricTag);
 
     tracer = TracerConfigurator.loadTracer(loader, cfg.getTracerConfiguratorPluginInfo());
 

@@ -22,6 +22,7 @@ import com.codahale.metrics.Counter;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.Timer;
 import java.lang.invoke.MethodHandles;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import org.apache.solr.api.Api;
@@ -36,10 +37,7 @@ import org.apache.solr.core.MetricsConfig;
 import org.apache.solr.core.PluginBag;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrInfoBean;
-import org.apache.solr.metrics.SolrDelegateRegistryMetricsContext;
-import org.apache.solr.metrics.SolrMetricManager;
-import org.apache.solr.metrics.SolrMetricProducer;
-import org.apache.solr.metrics.SolrMetricsContext;
+import org.apache.solr.metrics.*;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
@@ -67,6 +65,7 @@ public abstract class RequestHandlerBase
   protected boolean aggregateNodeLevelMetricsEnabled = false;
 
   protected SolrMetricsContext solrMetricsContext;
+  protected SolrPrometheusMetricManager solrPrometheusMetricManager;
   protected HandlerMetrics metrics = HandlerMetrics.NO_OP;
   private final long handlerStart;
 
@@ -149,6 +148,8 @@ public abstract class RequestHandlerBase
     return solrMetricsContext;
   }
 
+  public SolrPrometheusMetricManager getSolrPrometheusMetricManager() { return solrPrometheusMetricManager; }
+
   @Override
   public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
     if (aggregateNodeLevelMetricsEnabled) {
@@ -162,6 +163,7 @@ public abstract class RequestHandlerBase
       this.solrMetricsContext = parentContext.getChildContext(this);
     }
     metrics = new HandlerMetrics(solrMetricsContext, getCategory().toString(), scope);
+    solrPrometheusMetricManager = new SolrPrometheusMetricManager();
     solrMetricsContext.gauge(
         () -> handlerStart, true, "handlerStart", getCategory().toString(), scope);
   }
@@ -173,8 +175,9 @@ public abstract class RequestHandlerBase
             new SolrMetricsContext(
                 new SolrMetricManager(
                     null, new MetricsConfig.MetricsConfigBuilder().setEnabled(false).build()),
+                new SolrPrometheusMetricManager(),
                 "NO_OP",
-                "NO_OP"));
+                "NO_OP"), "NO_OP");
 
     public final Meter numErrors;
     public final Meter numServerErrors;
@@ -183,6 +186,7 @@ public abstract class RequestHandlerBase
     public final Counter requests;
     public final Timer requestTimes;
     public final Counter totalTime;
+    public final io.prometheus.metrics.core.metrics.Counter requestTotalPrometheus;
 
     public HandlerMetrics(SolrMetricsContext solrMetricsContext, String... metricPath) {
       numErrors = solrMetricsContext.meter("errors", metricPath);
@@ -192,6 +196,9 @@ public abstract class RequestHandlerBase
       requests = solrMetricsContext.counter("requests", metricPath);
       requestTimes = solrMetricsContext.timer("requestTimes", metricPath);
       totalTime = solrMetricsContext.counter("totalTime", metricPath);
+      String metricName = (metricPath == null || metricPath.length == 0 ? "NO_OP_NAME" : metricPath[0]);
+      requestTotalPrometheus = solrMetricsContext.counterPrometheus("request_total");
+
     }
   }
 
@@ -214,6 +221,7 @@ public abstract class RequestHandlerBase
   public void handleRequest(SolrQueryRequest req, SolrQueryResponse rsp) {
     HandlerMetrics metrics = getMetricsForThisRequest(req);
     metrics.requests.inc();
+    metrics.requestTotalPrometheus.inc();
 
     Timer.Context timer = metrics.requestTimes.time();
     try {

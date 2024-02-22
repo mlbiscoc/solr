@@ -39,7 +39,7 @@ public class SolrDelegateRegistryMetricsContext extends SolrMetricsContext {
 
   public SolrDelegateRegistryMetricsContext(
       SolrMetricManager metricManager, String registry, String tag, String delegateRegistry) {
-    super(metricManager, registry, tag);
+    super(metricManager, new SolrPrometheusMetricManager(), registry, tag);
     this.delegateRegistry = delegateRegistry;
   }
 
