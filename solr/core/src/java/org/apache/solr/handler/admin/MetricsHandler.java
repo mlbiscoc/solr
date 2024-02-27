@@ -38,8 +38,12 @@ import java.util.function.BiConsumer;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+
+import io.prometheus.client.CollectorRegistry;
+import io.prometheus.metrics.model.registry.PrometheusRegistry;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.CommonTestInjection;
 import org.apache.solr.common.util.NamedList;
@@ -58,6 +62,7 @@ import org.apache.solr.util.stats.MetricUtils;
 /** Request handler to return metrics */
 public class MetricsHandler extends RequestHandlerBase implements PermissionNameProvider {
   final SolrMetricManager metricManager;
+  public static final String PROMETHEUS_METRICS_WT = "prometheus";
 
   public static final String COMPACT_PARAM = "compact";
   public static final String PREFIX_PARAM = "prefix";
@@ -118,11 +123,20 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
 
   private void handleRequest(SolrParams params, BiConsumer<String, Object> consumer)
       throws Exception {
+    NamedList<Object> response;
     if (!enabled) {
       consumer.accept("error", "metrics collection is disabled");
       return;
     }
     boolean compact = params.getBool(COMPACT_PARAM, true);
+
+    Set<String> requestedRegistries = parseRegistries(params);
+    if (PROMETHEUS_METRICS_WT.equals(params.get(CommonParams.WT))) {
+      response = handlePrometheusRegistry(requestedRegistries);
+      consumer.accept("metrics", response);
+      return;
+    }
+
     String[] keys = params.getParams(KEY_PARAM);
     if (keys != null && keys.length > 0) {
       handleKeyRequest(keys, consumer);
@@ -138,9 +152,7 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
     List<MetricType> metricTypes = parseMetricTypes(params);
     List<MetricFilter> metricFilters =
         metricTypes.stream().map(MetricType::asMetricFilter).collect(Collectors.toList());
-    Set<String> requestedRegistries = parseRegistries(params);
-
-    NamedList<Object> response = new SimpleOrderedMap<>();
+    response = new SimpleOrderedMap<>();
     for (String registryName : requestedRegistries) {
       MetricRegistry registry = metricManager.registry(registryName);
       SimpleOrderedMap<Object> result = new SimpleOrderedMap<>();
@@ -159,6 +171,16 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
       }
     }
     consumer.accept("metrics", response);
+  }
+
+  private NamedList<Object> handlePrometheusRegistry(Set<String> requestedRegistries) {
+
+    NamedList<Object> response = new SimpleOrderedMap<>();
+    String registryName = "solr.node";
+    PrometheusRegistry registry = this.prometheusMetrics.getRegistry(registryName);
+    response.add(registryName, registry);
+
+    return response;
   }
 
   private static class MetricsExpr {

@@ -130,10 +130,7 @@ import org.apache.solr.jersey.InjectionFactories;
 import org.apache.solr.jersey.JerseyAppHandlerCache;
 import org.apache.solr.logging.LogWatcher;
 import org.apache.solr.logging.MDCLoggingContext;
-import org.apache.solr.metrics.SolrCoreMetricManager;
-import org.apache.solr.metrics.SolrMetricManager;
-import org.apache.solr.metrics.SolrMetricProducer;
-import org.apache.solr.metrics.SolrMetricsContext;
+import org.apache.solr.metrics.*;
 import org.apache.solr.pkg.SolrPackageLoader;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.request.SolrRequestInfo;
@@ -268,6 +265,7 @@ public class CoreContainer {
   protected volatile String metricTag = SolrMetricProducer.getUniqueMetricTag(this, null);
 
   protected volatile SolrMetricsContext solrMetricsContext;
+  protected volatile SolrPrometheusMetricManager solrPrometheusMetricManager;
 
   protected volatile Tracer tracer;
 
@@ -783,6 +781,9 @@ public class CoreContainer {
     metricManager = new SolrMetricManager(loader, cfg.getMetricsConfig());
     String registryName = SolrMetricManager.getRegistryName(SolrInfoBean.Group.node);
     solrMetricsContext = new SolrMetricsContext(metricManager, registryName, metricTag);
+
+    solrPrometheusMetricManager = new SolrPrometheusMetricManager();
+    solrPrometheusMetricManager.createRegistry(registryName);
 
     tracer = TracerConfigurator.loadTracer(loader, cfg.getTracerConfiguratorPluginInfo());
 

@@ -36,10 +36,7 @@ import org.apache.solr.core.MetricsConfig;
 import org.apache.solr.core.PluginBag;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrInfoBean;
-import org.apache.solr.metrics.SolrDelegateRegistryMetricsContext;
-import org.apache.solr.metrics.SolrMetricManager;
-import org.apache.solr.metrics.SolrMetricProducer;
-import org.apache.solr.metrics.SolrMetricsContext;
+import org.apache.solr.metrics.*;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
@@ -68,6 +65,9 @@ public abstract class RequestHandlerBase
 
   protected SolrMetricsContext solrMetricsContext;
   protected HandlerMetrics metrics = HandlerMetrics.NO_OP;
+  public SolrPrometheusMetricManager prometheusMetrics;
+  public io.prometheus.metrics.core.metrics.Counter requestTotalPrometheus;
+
   private final long handlerStart;
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -77,6 +77,8 @@ public abstract class RequestHandlerBase
   @SuppressForbidden(reason = "Need currentTimeMillis, used only for stats output")
   public RequestHandlerBase() {
     handlerStart = System.currentTimeMillis();
+    this.prometheusMetrics = new SolrPrometheusMetricManager();
+    this.requestTotalPrometheus = prometheusMetrics.registerCounter("NO_OP", "NO_OP_METRIC");
   }
 
   /**
@@ -162,6 +164,8 @@ public abstract class RequestHandlerBase
       this.solrMetricsContext = parentContext.getChildContext(this);
     }
     metrics = new HandlerMetrics(solrMetricsContext, getCategory().toString(), scope);
+    prometheusMetrics = new SolrPrometheusMetricManager();
+    requestTotalPrometheus = prometheusMetrics.registerCounter(solrMetricsContext.getRegistryName(), "total_requests");
     solrMetricsContext.gauge(
         () -> handlerStart, true, "handlerStart", getCategory().toString(), scope);
   }
@@ -214,6 +218,7 @@ public abstract class RequestHandlerBase
   public void handleRequest(SolrQueryRequest req, SolrQueryResponse rsp) {
     HandlerMetrics metrics = getMetricsForThisRequest(req);
     metrics.requests.inc();
+    requestTotalPrometheus.labelValues(req.getPath()).inc();
 
     Timer.Context timer = metrics.requestTimes.time();
     try {
