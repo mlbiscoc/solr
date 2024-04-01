@@ -25,22 +25,19 @@ import com.codahale.metrics.Metric;
 import com.codahale.metrics.MetricFilter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.EnumSet;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeSet;
+
+import java.io.IOException;
+import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import io.prometheus.client.dropwizard.samplebuilder.MapperConfig;
+import io.prometheus.metrics.model.registry.Collector;
 import io.prometheus.metrics.model.registry.PrometheusRegistry;
 import io.prometheus.metrics.simpleclient.bridge.SimpleclientCollector;
+import org.apache.solr.client.solrj.response.FacetField;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
@@ -51,7 +48,9 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.RequestHandlerBase;
+import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.metrics.SolrMetricReporter;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
@@ -133,7 +132,7 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
 
     Set<String> requestedRegistries = parseRegistries(params);
     if (PROMETHEUS_METRICS_WT.equals(params.get(CommonParams.WT))) {
-      response = handlePrometheusRegistry(requestedRegistries);
+      response = handlePrometheusRegistry(params, requestedRegistries);
       consumer.accept("metrics", response);
       return;
     }
@@ -184,20 +183,55 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
     return response;
   }
 
-  private NamedList<Object> handlePrometheusRegistry(Set<String> requestedRegistries) {
+  private NamedList<Object> handlePrometheusRegistry(SolrParams params, Set<String> requestedRegistries) {
     NamedList<Object> response = new SimpleOrderedMap<>();
+    boolean compact = params.getBool(COMPACT_PARAM, true);
+    MetricFilter mustMatchFilter = parseMustMatchFilter(params);
+    Predicate<CharSequence> propertyFilter = parsePropertyFilter(params);
+    List<MetricType> metricTypes = parseMetricTypes(params);
+    List<MetricFilter> metricFilters =
+            metricTypes.stream().map(MetricType::asMetricFilter).collect(Collectors.toList());
     for (String registryName : requestedRegistries) {
       MetricRegistry dropWizardRegistry = metricManager.registry(registryName);
-
-      /*
-      Prometheus Client recommends using client 0.16 for Dropwizard export then bridging
-      to 1.0 Client since it as it has not ported to 1.0 yet
-      */
-      CollectorRegistry collectorRegistry = new CollectorRegistry();
-      collectorRegistry.register(new DropwizardExports(dropWizardRegistry));
+      SimpleOrderedMap<Object> result = new SimpleOrderedMap<>();
       PrometheusRegistry prometheusRegistry = new PrometheusRegistry();
-      SimpleclientCollector.builder().collectorRegistry(collectorRegistry).register(prometheusRegistry);
-
+      if(registryName.equals("solr.core.demo")){
+            MetricUtils.toMaps(
+                dropWizardRegistry,
+                metricFilters,
+                mustMatchFilter,
+                propertyFilter,
+                false,
+                false,
+                compact,
+                false,
+                (k, v) -> {
+                  result.add(k, v);
+                });
+      }
+      Map<String, Object> registryMap = result.asShallowMap();
+      String[] splitRegistryName = registryName.split("\\.");
+      String coreName;
+      if (splitRegistryName.length == 3) {
+          coreName = splitRegistryName[2];
+      } else if (splitRegistryName.length == 5) {
+          System.out.println("TBD");
+          coreName = "NoCoreNameFound";
+      } else {
+          coreName = "NoCoreNameFound";
+      }
+      io.prometheus.metrics.core.metrics.Counter requestsTotal = io.prometheus.metrics.core.metrics.Counter.builder().name("solr_metrics_core_requests_total").help("Total number of requests to Solr").labelNames("category", "handler", "collection").register(prometheusRegistry);
+      for (Map.Entry<String, Object> entry : registryMap.entrySet()) {
+        String key = entry.getKey();
+        Object value = entry.getValue();
+        if (key.endsWith("requests")) {
+          String[] splitString = key.split("\\.");
+          System.out.println("We are here!");
+          if( value instanceof Long ) {
+            requestsTotal.labelValues(splitString[0], splitString[1], coreName).inc((long) value);
+          }
+        }
+      }
       response.add(registryName, prometheusRegistry);
     }
     return response;
