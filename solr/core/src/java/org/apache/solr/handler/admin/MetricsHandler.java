@@ -39,7 +39,9 @@ import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import io.prometheus.metrics.core.metrics.Summary;
 import io.prometheus.metrics.model.registry.PrometheusRegistry;
+import io.prometheus.metrics.model.snapshots.Unit;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
@@ -220,14 +222,18 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
       } else {
         coreName = "NoCoreNameFound";
       }
-      io.prometheus.metrics.core.metrics.Counter requestsTotal = io.prometheus.metrics.core.metrics.Counter.builder().name("solr_metrics_core_requests_total").help("Total number of requests to Solr").labelNames("category", "handler", "collection").register(prometheusRegistry);
+      io.prometheus.metrics.core.metrics.Counter requestsTotal = io.prometheus.metrics.core.metrics.Counter.builder().name("solr_metrics_core_requests_total").help("Total number of requests to Solr").labelNames("category", "handler", "collection").withoutExemplars().register(prometheusRegistry);
+      io.prometheus.metrics.core.metrics.Gauge requestTimesMeanRate = io.prometheus.metrics.core.metrics.Gauge.builder().name("solr_metrics_core_query_mean_rate").help("Mean reate for Solr Query").labelNames("category", "handler", "collection").unit(Unit.SECONDS).withoutExemplars().register(prometheusRegistry);
       for (Map.Entry<String, Object> entry : registryMap.entrySet()) {
         String key = entry.getKey();
         Object value = entry.getValue();
-        if (key.endsWith("requests")) {
-          String[] splitString = key.split("\\.");
-          if( value instanceof Long ) {
-            requestsTotal.labelValues(splitString[0], splitString[1], coreName).inc((long) value);
+        Map<String, Metric> rawMetrics = dropWizardRegistry.getMetrics();
+        Metric metric = rawMetrics.get(key);
+        if (key.endsWith("requestTimes")) {
+          if (metric instanceof Timer) {
+            String[] splitString = key.split("\\.");
+            requestsTotal.labelValues(splitString[0], splitString[1], coreName).inc(((Timer) metric).getCount());
+            requestTimesMeanRate.labelValues(splitString[0], splitString[1], coreName).set(((Timer) metric).getMeanRate());
           }
         }
       }
