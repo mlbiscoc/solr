@@ -45,6 +45,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+
+import io.prometheus.metrics.model.registry.PrometheusRegistry;
+import io.prometheus.metrics.model.snapshots.Unit;
 import org.apache.solr.common.ConditionalKeyMapWriter;
 import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.MapWriter;
@@ -164,6 +167,59 @@ public class MetricUtils {
           consumer.accept(doc);
         });
   }
+
+    public static void toPrometheusRegistry(
+            MetricRegistry registry,
+            String registryName,
+            List<MetricFilter> shouldMatchFilters,
+            MetricFilter mustMatchFilter,
+            Predicate<CharSequence> propertyFilter,
+            boolean skipHistograms,
+            boolean skipAggregateValues,
+            boolean compact,
+            Consumer<PrometheusRegistry> consumer) {
+        PrometheusRegistry prometheusRegistry = new PrometheusRegistry();
+        Map<String, Metric> rawMetrics = registry.getMetrics();
+        io.prometheus.metrics.core.metrics.Counter requestsTotal = io.prometheus.metrics.core.metrics.Counter.builder()
+                .name("solr_metrics_core_requests_total")
+                .help("Total number of requests to Solr")
+                .labelNames("category", "handler", "collection")
+                .withoutExemplars().register(prometheusRegistry);
+        io.prometheus.metrics.core.metrics.Gauge requestTimesMeanRate = io.prometheus.metrics.core.metrics.Gauge.builder()
+                .name("solr_metrics_core_query_mean_rate")
+                .help("Mean reate for Solr Query")
+                .labelNames("category", "handler", "collection")
+                .unit(Unit.SECONDS).withoutExemplars().register(prometheusRegistry);
+        toMaps(
+                registry,
+                shouldMatchFilters,
+                mustMatchFilter,
+                propertyFilter,
+                skipHistograms,
+                skipAggregateValues,
+                compact,
+                false,
+                (metricName, metric) -> {
+                  String[] splitRegistryName = registryName.split("\\.");
+                  String coreName;
+                  if (splitRegistryName.length == 3) {
+                    coreName = splitRegistryName[2];
+                  } else if (splitRegistryName.length == 5) {
+                    coreName = "NoCoreNameFound";
+                  } else {
+                    coreName = "NoCoreNameFound";
+                  }
+                    Metric rawMetric = rawMetrics.get(metricName);
+                    if (metricName.endsWith("requestTimes")) {
+                      if (rawMetric instanceof Timer) {
+                        String[] splitString = metricName.split("\\.");
+                        requestsTotal.labelValues(splitString[0], splitString[1], coreName).inc(((Timer) rawMetric).getCount());
+                        requestTimesMeanRate.labelValues(splitString[0], splitString[1], coreName).set(((Timer) rawMetric).getMeanRate());
+                      }
+                    }
+                });
+        consumer.accept(prometheusRegistry);
+    }
 
   /**
    * Fill in a SolrInputDocument with values from a converted metric, recursively.

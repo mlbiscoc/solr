@@ -197,47 +197,20 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
     for (String registryName : requestedRegistries) {
       MetricRegistry dropWizardRegistry = metricManager.registry(registryName);
       SimpleOrderedMap<Object> result = new SimpleOrderedMap<>();
-      PrometheusRegistry prometheusRegistry = new PrometheusRegistry();
       if(registryName.equals("solr.core.demo")){
-        MetricUtils.toMaps(
+        MetricUtils.toPrometheusRegistry(
                 dropWizardRegistry,
+                registryName,
                 metricFilters,
                 mustMatchFilter,
                 propertyFilter,
                 false,
                 false,
                 compact,
-                false,
-                (k, v) -> {
-                  result.add(k, v);
+                (registry) -> {
+                  response.add(registryName, registry);
                 });
       }
-      Map<String, Object> registryMap = result.asShallowMap();
-      String[] splitRegistryName = registryName.split("\\.");
-      String coreName;
-      if (splitRegistryName.length == 3) {
-        coreName = splitRegistryName[2];
-      } else if (splitRegistryName.length == 5) {
-        coreName = "NoCoreNameFound";
-      } else {
-        coreName = "NoCoreNameFound";
-      }
-      io.prometheus.metrics.core.metrics.Counter requestsTotal = io.prometheus.metrics.core.metrics.Counter.builder().name("solr_metrics_core_requests_total").help("Total number of requests to Solr").labelNames("category", "handler", "collection").withoutExemplars().register(prometheusRegistry);
-      io.prometheus.metrics.core.metrics.Gauge requestTimesMeanRate = io.prometheus.metrics.core.metrics.Gauge.builder().name("solr_metrics_core_query_mean_rate").help("Mean reate for Solr Query").labelNames("category", "handler", "collection").unit(Unit.SECONDS).withoutExemplars().register(prometheusRegistry);
-      for (Map.Entry<String, Object> entry : registryMap.entrySet()) {
-        String key = entry.getKey();
-        Object value = entry.getValue();
-        Map<String, Metric> rawMetrics = dropWizardRegistry.getMetrics();
-        Metric metric = rawMetrics.get(key);
-        if (key.endsWith("requestTimes")) {
-          if (metric instanceof Timer) {
-            String[] splitString = key.split("\\.");
-            requestsTotal.labelValues(splitString[0], splitString[1], coreName).inc(((Timer) metric).getCount());
-            requestTimesMeanRate.labelValues(splitString[0], splitString[1], coreName).set(((Timer) metric).getMeanRate());
-          }
-        }
-      }
-      response.add(registryName, prometheusRegistry);
     }
     return response;
   }
