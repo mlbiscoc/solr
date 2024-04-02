@@ -56,8 +56,12 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.AggregateMetric;
 import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.metrics.prometheus.SolrPrometheusCoreMetrics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.metrics.prometheus.SolrPrometheusCoreMetrics.CORE_REQUESTS_QUERY_MEAN_RATE;
+import static org.apache.solr.metrics.prometheus.SolrPrometheusCoreMetrics.CORE_REQUESTS_TOTAL;
 
 /** Metrics specific utility functions. */
 public class MetricUtils {
@@ -178,18 +182,8 @@ public class MetricUtils {
             boolean skipAggregateValues,
             boolean compact,
             Consumer<PrometheusRegistry> consumer) {
-        PrometheusRegistry prometheusRegistry = new PrometheusRegistry();
-        Map<String, Metric> rawMetrics = registry.getMetrics();
-        io.prometheus.metrics.core.metrics.Counter requestsTotal = io.prometheus.metrics.core.metrics.Counter.builder()
-                .name("solr_metrics_core_requests_total")
-                .help("Total number of requests to Solr")
-                .labelNames("category", "handler", "collection")
-                .withoutExemplars().register(prometheusRegistry);
-        io.prometheus.metrics.core.metrics.Gauge requestTimesMeanRate = io.prometheus.metrics.core.metrics.Gauge.builder()
-                .name("solr_metrics_core_query_mean_rate")
-                .help("Mean reate for Solr Query")
-                .labelNames("category", "handler", "collection")
-                .unit(Unit.SECONDS).withoutExemplars().register(prometheusRegistry);
+        Map<String, Metric> dropwizardMetrics = registry.getMetrics();
+        SolrPrometheusCoreMetrics solrPrometheusCoreMetrics = new SolrPrometheusCoreMetrics(new PrometheusRegistry()).registerDefaultMetrics();
         toMaps(
                 registry,
                 shouldMatchFilters,
@@ -209,16 +203,12 @@ public class MetricUtils {
                   } else {
                     coreName = "NoCoreNameFound";
                   }
-                    Metric rawMetric = rawMetrics.get(metricName);
+                    Metric dropwizardMetric = dropwizardMetrics.get(metricName);
                     if (metricName.endsWith("requestTimes")) {
-                      if (rawMetric instanceof Timer) {
-                        String[] splitString = metricName.split("\\.");
-                        requestsTotal.labelValues(splitString[0], splitString[1], coreName).inc(((Timer) rawMetric).getCount());
-                        requestTimesMeanRate.labelValues(splitString[0], splitString[1], coreName).set(((Timer) rawMetric).getMeanRate());
-                      }
+                        solrPrometheusCoreMetrics.convertDropwizardMetric(metricName, coreName, dropwizardMetric);
                     }
                 });
-        consumer.accept(prometheusRegistry);
+        consumer.accept(solrPrometheusCoreMetrics.getPrometheusRegistry());
     }
 
   /**
@@ -621,6 +611,10 @@ public class MetricUtils {
         consumer.accept(name, writer);
       }
     }
+  }
+
+  public static void convertTimerToPrometheus() {
+
   }
 
   /**
