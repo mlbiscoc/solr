@@ -31,7 +31,7 @@ public class PrometheusResponseWriter extends RawResponseWriter {
 
         NamedList<Object> prometheusRegistries = (NamedList<Object>) response.getValues().get("metrics");
         Map<String, Object> registryMap = prometheusRegistries.asShallowMap();
-        PrometheusTextFormatWriter prometheusTextFormatWriter = new PrometheusTextFormatWriter(true);
+        PrometheusTextFormatWriter prometheusTextFormatWriter = new PrometheusTextFormatWriter(false);
         registryMap.forEach((name, registry) -> {
             try {
                 PrometheusRegistry prometheusRegistry = (PrometheusRegistry) registry;

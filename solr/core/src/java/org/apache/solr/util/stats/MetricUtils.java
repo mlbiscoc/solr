@@ -35,11 +35,7 @@ import java.lang.invoke.MethodHandles;
 import java.lang.management.OperatingSystemMXBean;
 import java.lang.management.PlatformManagedObject;
 import java.lang.reflect.InvocationTargetException;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.SortedSet;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
@@ -184,6 +180,9 @@ public class MetricUtils {
             Consumer<PrometheusRegistry> consumer) {
         Map<String, Metric> dropwizardMetrics = registry.getMetrics();
         SolrPrometheusCoreMetrics solrPrometheusCoreMetrics = new SolrPrometheusCoreMetrics(new PrometheusRegistry()).registerDefaultMetrics();
+
+//        Set<String> category = new HashSet<>();
+        Map<String, List<String>> categories = new HashMap<>();
         toMaps(
                 registry,
                 shouldMatchFilters,
@@ -204,9 +203,12 @@ public class MetricUtils {
                     coreName = "NoCoreNameFound";
                   }
                     Metric dropwizardMetric = dropwizardMetrics.get(metricName);
-                    if (metricName.endsWith("requestTimes")) {
-                        solrPrometheusCoreMetrics.convertDropwizardMetric(metricName, coreName, dropwizardMetric);
+                    String[] splitString = metricName.split("\\.");
+                    if(!categories.containsKey(splitString[0])) {
+                        categories.put(splitString[0], new ArrayList<>());
                     }
+                    categories.get(splitString[0]).add(metricName);
+                    solrPrometheusCoreMetrics.convertDropwizardMetric(metricName, coreName, dropwizardMetric);
                 });
         consumer.accept(solrPrometheusCoreMetrics.getPrometheusRegistry());
     }
@@ -611,10 +613,6 @@ public class MetricUtils {
         consumer.accept(name, writer);
       }
     }
-  }
-
-  public static void convertTimerToPrometheus() {
-
   }
 
   /**
