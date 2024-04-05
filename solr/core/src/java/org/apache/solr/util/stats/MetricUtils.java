@@ -182,7 +182,7 @@ public class MetricUtils {
         SolrPrometheusCoreMetrics solrPrometheusCoreMetrics = new SolrPrometheusCoreMetrics(new PrometheusRegistry()).registerDefaultMetrics();
 
 //        Set<String> category = new HashSet<>();
-        Map<String, List<String>> categories = new HashMap<>();
+        Map<String, Map<String, Metric>> categories = new HashMap<>();
         toMaps(
                 registry,
                 shouldMatchFilters,
@@ -205,9 +205,12 @@ public class MetricUtils {
                     Metric dropwizardMetric = dropwizardMetrics.get(metricName);
                     String[] splitString = metricName.split("\\.");
                     if(!categories.containsKey(splitString[0])) {
-                        categories.put(splitString[0], new ArrayList<>());
+                        categories.put(splitString[0], new HashMap<>());
                     }
-                    categories.get(splitString[0]).add(metricName);
+                    if(!categories.get(splitString[0]).containsKey(metricName)) {
+                        categories.get(splitString[0]).put(metricName, dropwizardMetric);
+                    }
+//                    categories.get(splitString[0]).add(metricName);
                     solrPrometheusCoreMetrics.convertDropwizardMetric(metricName, coreName, dropwizardMetric);
                 });
         consumer.accept(solrPrometheusCoreMetrics.getPrometheusRegistry());

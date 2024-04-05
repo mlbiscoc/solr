@@ -61,7 +61,7 @@ public abstract class SolrPrometheusMetrics {
                 .name(metricName)
                 .help(help)
                 .labelNames(labelNames)
-                .unit(Unit.SECONDS).register(prometheusRegistry);
+                .register(prometheusRegistry);
         metricGauges.put(metricName, metricGauge);
     }
 
