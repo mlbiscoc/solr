@@ -20,6 +20,8 @@ public class SolrPrometheusCoreMetrics extends SolrPrometheusMetrics {
     public static final String CORE_REQUEST_TIMES_SUM = "solr_metrics_request_times_summary";
     public static final String CORE_CACHE_SEARCHER_METRICS = "solr_metrics_core_cache_gauge";
     public static final String CORE_TLOG_METRICS = "solr_metrics_tlog_replicas";
+    public static final String CORE_SEARCHER_METRICS = "solr_metrics_core_searcher";
+    public static final String CORE_HIGHLIGHER_METRICS = "solr_metrics_core_highlighter_requests";
 
     public SolrPrometheusCoreMetrics(PrometheusRegistry prometheusRegistry) {
         super(prometheusRegistry);
@@ -29,10 +31,12 @@ public class SolrPrometheusCoreMetrics extends SolrPrometheusMetrics {
     public SolrPrometheusCoreMetrics registerDefaultMetrics() {
         registerCounter(CORE_REQUESTS_TOTAL, "Solr requests Total", "category", "handler", "collection", "type");
         registerCounter(CORE_REQUESTS_TOTAL_TIME, "Solr requests Total", "category", "handler", "collection", "type");
-        registerCounter(CORE_TLOG_METRICS, "Solr TLOG Metrics", "collection", "item", "type");
+        registerCounter(CORE_TLOG_METRICS, "Solr TLOG Metrics", "collection", "type", "item");
+        registerCounter(CORE_HIGHLIGHER_METRICS, "Solr Highlighter Metrics", "collection", "type", "item");
         registerGauge(CORE_REQUESTS_QUERY_MEAN_RATE, "Solr requests Mean rate", "category", "handler", "collection");
         registerGauge(CORE_HANDLER_HANDLER_START, "Handler Start Time", "category", "handler", "collection", "type");
         registerGauge(CORE_UPDATE_HANDLER, "Handler Start Time", "category", "handler", "collection", "type");
+        registerGauge(CORE_SEARCHER_METRICS, "SearcherMetrics", "collecton", "searcherItem");
         registerGauge(CORE_CACHE_SEARCHER_METRICS, "Search Cache Metrics", "collection", "cacheType", "item");
         registerHistogram(CORE_REQUEST_TIMES_HIST, "Solr Requests times", "category", "handler", "collection", "type");
         registerSummary(CORE_REQUEST_TIMES_SUM, "Solr Request Times Summary", "category", "handler", "collection", "type");
@@ -88,9 +92,6 @@ public class SolrPrometheusCoreMetrics extends SolrPrometheusMetrics {
                 }
                 break;
             }
-            case "SEARCHER":
-            case "HIGHLIGHTER":
-            case "INDEX":
             case "CACHE": {
                 if (dropwizardMetric instanceof Gauge) {
                     Object obj = ((Gauge<?>) dropwizardMetric).getValue();
@@ -110,6 +111,42 @@ public class SolrPrometheusCoreMetrics extends SolrPrometheusMetrics {
                         break;
                     }
                 }
+                break;
+            }
+            case "SEARCHER":{
+                if (dropwizardMetric instanceof Gauge) {
+                    Object obj = ((Gauge<?>) dropwizardMetric).getValue();
+                    double value;
+                    if (obj instanceof Number) {
+                        value = ((Number) obj).doubleValue();
+                        getMetricGauge(CORE_SEARCHER_METRICS).labelValues(coreName, splitString[2]).set(value);
+                    } else if (obj instanceof Boolean) {
+                        value = ((Boolean) obj) ? 1 : 0;
+                    } else if (obj instanceof HashMap) {
+                        HashMap<?, ?> itemsMap = (HashMap<?, ?>) obj;
+                        for (Object item : itemsMap.keySet()) {
+                            if (itemsMap.get(item) instanceof Number) {
+                                getMetricGauge(CORE_SEARCHER_METRICS).labelValues(coreName, splitString[2]).set( ((Number) itemsMap.get(item)).doubleValue());
+                            } else {
+                                System.out.println("This is not an number");
+                            }
+                        }
+                    } else {
+                        System.out.println("Other type");
+                        break;
+                    }
+                }
+                break;
+            }
+            case "HIGHLIGHTER": {
+                if (dropwizardMetric instanceof Counter) {
+                    getMetricCounter(CORE_HIGHLIGHER_METRICS).labelValues(coreName, splitString[1], splitString[2]).inc(((Counter) dropwizardMetric).getCount());
+                } else {
+                    System.out.println("Non existent type");
+                }
+                break;
+            }
+            case "INDEX": {
                 break;
             }
             default: {

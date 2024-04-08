@@ -197,7 +197,7 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
     for (String registryName : requestedRegistries) {
       MetricRegistry dropWizardRegistry = metricManager.registry(registryName);
       SimpleOrderedMap<Object> result = new SimpleOrderedMap<>();
-      if(registryName.equals("solr.core.demo")){
+      if(registryName.startsWith("solr.core")){
         MetricUtils.toPrometheusRegistry(
                 dropWizardRegistry,
                 registryName,
