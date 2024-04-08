@@ -22,6 +22,7 @@ public class SolrPrometheusCoreMetrics extends SolrPrometheusMetrics {
     public static final String CORE_TLOG_METRICS = "solr_metrics_tlog_replicas";
     public static final String CORE_SEARCHER_METRICS = "solr_metrics_core_searcher";
     public static final String CORE_HIGHLIGHER_METRICS = "solr_metrics_core_highlighter_requests";
+    public static final String CORE_INDEX_METRICS = "solr_metrics_index";
 
     public SolrPrometheusCoreMetrics(PrometheusRegistry prometheusRegistry) {
         super(prometheusRegistry);
@@ -36,8 +37,9 @@ public class SolrPrometheusCoreMetrics extends SolrPrometheusMetrics {
         registerGauge(CORE_REQUESTS_QUERY_MEAN_RATE, "Solr requests Mean rate", "category", "handler", "collection");
         registerGauge(CORE_HANDLER_HANDLER_START, "Handler Start Time", "category", "handler", "collection", "type");
         registerGauge(CORE_UPDATE_HANDLER, "Handler Start Time", "category", "handler", "collection", "type");
-        registerGauge(CORE_SEARCHER_METRICS, "SearcherMetrics", "collecton", "searcherItem");
-        registerGauge(CORE_CACHE_SEARCHER_METRICS, "Search Cache Metrics", "collection", "cacheType", "item");
+        registerGauge(CORE_SEARCHER_METRICS, "SearcherMetrics", "collection", "searcherItem");
+        registerGauge(CORE_CACHE_SEARCHER_METRICS, "Searcher Cache Metrics", "collection", "cacheType", "item");
+        registerGauge(CORE_INDEX_METRICS, "Index Metrics", "collection", "type");
         registerHistogram(CORE_REQUEST_TIMES_HIST, "Solr Requests times", "category", "handler", "collection", "type");
         registerSummary(CORE_REQUEST_TIMES_SUM, "Solr Request Times Summary", "category", "handler", "collection", "type");
         return this;
@@ -147,6 +149,14 @@ public class SolrPrometheusCoreMetrics extends SolrPrometheusMetrics {
                 break;
             }
             case "INDEX": {
+                if (dropwizardMetric instanceof Gauge) {
+                    Object obj = ((Gauge<?>) dropwizardMetric).getValue();
+                    double value;
+                    if (obj instanceof Number) {
+                        value = ((Number) obj).doubleValue();
+                        getMetricGauge(CORE_INDEX_METRICS).labelValues(coreName, splitString[1]).set(value);
+                    }
+                }
                 break;
             }
             default: {
