@@ -41,6 +41,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import io.prometheus.metrics.model.registry.PrometheusRegistry;
 import org.apache.solr.common.ConditionalKeyMapWriter;
@@ -175,12 +176,14 @@ public class MetricUtils {
             boolean compact,
             Consumer<PrometheusRegistry> consumer) {
         Map<String, Metric> dropwizardMetrics = registry.getMetrics();
-        String[] splitRegistryName = registryName.split("\\.");
+        String[]rawParsedRegistry = registryName.split("\\.");
+        List<String> parsedRegistry = new ArrayList<>(
+                Arrays.asList(rawParsedRegistry));
         String coreName;
-        if (splitRegistryName.length == 3) {
-            coreName = splitRegistryName[2];
-        } else if (splitRegistryName.length == 5) {
-            coreName = "NoCoreNameFound";
+        if (parsedRegistry.size() == 3) {
+            coreName = parsedRegistry.get(2);
+        } else if (parsedRegistry.size() == 5) {
+            coreName =parsedRegistry.stream().skip(1).collect(Collectors.joining("_"));
         } else {
             coreName = "NoCoreNameFound";
         }
