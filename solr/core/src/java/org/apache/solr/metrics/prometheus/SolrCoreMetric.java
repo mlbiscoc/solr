@@ -1,6 +1,8 @@
 package org.apache.solr.metrics.prometheus;
 
-@FunctionalInterface
-public interface SolrCoreMetric {
-    void toPrometheus(SolrPrometheusCoreRegistry solrPrometheusCoreRegistry, String metricName);
+import com.codahale.metrics.Metric;
+
+public abstract class SolrCoreMetric {
+    public Metric dropwizardMetric;
+    abstract void toPrometheus(SolrPrometheusCoreRegistry solrPrometheusCoreRegistry, String metricName);
 }

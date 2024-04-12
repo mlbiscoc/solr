@@ -5,10 +5,7 @@ import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.Metric;
 
-public class SolrCoreHandlerMetric implements SolrCoreMetric {
-//    public PrometheusRegistry solrPrometheusCoreRegistry;
-    public Metric dropwizardMetric;
-//    public String coreName;
+public class SolrCoreHandlerMetric extends SolrCoreMetric {
     public static final String CORE_REQUESTS_TOTAL = "solr_metrics_core_requests_total";
     public static final String CORE_REQUESTS_TOTAL_TIME = "solr_metrics_core_requests_total_time";
     public static final String CORE_HANDLER_HANDLER_START = "solr_metrics_core_handler_start";

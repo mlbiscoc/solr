@@ -205,7 +205,7 @@ public class MetricUtils {
                     if(!categories.get(splitString[0]).containsKey(metricName)) {
                         categories.get(splitString[0]).put(metricName, dropwizardMetric);
                     }
-                    solrPrometheusCoreMetrics.convertDropwizardMetric(metricName, dropwizardMetric);
+                    solrPrometheusCoreMetrics.exportDropwizardMetric(metricName, dropwizardMetric);
                 });
         consumer.accept(solrPrometheusCoreMetrics.getPrometheusRegistry());
     }

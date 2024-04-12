@@ -74,13 +74,23 @@ public abstract class SolrPrometheusRegistry {
         getMetricCounter(prometheusMetricName).labelValues(labels).inc(dropwizardMetric.getCount());
     }
 
-    protected void exportCounter(com.codahale.metrics.Counter prometheusMetricName, String metricName, String ...labels) {
-        getMetricCounter(metricName).labelValues(labels).inc(prometheusMetricName.getCount());
+    protected void exportCounter(com.codahale.metrics.Counter dropwizardMetric, String prometheusMetricName, String ...labels) {
+        getMetricCounter(prometheusMetricName).labelValues(labels).inc(dropwizardMetric.getCount());
     }
+
 
     protected void exportGauge(com.codahale.metrics.Gauge<?> dropwizardMetric, String prometheusMetricName, String ...labels){
         if (dropwizardMetric instanceof Number) {
             getMetricGauge(prometheusMetricName).labelValues(labels).set(((Number) dropwizardMetric).doubleValue());
+        } else if (dropwizardMetric instanceof HashMap) {
+            HashMap<?, ?> itemsMap = (HashMap<?, ?>) dropwizardMetric;
+            for (Object item : itemsMap.keySet()) {
+                if (itemsMap.get(item) instanceof Number) {
+                    getMetricGauge(prometheusMetricName).labelValues(labels).set( ((Number) itemsMap.get(item)).doubleValue());
+                } else {
+                    System.out.println("This is not an number");
+                }
+            }
         }
     }
 
