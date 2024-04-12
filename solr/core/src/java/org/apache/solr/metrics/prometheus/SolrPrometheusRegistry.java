@@ -1,16 +1,19 @@
 package org.apache.solr.metrics.prometheus;
 
+import com.codahale.metrics.Meter;
+import com.codahale.metrics.Metric;
 import io.prometheus.metrics.core.metrics.Counter;
 import io.prometheus.metrics.core.metrics.Gauge;
 import io.prometheus.metrics.core.metrics.Histogram;
 import io.prometheus.metrics.core.metrics.Summary;
 import io.prometheus.metrics.model.registry.PrometheusRegistry;
+import io.prometheus.metrics.model.snapshots.CounterSnapshot;
 import io.prometheus.metrics.model.snapshots.Unit;
 
 import java.util.HashMap;
 import java.util.Map;
 
-public abstract class SolrPrometheusMetrics {
+public abstract class SolrPrometheusRegistry {
     PrometheusRegistry prometheusRegistry;
     String registryName;
     private final Map<String, Counter> metricCounters;
@@ -18,7 +21,7 @@ public abstract class SolrPrometheusMetrics {
     private final Map<String, Histogram> metricHistograms;
     private final Map<String, Summary> metricSummaries;
 
-    public SolrPrometheusMetrics(PrometheusRegistry prometheusRegistry) {
+    public SolrPrometheusRegistry(PrometheusRegistry prometheusRegistry) {
         this.prometheusRegistry = prometheusRegistry;
         this.metricCounters = new HashMap<>();
         this.metricGauges = new HashMap<>();
@@ -45,39 +48,40 @@ public abstract class SolrPrometheusMetrics {
 
     public Summary getMetricSummary(String metricName) { return metricSummaries.get(metricName); }
 
-    abstract SolrPrometheusMetrics registerDefaultMetrics();
+    abstract SolrPrometheusRegistry registerDefaultMetrics();
 
-    protected void registerCounter(String metricName, String help, String ...labelNames) {
-        Counter metricCounter = io.prometheus.metrics.core.metrics.Counter.builder()
+    protected Counter createCounter(String metricName, String help, String ...labelNames) {
+        Counter counter = io.prometheus.metrics.core.metrics.Counter.builder()
                 .name(metricName)
                 .help(help)
                 .labelNames(labelNames)
                 .register(prometheusRegistry);
-        metricCounters.put(metricName, metricCounter);
+        metricCounters.put(metricName, counter);
+        return counter;
     }
 
-    protected void registerGauge(String metricName, String help, String ...labelNames) {
-        Gauge metricGauge = io.prometheus.metrics.core.metrics.Gauge.builder()
+    protected Gauge createGauge(String metricName, String help, String ...labelNames) {
+        Gauge gauge = io.prometheus.metrics.core.metrics.Gauge.builder()
                 .name(metricName)
                 .help(help)
                 .labelNames(labelNames)
                 .register(prometheusRegistry);
-        metricGauges.put(metricName, metricGauge);
+        metricGauges.put(metricName, gauge);
+        return gauge;
     }
 
-    protected void registerHistogram(String metricName, String help, String ...labelNames) {
-        Histogram metricHistogram = Histogram.builder()
-                        .name(metricName)
-                        .help(help)
-                        .labelNames(labelNames)
-                                .unit(Unit.SECONDS)
-                                        .register(prometheusRegistry);
-        metricHistograms.put(metricName, metricHistogram);
+    protected void exportMeter(Meter dropwizardMetric, String prometheusMetricName, String ...labels) {
+        getMetricCounter(prometheusMetricName).labelValues(labels).inc(dropwizardMetric.getCount());
     }
 
-    protected void registerSummary(String metricName, String help, String ...labelNames) {
-        Summary metricSummary = Summary.builder().name(metricName).help(help).labelNames(labelNames).unit(Unit.SECONDS).register(prometheusRegistry);
-        metricSummaries.put(metricName, metricSummary);
+    protected void exportCounter(com.codahale.metrics.Counter prometheusMetricName, String metricName, String ...labels) {
+        getMetricCounter(metricName).labelValues(labels).inc(prometheusMetricName.getCount());
+    }
+
+    protected void exportGauge(com.codahale.metrics.Gauge<?> dropwizardMetric, String prometheusMetricName, String ...labels){
+        if (dropwizardMetric instanceof Number) {
+            getMetricGauge(prometheusMetricName).labelValues(labels).set(((Number) dropwizardMetric).doubleValue());
+        }
     }
 
 }

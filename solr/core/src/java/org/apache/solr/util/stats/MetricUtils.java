@@ -43,7 +43,6 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 import io.prometheus.metrics.model.registry.PrometheusRegistry;
-import io.prometheus.metrics.model.snapshots.Unit;
 import org.apache.solr.common.ConditionalKeyMapWriter;
 import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.MapWriter;
@@ -52,12 +51,9 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.AggregateMetric;
 import org.apache.solr.metrics.SolrMetricManager;
-import org.apache.solr.metrics.prometheus.SolrPrometheusCoreMetrics;
+import org.apache.solr.metrics.prometheus.SolrPrometheusCoreRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.apache.solr.metrics.prometheus.SolrPrometheusCoreMetrics.CORE_REQUESTS_QUERY_MEAN_RATE;
-import static org.apache.solr.metrics.prometheus.SolrPrometheusCoreMetrics.CORE_REQUESTS_TOTAL;
 
 /** Metrics specific utility functions. */
 public class MetricUtils {
@@ -179,7 +175,16 @@ public class MetricUtils {
             boolean compact,
             Consumer<PrometheusRegistry> consumer) {
         Map<String, Metric> dropwizardMetrics = registry.getMetrics();
-        SolrPrometheusCoreMetrics solrPrometheusCoreMetrics = new SolrPrometheusCoreMetrics(new PrometheusRegistry()).registerDefaultMetrics();
+        String[] splitRegistryName = registryName.split("\\.");
+        String coreName;
+        if (splitRegistryName.length == 3) {
+            coreName = splitRegistryName[2];
+        } else if (splitRegistryName.length == 5) {
+            coreName = "NoCoreNameFound";
+        } else {
+            coreName = "NoCoreNameFound";
+        }
+        SolrPrometheusCoreRegistry solrPrometheusCoreMetrics = new SolrPrometheusCoreRegistry(new PrometheusRegistry(), coreName).registerDefaultMetrics();
 
         Map<String, Map<String, Metric>> categories = new HashMap<>();
         toMaps(
@@ -192,15 +197,6 @@ public class MetricUtils {
                 compact,
                 false,
                 (metricName, metric) -> {
-                  String[] splitRegistryName = registryName.split("\\.");
-                  String coreName;
-                  if (splitRegistryName.length == 3) {
-                    coreName = splitRegistryName[2];
-                  } else if (splitRegistryName.length == 5) {
-                    coreName = "NoCoreNameFound";
-                  } else {
-                    coreName = "NoCoreNameFound";
-                  }
                     Metric dropwizardMetric = dropwizardMetrics.get(metricName);
                     String[] splitString = metricName.split("\\.");
                     if(!categories.containsKey(splitString[0])) {
@@ -209,7 +205,7 @@ public class MetricUtils {
                     if(!categories.get(splitString[0]).containsKey(metricName)) {
                         categories.get(splitString[0]).put(metricName, dropwizardMetric);
                     }
-                    solrPrometheusCoreMetrics.convertDropwizardMetric(metricName, coreName, dropwizardMetric);
+                    solrPrometheusCoreMetrics.convertDropwizardMetric(metricName, dropwizardMetric);
                 });
         consumer.accept(solrPrometheusCoreMetrics.getPrometheusRegistry());
     }
