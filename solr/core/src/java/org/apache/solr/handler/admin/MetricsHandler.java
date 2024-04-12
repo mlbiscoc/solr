@@ -196,8 +196,9 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
             metricTypes.stream().map(MetricType::asMetricFilter).collect(Collectors.toList());
     for (String registryName : requestedRegistries) {
       MetricRegistry dropWizardRegistry = metricManager.registry(registryName);
-      SimpleOrderedMap<Object> result = new SimpleOrderedMap<>();
-      if(registryName.startsWith("solr.core")){
+
+      // Currently only export Solr Core registries
+      if ( registryName.startsWith("solr.core") ) {
         MetricUtils.toPrometheusRegistry(
                 dropWizardRegistry,
                 registryName,
@@ -211,6 +212,7 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
                   response.add(registryName, registry);
                 });
       }
+
     }
     return response;
   }

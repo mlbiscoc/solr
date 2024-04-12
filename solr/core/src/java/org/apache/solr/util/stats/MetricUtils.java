@@ -199,12 +199,14 @@ public class MetricUtils {
                 (metricName, metric) -> {
                     Metric dropwizardMetric = dropwizardMetrics.get(metricName);
                     String[] splitString = metricName.split("\\.");
+
                     if(!categories.containsKey(splitString[0])) {
                         categories.put(splitString[0], new HashMap<>());
                     }
                     if(!categories.get(splitString[0]).containsKey(metricName)) {
                         categories.get(splitString[0]).put(metricName, dropwizardMetric);
                     }
+
                     solrPrometheusCoreMetrics.exportDropwizardMetric(metricName, dropwizardMetric);
                 });
         consumer.accept(solrPrometheusCoreMetrics.getPrometheusRegistry());
