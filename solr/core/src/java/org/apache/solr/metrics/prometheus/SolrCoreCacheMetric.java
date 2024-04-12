@@ -15,7 +15,9 @@ public class SolrCoreCacheMetric extends SolrCoreMetric {
     void toPrometheus(SolrPrometheusCoreRegistry solrPrometheusCoreRegistry, String metricName)  {
         String coreName = solrPrometheusCoreRegistry.coreName;
         String[] splitString = metricName.split("\\.");
-        solrPrometheusCoreRegistry.exportGauge((Gauge<?>) dropwizardMetric, CORE_CACHE_SEARCHER_METRICS, coreName, splitString[2]);
+        if (dropwizardMetric instanceof Gauge) {
+            solrPrometheusCoreRegistry.exportGauge((Gauge<?>) dropwizardMetric, CORE_CACHE_SEARCHER_METRICS, coreName, splitString[2]);
+        }
 //        if (dropwizardMetric instanceof Gauge) {
 //            Object obj = ((Gauge<?>) dropwizardMetric).getValue();
 //            if (obj instanceof Number) {

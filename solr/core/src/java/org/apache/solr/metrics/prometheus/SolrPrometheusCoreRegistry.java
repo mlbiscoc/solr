@@ -7,6 +7,7 @@ import static org.apache.solr.metrics.prometheus.SolrCoreCacheMetric.CORE_CACHE_
 import static org.apache.solr.metrics.prometheus.SolrCoreHandlerMetric.*;
 import static org.apache.solr.metrics.prometheus.SolrCoreHighlighterMetric.CORE_HIGHLIGHER_METRICS;
 import static org.apache.solr.metrics.prometheus.SolrCoreIndexMetric.CORE_INDEX_METRICS;
+import static org.apache.solr.metrics.prometheus.SolrCoreSearcherMetric.CORE_SEARCHER_CACHE_METRICS;
 import static org.apache.solr.metrics.prometheus.SolrCoreSearcherMetric.CORE_SEARCHER_METRICS;
 import static org.apache.solr.metrics.prometheus.SolrCoreTlogMetric.CORE_TLOG_METRICS;
 
@@ -27,8 +28,7 @@ public class SolrPrometheusCoreRegistry extends SolrPrometheusRegistry {
         createGauge(CORE_HANDLER_HANDLER_START, "Handler Start Time", "category", "handler", "collection", "type");
         createGauge(CORE_UPDATE_HANDLER, "Handler Start Time", "category", "handler", "collection", "type");
         createGauge(CORE_SEARCHER_METRICS, "SearcherMetrics", "collection", "searcherItem");
-//        createGauge(CORE_CACHE_SEARCHER_METRICS, "Searcher Cache Metrics", "collection", "cacheType", "item");
-        createGauge(CORE_CACHE_SEARCHER_METRICS, "Searcher Cache Metrics", "collection", "cacheType");
+        createGauge(CORE_CACHE_SEARCHER_METRICS, "Searcher Cache Metrics", "collection", "cacheType", "item");
         createGauge(CORE_INDEX_METRICS, "Index Metrics", "collection", "type");
         return this;
     }
@@ -70,27 +70,3 @@ public class SolrPrometheusCoreRegistry extends SolrPrometheusRegistry {
     }
 
 }
-
-
-//                if (dropwizardMetric instanceof Gauge) {
-//                    Object obj = ((Gauge<?>) dropwizardMetric).getValue();
-//                    double value;
-//                    if (obj instanceof Number) {
-//                        value = ((Number) obj).doubleValue();
-//                        getMetricGauge(CORE_SEARCHER_METRICS).labelValues(coreName, parsedMetric[2]).set(value);
-//                    } else if (obj instanceof Boolean) {
-//                        value = ((Boolean) obj) ? 1 : 0;
-//                    } else if (obj instanceof HashMap) {
-//                        HashMap<?, ?> itemsMap = (HashMap<?, ?>) obj;
-//                        for (Object item : itemsMap.keySet()) {
-//                            if (itemsMap.get(item) instanceof Number) {
-//                                getMetricGauge(CORE_SEARCHER_METRICS).labelValues(coreName, parsedMetric[2]).set( ((Number) itemsMap.get(item)).doubleValue());
-//                            } else {
-//                                System.out.println("This is not an number");
-//                            }
-//                        }
-//                    } else {
-//                        System.out.println("Other type");
-//                        break;
-//                    }
-//                }

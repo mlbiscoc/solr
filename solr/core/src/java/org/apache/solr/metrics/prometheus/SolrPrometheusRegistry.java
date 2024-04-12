@@ -44,9 +44,6 @@ public abstract class SolrPrometheusRegistry {
     public Gauge getMetricGauge(String metricName) {
         return metricGauges.get(metricName);
     }
-    public Histogram getMetricHistogram(String metricName) { return metricHistograms.get(metricName); }
-
-    public Summary getMetricSummary(String metricName) { return metricSummaries.get(metricName); }
 
     abstract SolrPrometheusRegistry registerDefaultMetrics();
 
@@ -79,14 +76,18 @@ public abstract class SolrPrometheusRegistry {
     }
 
 
-    protected void exportGauge(com.codahale.metrics.Gauge<?> dropwizardMetric, String prometheusMetricName, String ...labels){
+    protected void exportGauge(com.codahale.metrics.Gauge<?> dropwizardMetricRaw, String prometheusMetricName, String ...labels) {
+        Object dropwizardMetric = (dropwizardMetricRaw).getValue();
         if (dropwizardMetric instanceof Number) {
             getMetricGauge(prometheusMetricName).labelValues(labels).set(((Number) dropwizardMetric).doubleValue());
         } else if (dropwizardMetric instanceof HashMap) {
             HashMap<?, ?> itemsMap = (HashMap<?, ?>) dropwizardMetric;
             for (Object item : itemsMap.keySet()) {
                 if (itemsMap.get(item) instanceof Number) {
-                    getMetricGauge(prometheusMetricName).labelValues(labels).set( ((Number) itemsMap.get(item)).doubleValue());
+                    String[] newLabels = new String[labels.length + 1];
+                    System.arraycopy(labels, 0, newLabels, 0, labels.length);
+                    newLabels[labels.length] = (String) item;
+                    getMetricGauge(prometheusMetricName).labelValues(newLabels).set(((Number) itemsMap.get(item)).doubleValue());
                 } else {
                     System.out.println("This is not an number");
                 }
