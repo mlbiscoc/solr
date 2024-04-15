@@ -3,6 +3,8 @@ package org.apache.solr.metrics.prometheus;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.Metric;
 
+import java.util.Map;
+
 public class SolrCoreTlogMetric extends SolrCoreMetric {
     public static final String CORE_TLOG_METRICS = "solr_metrics_tlog_replicas";
 
@@ -13,13 +15,23 @@ public class SolrCoreTlogMetric extends SolrCoreMetric {
     }
 
     @Override
-    public void toPrometheus(SolrPrometheusCoreRegistry solrPrometheusCoreRegistry) {
+    public SolrCoreMetric parseLabels() {
         String[] parsedMetric = metricName.split("\\.");
-
         if (dropwizardMetric instanceof Meter) {
             String item = parsedMetric[1];
             String type = parsedMetric[2];
-            solrPrometheusCoreRegistry.exportMeter((Meter) dropwizardMetric, CORE_TLOG_METRICS, coreName, item, type);
+            this.labels = Map.of(
+                    "core", coreName,
+                    "item", item,
+                    "type", type);
+        }
+        return this;
+    }
+
+    @Override
+    public void toPrometheus(SolrPrometheusCoreRegistry solrPrometheusCoreRegistry) {
+        if (dropwizardMetric instanceof Meter) {
+            solrPrometheusCoreRegistry.exportMeter((Meter) dropwizardMetric, CORE_TLOG_METRICS, labels);
         } else {
             System.out.println("Not possible to migrate string values to prometheus");
         }

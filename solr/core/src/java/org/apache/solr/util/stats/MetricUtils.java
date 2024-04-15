@@ -183,11 +183,11 @@ public class MetricUtils {
         if (parsedRegistry.size() == 3) {
             coreName = parsedRegistry.get(2);
         } else if (parsedRegistry.size() == 5) {
-            coreName =parsedRegistry.stream().skip(1).collect(Collectors.joining("_"));
+            coreName = parsedRegistry.stream().skip(1).collect(Collectors.joining("_"));
         } else {
-            coreName = "NoCoreNameFound";
+            coreName = registryName;
         }
-        SolrPrometheusCoreRegistry solrPrometheusCoreMetrics = new SolrPrometheusCoreRegistry(new PrometheusRegistry(), coreName).registerDefaultMetrics();
+        SolrPrometheusCoreRegistry solrPrometheusCoreMetrics = new SolrPrometheusCoreRegistry(new PrometheusRegistry(), coreName);
 
         Map<String, Map<String, Metric>> categories = new HashMap<>();
         toMaps(
