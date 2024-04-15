@@ -38,10 +38,6 @@ import java.util.function.BiConsumer;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-
-import io.prometheus.metrics.core.metrics.Summary;
-import io.prometheus.metrics.model.registry.PrometheusRegistry;
-import io.prometheus.metrics.model.snapshots.Unit;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
@@ -123,7 +119,7 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
   }
 
   private void handleRequest(SolrParams params, BiConsumer<String, Object> consumer)
-          throws Exception {
+      throws Exception {
     NamedList<Object> response;
 
     if (!enabled) {
@@ -152,16 +148,16 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
     response = handleDropwizardRegistry(params, requestedRegistries);
 
     consumer.accept("metrics", response);
-
   }
 
-  private NamedList<Object> handleDropwizardRegistry(SolrParams params, Set<String> requestedRegistries) {
+  private NamedList<Object> handleDropwizardRegistry(
+      SolrParams params, Set<String> requestedRegistries) {
     boolean compact = params.getBool(COMPACT_PARAM, true);
     MetricFilter mustMatchFilter = parseMustMatchFilter(params);
     Predicate<CharSequence> propertyFilter = parsePropertyFilter(params);
     List<MetricType> metricTypes = parseMetricTypes(params);
     List<MetricFilter> metricFilters =
-            metricTypes.stream().map(MetricType::asMetricFilter).collect(Collectors.toList());
+        metricTypes.stream().map(MetricType::asMetricFilter).collect(Collectors.toList());
     metricTypes.stream().map(MetricType::asMetricFilter).collect(Collectors.toList());
 
     NamedList<Object> response = new SimpleOrderedMap<>();
@@ -170,15 +166,15 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
       SimpleOrderedMap<Object> result = new SimpleOrderedMap<>();
 
       MetricUtils.toMaps(
-              registry,
-              metricFilters,
-              mustMatchFilter,
-              propertyFilter,
-              false,
-              false,
-              compact,
-              false,
-              (k, v) -> result.add(k, v));
+          registry,
+          metricFilters,
+          mustMatchFilter,
+          propertyFilter,
+          false,
+          false,
+          compact,
+          false,
+          (k, v) -> result.add(k, v));
       if (result.size() > 0) {
         response.add(registryName, result);
       }
@@ -186,33 +182,33 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
     return response;
   }
 
-  private NamedList<Object> handlePrometheusRegistry(SolrParams params, Set<String> requestedRegistries) {
+  private NamedList<Object> handlePrometheusRegistry(
+      SolrParams params, Set<String> requestedRegistries) {
     NamedList<Object> response = new SimpleOrderedMap<>();
     boolean compact = params.getBool(COMPACT_PARAM, true);
     MetricFilter mustMatchFilter = parseMustMatchFilter(params);
     Predicate<CharSequence> propertyFilter = parsePropertyFilter(params);
     List<MetricType> metricTypes = parseMetricTypes(params);
     List<MetricFilter> metricFilters =
-            metricTypes.stream().map(MetricType::asMetricFilter).collect(Collectors.toList());
+        metricTypes.stream().map(MetricType::asMetricFilter).collect(Collectors.toList());
     for (String registryName : requestedRegistries) {
       MetricRegistry dropWizardRegistry = metricManager.registry(registryName);
 
       // Currently only export Solr Core registries
-      if ( registryName.startsWith("solr.core") ) {
+      if (registryName.startsWith("solr.core")) {
         MetricUtils.toPrometheusRegistry(
-                dropWizardRegistry,
-                registryName,
-                metricFilters,
-                mustMatchFilter,
-                propertyFilter,
-                false,
-                false,
-                compact,
-                (registry) -> {
-                  response.add(registryName, registry);
-                });
+            dropWizardRegistry,
+            registryName,
+            metricFilters,
+            mustMatchFilter,
+            propertyFilter,
+            false,
+            false,
+            compact,
+            (registry) -> {
+              response.add(registryName, registry);
+            });
       }
-
     }
     return response;
   }
