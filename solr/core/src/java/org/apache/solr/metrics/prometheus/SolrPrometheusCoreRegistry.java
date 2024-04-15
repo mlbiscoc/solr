@@ -3,12 +3,19 @@ package org.apache.solr.metrics.prometheus;
 import com.codahale.metrics.*;
 import io.prometheus.metrics.model.registry.PrometheusRegistry;
 
+import java.util.HashMap;
+import java.util.Map;
+
 public class SolrPrometheusCoreRegistry extends SolrPrometheusRegistry {
     public final String coreName;
+    public final boolean cloudMode;
 
-    public SolrPrometheusCoreRegistry(PrometheusRegistry prometheusRegistry, String coreName) {
+
+    public SolrPrometheusCoreRegistry(PrometheusRegistry prometheusRegistry, String coreName, boolean cloudMode) {
         super(prometheusRegistry);
         this.coreName = coreName;
+        this.cloudMode = cloudMode;
+
     }
 
     public void exportDropwizardMetric(String metricName, Metric dropwizardMetric) {
@@ -23,26 +30,26 @@ public class SolrPrometheusCoreRegistry extends SolrPrometheusRegistry {
             case "QUERY":
             case "UPDATE":
             case "REPLICATION": {
-                return new SolrCoreHandlerMetric(dropwizardMetric, coreName, metricName);
+                return new SolrCoreHandlerMetric(dropwizardMetric, coreName, metricName, cloudMode);
             }
             case "TLOG": {
-                return new SolrCoreTlogMetric(dropwizardMetric, coreName, metricName);
+                return new SolrCoreTlogMetric(dropwizardMetric, coreName, metricName, cloudMode);
             }
             case "CACHE": {
-                return new SolrCoreCacheMetric(dropwizardMetric, coreName, metricName);
+                return new SolrCoreCacheMetric(dropwizardMetric, coreName, metricName, cloudMode);
             }
             case "SEARCHER":{
-                return new SolrCoreSearcherMetric(dropwizardMetric, coreName, metricName);
+                return new SolrCoreSearcherMetric(dropwizardMetric, coreName, metricName, cloudMode);
             }
             case "HIGHLIGHTER": {
-                return new SolrCoreHighlighterMetric(dropwizardMetric, coreName, metricName);
+                return new SolrCoreHighlighterMetric(dropwizardMetric, coreName, metricName, cloudMode);
             }
             case "INDEX": {
-                return new SolrCoreIndexMetric(dropwizardMetric, coreName, metricName);
+                return new SolrCoreIndexMetric(dropwizardMetric, coreName, metricName, cloudMode);
             }
             case "CORE":
             default: {
-                return new SolrCoreNoOpMetric(dropwizardMetric, coreName, metricName);
+                return new SolrCoreNoOpMetric(dropwizardMetric, coreName, metricName, cloudMode);
             }
         }
     }

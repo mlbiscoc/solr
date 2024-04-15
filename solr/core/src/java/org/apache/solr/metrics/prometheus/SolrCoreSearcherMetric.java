@@ -3,6 +3,7 @@ package org.apache.solr.metrics.prometheus;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Metric;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import static org.apache.solr.metrics.prometheus.SolrCoreCacheMetric.CORE_CACHE_SEARCHER_METRICS;
@@ -10,10 +11,8 @@ import static org.apache.solr.metrics.prometheus.SolrCoreCacheMetric.CORE_CACHE_
 public class SolrCoreSearcherMetric extends SolrCoreMetric {
     public static final String CORE_SEARCHER_METRICS = "solr_metrics_core_searcher";
 
-    public SolrCoreSearcherMetric(Metric dropwizardMetric, String coreName, String metricName) {
-        this.dropwizardMetric = dropwizardMetric;
-        this.coreName = coreName;
-        this.metricName = metricName;
+    public SolrCoreSearcherMetric(Metric dropwizardMetric, String coreName, String metricName, boolean cloudMode) {
+        super(dropwizardMetric, coreName, metricName, cloudMode);
     }
 
     @Override
@@ -21,9 +20,7 @@ public class SolrCoreSearcherMetric extends SolrCoreMetric {
         String[] parsedMetric = metricName.split("\\.");
         if (dropwizardMetric instanceof Gauge) {
             String type = parsedMetric[2];
-            labels = Map.of(
-                    "core", coreName,
-                    "type", type);
+            labels.put("type", type);
         }
         return this;
     }

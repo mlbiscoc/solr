@@ -180,14 +180,16 @@ public class MetricUtils {
         List<String> parsedRegistry = new ArrayList<>(
                 Arrays.asList(rawParsedRegistry));
         String coreName;
+        boolean cloudMode = false;
         if (parsedRegistry.size() == 3) {
             coreName = parsedRegistry.get(2);
         } else if (parsedRegistry.size() == 5) {
             coreName = parsedRegistry.stream().skip(1).collect(Collectors.joining("_"));
+            cloudMode = true;
         } else {
             coreName = registryName;
         }
-        SolrPrometheusCoreRegistry solrPrometheusCoreMetrics = new SolrPrometheusCoreRegistry(new PrometheusRegistry(), coreName);
+        SolrPrometheusCoreRegistry solrPrometheusCoreMetrics = new SolrPrometheusCoreRegistry(new PrometheusRegistry(), coreName, cloudMode);
 
         Map<String, Map<String, Metric>> categories = new HashMap<>();
         toMaps(

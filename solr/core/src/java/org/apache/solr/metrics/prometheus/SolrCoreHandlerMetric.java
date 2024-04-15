@@ -13,10 +13,8 @@ public class SolrCoreHandlerMetric extends SolrCoreMetric {
     public static final String CORE_REQUESTS_TOTAL_TIME = "solr_metrics_core_requests_total_time";
     public static final String CORE_HANDLER_HANDLER_START = "solr_metrics_core_handler_start";
     public static final String CORE_UPDATE_HANDLER = "solr_metrics_core_update_handler_metrics";
-    public SolrCoreHandlerMetric(Metric dropwizardMetric, String coreName, String metricName) {
-        this.dropwizardMetric = dropwizardMetric;
-        this.coreName = coreName;
-        this.metricName = metricName;
+    public SolrCoreHandlerMetric(Metric dropwizardMetric, String coreName, String metricName, boolean cloudMode) {
+        super(dropwizardMetric, coreName, metricName, cloudMode);
     }
 
     @Override
@@ -25,11 +23,9 @@ public class SolrCoreHandlerMetric extends SolrCoreMetric {
         String category = parsedMetric[0];
         String handler = parsedMetric[1];
         String type = parsedMetric[2];
-        this.labels = Map.of(
-                "core", coreName,
-                "category", category,
-                "handler", handler,
-                "type", type);
+        labels.put("category", category);
+        labels.put("handler", handler);
+        labels.put("type", type);
         return this;
     }
 

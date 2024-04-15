@@ -6,10 +6,8 @@ import java.util.Map;
 
 public class SolrCoreNoOpMetric extends SolrCoreMetric {
 
-    public SolrCoreNoOpMetric(Metric dropwizardMetric, String coreName, String metricName) {
-        this.dropwizardMetric = dropwizardMetric;
-        this.coreName = coreName;
-        this.metricName = metricName;
+    public SolrCoreNoOpMetric(Metric dropwizardMetric, String coreName, String metricName, boolean cloudMode) {
+        super(dropwizardMetric, coreName, metricName, cloudMode);
     }
 
     @Override
