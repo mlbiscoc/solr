@@ -17,10 +17,9 @@
 package org.apache.solr.metrics.prometheus.core;
 
 import com.codahale.metrics.Metric;
-import org.apache.solr.metrics.prometheus.SolrPrometheusCoreRegistry;
-
 import java.util.HashMap;
 import java.util.Map;
+import org.apache.solr.metrics.prometheus.SolrPrometheusCoreRegistry;
 
 public abstract class SolrCoreMetric {
   public Metric dropwizardMetric;
