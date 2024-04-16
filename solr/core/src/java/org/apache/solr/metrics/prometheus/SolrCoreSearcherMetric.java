@@ -4,9 +4,11 @@ import static org.apache.solr.metrics.prometheus.SolrCoreCacheMetric.CORE_CACHE_
 
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Metric;
+import com.codahale.metrics.Timer;
 
 public class SolrCoreSearcherMetric extends SolrCoreMetric {
-  public static final String CORE_SEARCHER_METRICS = "solr_metrics_core_searcher";
+  public static final String CORE_SEARCHER_METRICS = "solr_metrics_core_searcher_documents";
+  public static final String CORE_SEARCHER_TIMES = "solr_metrics_core_average_searcher_warmup_time";
 
   public SolrCoreSearcherMetric(
       Metric dropwizardMetric, String coreName, String metricName, boolean cloudMode) {
@@ -33,8 +35,8 @@ public class SolrCoreSearcherMetric extends SolrCoreMetric {
         solrPrometheusCoreRegistry.exportGauge(
             (Gauge<?>) dropwizardMetric, CORE_SEARCHER_METRICS, labels);
       }
-    } else {
-      System.out.println("This metric does not exist");
+    } else if (dropwizardMetric instanceof Timer) {
+      solrPrometheusCoreRegistry.exportTimer((Timer) dropwizardMetric, CORE_SEARCHER_TIMES, labels);
     }
   }
 }

@@ -15,7 +15,5 @@ public class SolrCoreNoOpMetric extends SolrCoreMetric {
   }
 
   @Override
-  void toPrometheus(SolrPrometheusCoreRegistry solrPrometheusCoreRegistry) {
-    System.out.println("Cannot export string metrics");
-  }
+  void toPrometheus(SolrPrometheusCoreRegistry solrPrometheusCoreRegistry) {}
 }

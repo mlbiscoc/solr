@@ -1,6 +1,7 @@
 package org.apache.solr.metrics.prometheus;
 
 import com.codahale.metrics.Meter;
+import com.codahale.metrics.Timer;
 import io.prometheus.metrics.core.metrics.Counter;
 import io.prometheus.metrics.core.metrics.Gauge;
 import io.prometheus.metrics.model.registry.PrometheusRegistry;
@@ -80,6 +81,17 @@ public abstract class SolrPrometheusRegistry {
         .inc(dropwizardMetric.getCount());
   }
 
+  protected void exportTimer(Timer dropwizardMetric, String prometheusMetricName, Map<String, String> labelsMap) {
+    if (!metricGauges.containsKey(prometheusMetricName)) {
+      ArrayList<String> labels = new ArrayList<>(labelsMap.keySet());
+      registerGauge(prometheusMetricName, labels.toArray(String[]::new));
+    }
+    ArrayList<String> labelValues = new ArrayList<>(labelsMap.values());
+    getMetricGauge(prometheusMetricName)
+            .labelValues(labelValues.toArray(String[]::new))
+            .set(dropwizardMetric.getMeanRate());
+  }
+
   protected void exportGauge(
       com.codahale.metrics.Gauge<?> dropwizardMetricRaw,
       String prometheusMetricName,
@@ -108,8 +120,6 @@ public abstract class SolrPrometheusRegistry {
           getMetricGauge(prometheusMetricName)
               .labelValues(newLabels)
               .set(((Number) itemsMap.get(item)).doubleValue());
-        } else {
-          System.out.println("This is not an number");
         }
       }
     }

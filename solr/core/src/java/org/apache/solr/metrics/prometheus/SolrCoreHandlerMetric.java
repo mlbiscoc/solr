@@ -4,12 +4,13 @@ import com.codahale.metrics.Counter;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.Metric;
+import com.codahale.metrics.Timer;
 
 public class SolrCoreHandlerMetric extends SolrCoreMetric {
-  public static final String CORE_REQUESTS_TOTAL = "solr_metrics_core_requests_total";
-  public static final String CORE_REQUESTS_TOTAL_TIME = "solr_metrics_core_requests_total_time";
-  public static final String CORE_HANDLER_HANDLER_START = "solr_metrics_core_handler_start";
-  public static final String CORE_UPDATE_HANDLER = "solr_metrics_core_update_handler_metrics";
+  public static final String CORE_REQUESTS_TOTAL = "solr_metrics_core_requests";
+  public static final String CORE_REQUESTS_UPDATE_HANDLER = "solr_metrics_core_update_handler";
+  public static final String CORE_REQUESTS_TOTAL_TIME = "solr_metrics_core_requests_time";
+  public static final String CORE_REQUEST_TIMES = "solr_metrics_core_average_request_time";
 
   public SolrCoreHandlerMetric(
       Metric dropwizardMetric, String coreName, String metricName, boolean cloudMode) {
@@ -23,8 +24,10 @@ public class SolrCoreHandlerMetric extends SolrCoreMetric {
     String handler = parsedMetric[1];
     String type = parsedMetric[2];
     labels.put("category", category);
-    labels.put("handler", handler);
     labels.put("type", type);
+    if (!(dropwizardMetric instanceof Gauge)) {
+      labels.put("handler", handler);
+    }
     return this;
   }
 
@@ -41,15 +44,11 @@ public class SolrCoreHandlerMetric extends SolrCoreMetric {
             (Counter) dropwizardMetric, CORE_REQUESTS_TOTAL_TIME, labels);
       }
     } else if (dropwizardMetric instanceof Gauge) {
-      if (metricName.endsWith("handlerStart")) {
         solrPrometheusCoreRegistry.exportGauge(
-            (Gauge<?>) dropwizardMetric, CORE_HANDLER_HANDLER_START, labels);
-      } else {
-        solrPrometheusCoreRegistry.exportGauge(
-            (Gauge<?>) dropwizardMetric, CORE_UPDATE_HANDLER, labels);
-      }
-    } else {
-      System.out.println("This Metric does not exist");
+            (Gauge<?>) dropwizardMetric, CORE_REQUESTS_UPDATE_HANDLER, labels);
+    } else if (dropwizardMetric instanceof Timer) {
+      solrPrometheusCoreRegistry.exportTimer(
+              (Timer) dropwizardMetric, CORE_REQUEST_TIMES, labels);
     }
   }
 }

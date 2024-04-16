@@ -180,11 +180,12 @@ public class MetricUtils {
       boolean skipAggregateValues,
       boolean compact,
       Consumer<PrometheusRegistry> consumer) {
+      String coreName;
+      boolean cloudMode = false;
     Map<String, Metric> dropwizardMetrics = registry.getMetrics();
     String[] rawParsedRegistry = registryName.split("\\.");
     List<String> parsedRegistry = new ArrayList<>(Arrays.asList(rawParsedRegistry));
-    String coreName;
-    boolean cloudMode = false;
+
     if (parsedRegistry.size() == 3) {
       coreName = parsedRegistry.get(2);
     } else if (parsedRegistry.size() == 5) {
@@ -193,10 +194,10 @@ public class MetricUtils {
     } else {
       coreName = registryName;
     }
+
     SolrPrometheusCoreRegistry solrPrometheusCoreMetrics =
         new SolrPrometheusCoreRegistry(new PrometheusRegistry(), coreName, cloudMode);
 
-    Map<String, Map<String, Metric>> categories = new HashMap<>();
     toMaps(
         registry,
         shouldMatchFilters,
@@ -208,15 +209,6 @@ public class MetricUtils {
         false,
         (metricName, metric) -> {
           Metric dropwizardMetric = dropwizardMetrics.get(metricName);
-          String[] splitString = metricName.split("\\.");
-
-          if (!categories.containsKey(splitString[0])) {
-            categories.put(splitString[0], new HashMap<>());
-          }
-          if (!categories.get(splitString[0]).containsKey(metricName)) {
-            categories.get(splitString[0]).put(metricName, dropwizardMetric);
-          }
-
           solrPrometheusCoreMetrics.exportDropwizardMetric(metricName, dropwizardMetric);
         });
     consumer.accept(solrPrometheusCoreMetrics.getPrometheusRegistry());
