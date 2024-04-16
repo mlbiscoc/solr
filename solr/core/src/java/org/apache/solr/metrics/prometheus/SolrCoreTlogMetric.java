@@ -2,7 +2,6 @@ package org.apache.solr.metrics.prometheus;
 
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.Metric;
-import com.codahale.metrics.Timer;
 
 public class SolrCoreTlogMetric extends SolrCoreMetric {
   public static final String CORE_TLOG_METRICS = "solr_metrics_core_tlog";

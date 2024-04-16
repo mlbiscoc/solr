@@ -44,11 +44,10 @@ public class SolrCoreHandlerMetric extends SolrCoreMetric {
             (Counter) dropwizardMetric, CORE_REQUESTS_TOTAL_TIME, labels);
       }
     } else if (dropwizardMetric instanceof Gauge) {
-        solrPrometheusCoreRegistry.exportGauge(
-            (Gauge<?>) dropwizardMetric, CORE_REQUESTS_UPDATE_HANDLER, labels);
+      solrPrometheusCoreRegistry.exportGauge(
+          (Gauge<?>) dropwizardMetric, CORE_REQUESTS_UPDATE_HANDLER, labels);
     } else if (dropwizardMetric instanceof Timer) {
-      solrPrometheusCoreRegistry.exportTimer(
-              (Timer) dropwizardMetric, CORE_REQUEST_TIMES, labels);
+      solrPrometheusCoreRegistry.exportTimer((Timer) dropwizardMetric, CORE_REQUEST_TIMES, labels);
     }
   }
 }

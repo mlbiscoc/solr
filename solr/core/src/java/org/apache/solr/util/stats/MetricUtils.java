@@ -180,8 +180,8 @@ public class MetricUtils {
       boolean skipAggregateValues,
       boolean compact,
       Consumer<PrometheusRegistry> consumer) {
-      String coreName;
-      boolean cloudMode = false;
+    String coreName;
+    boolean cloudMode = false;
     Map<String, Metric> dropwizardMetrics = registry.getMetrics();
     String[] rawParsedRegistry = registryName.split("\\.");
     List<String> parsedRegistry = new ArrayList<>(Arrays.asList(rawParsedRegistry));
@@ -208,8 +208,13 @@ public class MetricUtils {
         compact,
         false,
         (metricName, metric) -> {
-          Metric dropwizardMetric = dropwizardMetrics.get(metricName);
-          solrPrometheusCoreMetrics.exportDropwizardMetric(metricName, dropwizardMetric);
+          try {
+            Metric dropwizardMetric = dropwizardMetrics.get(metricName);
+            solrPrometheusCoreMetrics.exportDropwizardMetric(metricName, dropwizardMetric);
+          } catch (Exception e) {
+            // Do not fail entirely for metrics exporting. Log and try to export next metric
+            log.warn("Error occurred exporting Dropwizard Metric to Prometheus", e);
+          }
         });
     consumer.accept(solrPrometheusCoreMetrics.getPrometheusRegistry());
   }

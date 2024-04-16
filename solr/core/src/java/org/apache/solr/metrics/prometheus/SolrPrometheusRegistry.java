@@ -2,6 +2,7 @@ package org.apache.solr.metrics.prometheus;
 
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.Timer;
+import com.google.common.collect.ImmutableMap;
 import io.prometheus.metrics.core.metrics.Counter;
 import io.prometheus.metrics.core.metrics.Gauge;
 import io.prometheus.metrics.model.registry.PrometheusRegistry;
@@ -29,15 +30,23 @@ public abstract class SolrPrometheusRegistry {
     return registryName;
   }
 
-  public Counter getMetricCounter(String metricName) {
+  public Map<String, Counter> copyOfCounters() {
+    return ImmutableMap.copyOf(metricCounters);
+  }
+
+  public Map<String, Gauge> copyOfGauges() {
+    return ImmutableMap.copyOf(metricGauges);
+  }
+
+  private Counter getMetricCounter(String metricName) {
     return metricCounters.get(metricName);
   }
 
-  public Gauge getMetricGauge(String metricName) {
+  private Gauge getMetricGauge(String metricName) {
     return metricGauges.get(metricName);
   }
 
-  protected void registerCounter(String metricName, String... labelNames) {
+  private void registerCounter(String metricName, String... labelNames) {
     Counter counter =
         io.prometheus.metrics.core.metrics.Counter.builder()
             .name(metricName)
@@ -46,7 +55,7 @@ public abstract class SolrPrometheusRegistry {
     metricCounters.put(metricName, counter);
   }
 
-  protected void registerGauge(String metricName, String... labelNames) {
+  private void registerGauge(String metricName, String... labelNames) {
     Gauge gauge =
         io.prometheus.metrics.core.metrics.Gauge.builder()
             .name(metricName)
@@ -55,9 +64,9 @@ public abstract class SolrPrometheusRegistry {
     metricGauges.put(metricName, gauge);
   }
 
-  protected void exportMeter(
+  public void exportMeter(
       Meter dropwizardMetric, String prometheusMetricName, Map<String, String> labelsMap) {
-    if (!metricCounters.containsKey(prometheusMetricName)) {
+    if (!copyOfCounters().containsKey(prometheusMetricName)) {
       ArrayList<String> labels = new ArrayList<>(labelsMap.keySet());
       registerCounter(prometheusMetricName, labels.toArray(String[]::new));
     }
@@ -71,7 +80,7 @@ public abstract class SolrPrometheusRegistry {
       com.codahale.metrics.Counter dropwizardMetric,
       String prometheusMetricName,
       Map<String, String> labelsMap) {
-    if (!metricCounters.containsKey(prometheusMetricName)) {
+    if (!copyOfCounters().containsKey(prometheusMetricName)) {
       ArrayList<String> labels = new ArrayList<>(labelsMap.keySet());
       registerCounter(prometheusMetricName, labels.toArray(String[]::new));
     }
@@ -81,23 +90,24 @@ public abstract class SolrPrometheusRegistry {
         .inc(dropwizardMetric.getCount());
   }
 
-  protected void exportTimer(Timer dropwizardMetric, String prometheusMetricName, Map<String, String> labelsMap) {
-    if (!metricGauges.containsKey(prometheusMetricName)) {
+  public void exportTimer(
+      Timer dropwizardMetric, String prometheusMetricName, Map<String, String> labelsMap) {
+    if (!copyOfGauges().containsKey(prometheusMetricName)) {
       ArrayList<String> labels = new ArrayList<>(labelsMap.keySet());
       registerGauge(prometheusMetricName, labels.toArray(String[]::new));
     }
     ArrayList<String> labelValues = new ArrayList<>(labelsMap.values());
     getMetricGauge(prometheusMetricName)
-            .labelValues(labelValues.toArray(String[]::new))
-            .set(dropwizardMetric.getMeanRate());
+        .labelValues(labelValues.toArray(String[]::new))
+        .set(dropwizardMetric.getMeanRate());
   }
 
-  protected void exportGauge(
+  public void exportGauge(
       com.codahale.metrics.Gauge<?> dropwizardMetricRaw,
       String prometheusMetricName,
       Map<String, String> labelsMap) {
     Object dropwizardMetric = (dropwizardMetricRaw).getValue();
-    if (!metricGauges.containsKey(prometheusMetricName)) {
+    if (!copyOfGauges().containsKey(prometheusMetricName)) {
       ArrayList<String> labels = new ArrayList<>(labelsMap.keySet());
       if (dropwizardMetric instanceof HashMap) {
         labels.add("item");

@@ -6,16 +6,16 @@ import io.prometheus.metrics.model.registry.PrometheusRegistry;
 public class SolrPrometheusCoreRegistry extends SolrPrometheusRegistry {
   public final String coreName;
   public final boolean cloudMode;
-  public final static String ADMIN = "ADMIN";
-  public final static String QUERY = "QUERY";
-  public final static String UPDATE = "UPDATE";
-  public final static String REPLICATION = "REPLICATION";
-  public final static String TLOG = "TLOG";
-  public final static String CACHE = "CACHE";
-  public final static String SEARCHER = "SEARCHER";
-  public final static String HIGHLIGHTER = "HIGHLIGHTER";
-  public final static String INDEX = "INDEX";
-  public final static String CORE = "CORE";
+  public static final String ADMIN = "ADMIN";
+  public static final String QUERY = "QUERY";
+  public static final String UPDATE = "UPDATE";
+  public static final String REPLICATION = "REPLICATION";
+  public static final String TLOG = "TLOG";
+  public static final String CACHE = "CACHE";
+  public static final String SEARCHER = "SEARCHER";
+  public static final String HIGHLIGHTER = "HIGHLIGHTER";
+  public static final String INDEX = "INDEX";
+  public static final String CORE = "CORE";
 
   public SolrPrometheusCoreRegistry(
       PrometheusRegistry prometheusRegistry, String coreName, boolean cloudMode) {
