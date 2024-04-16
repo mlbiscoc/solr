@@ -1,10 +1,11 @@
-package org.apache.solr.metrics.prometheus;
+package org.apache.solr.metrics.prometheus.core;
 
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.Metric;
 import com.codahale.metrics.Timer;
+import org.apache.solr.metrics.prometheus.SolrPrometheusCoreRegistry;
 
 public class SolrCoreHandlerMetric extends SolrCoreMetric {
   public static final String CORE_REQUESTS_TOTAL = "solr_metrics_core_requests";

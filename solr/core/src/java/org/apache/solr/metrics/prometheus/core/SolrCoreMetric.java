@@ -1,6 +1,8 @@
-package org.apache.solr.metrics.prometheus;
+package org.apache.solr.metrics.prometheus.core;
 
 import com.codahale.metrics.Metric;
+import org.apache.solr.metrics.prometheus.SolrPrometheusCoreRegistry;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -24,7 +26,7 @@ public abstract class SolrCoreMetric {
     }
   }
 
-  abstract SolrCoreMetric parseLabels();
+  public abstract SolrCoreMetric parseLabels();
 
-  abstract void toPrometheus(SolrPrometheusCoreRegistry solrPrometheusCoreRegistry);
+  public abstract void toPrometheus(SolrPrometheusCoreRegistry solrPrometheusCoreRegistry);
 }

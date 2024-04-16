@@ -2,6 +2,14 @@ package org.apache.solr.metrics.prometheus;
 
 import com.codahale.metrics.Metric;
 import io.prometheus.metrics.model.registry.PrometheusRegistry;
+import org.apache.solr.metrics.prometheus.core.SolrCoreCacheMetric;
+import org.apache.solr.metrics.prometheus.core.SolrCoreHandlerMetric;
+import org.apache.solr.metrics.prometheus.core.SolrCoreHighlighterMetric;
+import org.apache.solr.metrics.prometheus.core.SolrCoreIndexMetric;
+import org.apache.solr.metrics.prometheus.core.SolrCoreMetric;
+import org.apache.solr.metrics.prometheus.core.SolrCoreNoOpMetric;
+import org.apache.solr.metrics.prometheus.core.SolrCoreSearcherMetric;
+import org.apache.solr.metrics.prometheus.core.SolrCoreTlogMetric;
 
 public class SolrPrometheusCoreRegistry extends SolrPrometheusRegistry {
   public final String coreName;

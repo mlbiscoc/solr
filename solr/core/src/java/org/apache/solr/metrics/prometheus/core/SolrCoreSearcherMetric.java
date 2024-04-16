@@ -1,10 +1,11 @@
-package org.apache.solr.metrics.prometheus;
+package org.apache.solr.metrics.prometheus.core;
 
-import static org.apache.solr.metrics.prometheus.SolrCoreCacheMetric.CORE_CACHE_SEARCHER_METRICS;
+import static org.apache.solr.metrics.prometheus.core.SolrCoreCacheMetric.CORE_CACHE_SEARCHER_METRICS;
 
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Metric;
 import com.codahale.metrics.Timer;
+import org.apache.solr.metrics.prometheus.SolrPrometheusCoreRegistry;
 
 public class SolrCoreSearcherMetric extends SolrCoreMetric {
   public static final String CORE_SEARCHER_METRICS = "solr_metrics_core_searcher_documents";
@@ -26,7 +27,7 @@ public class SolrCoreSearcherMetric extends SolrCoreMetric {
   }
 
   @Override
-  void toPrometheus(SolrPrometheusCoreRegistry solrPrometheusCoreRegistry) {
+  public void toPrometheus(SolrPrometheusCoreRegistry solrPrometheusCoreRegistry) {
     if (dropwizardMetric instanceof Gauge) {
       if (metricName.endsWith("liveDocsCache")) {
         solrPrometheusCoreRegistry.exportGauge(
