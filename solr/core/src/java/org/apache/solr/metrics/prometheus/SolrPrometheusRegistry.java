@@ -38,32 +38,6 @@ public abstract class SolrPrometheusRegistry {
     return ImmutableMap.copyOf(metricGauges);
   }
 
-  private Counter getMetricCounter(String metricName) {
-    return metricCounters.get(metricName);
-  }
-
-  private Gauge getMetricGauge(String metricName) {
-    return metricGauges.get(metricName);
-  }
-
-  private void registerCounter(String metricName, String... labelNames) {
-    Counter counter =
-        io.prometheus.metrics.core.metrics.Counter.builder()
-            .name(metricName)
-            .labelNames(labelNames)
-            .register(prometheusRegistry);
-    metricCounters.put(metricName, counter);
-  }
-
-  private void registerGauge(String metricName, String... labelNames) {
-    Gauge gauge =
-        io.prometheus.metrics.core.metrics.Gauge.builder()
-            .name(metricName)
-            .labelNames(labelNames)
-            .register(prometheusRegistry);
-    metricGauges.put(metricName, gauge);
-  }
-
   public void exportMeter(
       Meter dropwizardMetric, String prometheusMetricName, Map<String, String> labelsMap) {
     if (!copyOfCounters().containsKey(prometheusMetricName)) {
@@ -76,7 +50,7 @@ public abstract class SolrPrometheusRegistry {
         .inc(dropwizardMetric.getCount());
   }
 
-  protected void exportCounter(
+  public void exportCounter(
       com.codahale.metrics.Counter dropwizardMetric,
       String prometheusMetricName,
       Map<String, String> labelsMap) {
@@ -133,5 +107,31 @@ public abstract class SolrPrometheusRegistry {
         }
       }
     }
+  }
+
+  private Counter getMetricCounter(String metricName) {
+    return metricCounters.get(metricName);
+  }
+
+  private Gauge getMetricGauge(String metricName) {
+    return metricGauges.get(metricName);
+  }
+
+  private void registerCounter(String metricName, String... labelNames) {
+    Counter counter =
+        io.prometheus.metrics.core.metrics.Counter.builder()
+            .name(metricName)
+            .labelNames(labelNames)
+            .register(prometheusRegistry);
+    metricCounters.put(metricName, counter);
+  }
+
+  private void registerGauge(String metricName, String... labelNames) {
+    Gauge gauge =
+        io.prometheus.metrics.core.metrics.Gauge.builder()
+            .name(metricName)
+            .labelNames(labelNames)
+            .register(prometheusRegistry);
+    metricGauges.put(metricName, gauge);
   }
 }

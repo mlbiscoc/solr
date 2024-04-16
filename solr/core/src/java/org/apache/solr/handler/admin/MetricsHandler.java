@@ -126,11 +126,9 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
       consumer.accept("error", "metrics collection is disabled");
       return;
     }
-    boolean compact = params.getBool(COMPACT_PARAM, true);
 
-    Set<String> requestedRegistries = parseRegistries(params);
     if (PROMETHEUS_METRICS_WT.equals(params.get(CommonParams.WT))) {
-      response = handlePrometheusRegistry(params, requestedRegistries);
+      response = handlePrometheusRegistry(params);
       consumer.accept("metrics", response);
       return;
     }
@@ -145,20 +143,19 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
       return;
     }
 
-    response = handleDropwizardRegistry(params, requestedRegistries);
+    response = handleDropwizardRegistry(params);
 
     consumer.accept("metrics", response);
   }
 
-  private NamedList<Object> handleDropwizardRegistry(
-      SolrParams params, Set<String> requestedRegistries) {
+  private NamedList<Object> handleDropwizardRegistry(SolrParams params) {
     boolean compact = params.getBool(COMPACT_PARAM, true);
     MetricFilter mustMatchFilter = parseMustMatchFilter(params);
     Predicate<CharSequence> propertyFilter = parsePropertyFilter(params);
     List<MetricType> metricTypes = parseMetricTypes(params);
     List<MetricFilter> metricFilters =
         metricTypes.stream().map(MetricType::asMetricFilter).collect(Collectors.toList());
-    metricTypes.stream().map(MetricType::asMetricFilter).collect(Collectors.toList());
+    Set<String> requestedRegistries = parseRegistries(params);
 
     NamedList<Object> response = new SimpleOrderedMap<>();
     for (String registryName : requestedRegistries) {
@@ -182,8 +179,7 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
     return response;
   }
 
-  private NamedList<Object> handlePrometheusRegistry(
-      SolrParams params, Set<String> requestedRegistries) {
+  private NamedList<Object> handlePrometheusRegistry(SolrParams params) {
     NamedList<Object> response = new SimpleOrderedMap<>();
     boolean compact = params.getBool(COMPACT_PARAM, true);
     MetricFilter mustMatchFilter = parseMustMatchFilter(params);
@@ -191,9 +187,10 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
     List<MetricType> metricTypes = parseMetricTypes(params);
     List<MetricFilter> metricFilters =
         metricTypes.stream().map(MetricType::asMetricFilter).collect(Collectors.toList());
+    Set<String> requestedRegistries = parseRegistries(params);
+
     for (String registryName : requestedRegistries) {
       MetricRegistry dropWizardRegistry = metricManager.registry(registryName);
-
       // Currently only export Solr Core registries
       if (registryName.startsWith("solr.core")) {
         MetricUtils.toPrometheusRegistry(
