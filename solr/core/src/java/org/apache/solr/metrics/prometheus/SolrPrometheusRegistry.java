@@ -18,7 +18,6 @@ package org.apache.solr.metrics.prometheus;
 
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.Timer;
-import com.google.common.collect.ImmutableMap;
 import io.prometheus.metrics.core.metrics.Counter;
 import io.prometheus.metrics.core.metrics.Gauge;
 import io.prometheus.metrics.model.registry.PrometheusRegistry;
@@ -46,17 +45,9 @@ public abstract class SolrPrometheusRegistry {
     return registryName;
   }
 
-  public Map<String, Counter> copyOfCounters() {
-    return ImmutableMap.copyOf(metricCounters);
-  }
-
-  public Map<String, Gauge> copyOfGauges() {
-    return ImmutableMap.copyOf(metricGauges);
-  }
-
   public void exportMeter(
       Meter dropwizardMetric, String prometheusMetricName, Map<String, String> labelsMap) {
-    if (!copyOfCounters().containsKey(prometheusMetricName)) {
+    if (!metricCounters.containsKey(prometheusMetricName)) {
       ArrayList<String> labels = new ArrayList<>(labelsMap.keySet());
       registerCounter(prometheusMetricName, labels.toArray(String[]::new));
     }
@@ -70,7 +61,7 @@ public abstract class SolrPrometheusRegistry {
       com.codahale.metrics.Counter dropwizardMetric,
       String prometheusMetricName,
       Map<String, String> labelsMap) {
-    if (!copyOfCounters().containsKey(prometheusMetricName)) {
+    if (!metricCounters.containsKey(prometheusMetricName)) {
       ArrayList<String> labels = new ArrayList<>(labelsMap.keySet());
       registerCounter(prometheusMetricName, labels.toArray(String[]::new));
     }
@@ -82,7 +73,7 @@ public abstract class SolrPrometheusRegistry {
 
   public void exportTimer(
       Timer dropwizardMetric, String prometheusMetricName, Map<String, String> labelsMap) {
-    if (!copyOfGauges().containsKey(prometheusMetricName)) {
+    if (!metricCounters.containsKey(prometheusMetricName)) {
       ArrayList<String> labels = new ArrayList<>(labelsMap.keySet());
       registerGauge(prometheusMetricName, labels.toArray(String[]::new));
     }
@@ -97,7 +88,7 @@ public abstract class SolrPrometheusRegistry {
       String prometheusMetricName,
       Map<String, String> labelsMap) {
     Object dropwizardMetric = (dropwizardMetricRaw).getValue();
-    if (!copyOfGauges().containsKey(prometheusMetricName)) {
+    if (!metricGauges.containsKey(prometheusMetricName)) {
       ArrayList<String> labels = new ArrayList<>(labelsMap.keySet());
       if (dropwizardMetric instanceof HashMap) {
         labels.add("item");
