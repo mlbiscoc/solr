@@ -35,6 +35,9 @@ import java.util.stream.Collectors;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.metrics.AggregateMetric;
 import org.apache.solr.metrics.prometheus.SolrPrometheusCoreExporter;
+import org.apache.solr.metrics.prometheus.SolrPrometheusExporter;
+import org.apache.solr.metrics.prometheus.SolrPrometheusJvmExporter;
+import org.apache.solr.metrics.prometheus.SolrPrometheusNoOpExporter;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.util.stats.MetricUtils;
 import org.slf4j.Logger;
@@ -55,7 +58,7 @@ public class PrometheusResponseWriter extends RawResponseWriter {
         (NamedList<Object>) response.getValues().get("metrics");
     var prometheusTextFormatWriter = new PrometheusTextFormatWriter(false);
     for (Map.Entry<String, Object> prometheusRegistry : prometheusRegistries) {
-      var prometheusExporter = (SolrPrometheusCoreExporter) prometheusRegistry.getValue();
+      var prometheusExporter = (SolrPrometheusExporter) prometheusRegistry.getValue();
       prometheusTextFormatWriter.write(out, prometheusExporter.collect());
     }
   }
@@ -85,23 +88,29 @@ public class PrometheusResponseWriter extends RawResponseWriter {
       boolean skipHistograms,
       boolean skipAggregateValues,
       boolean compact,
-      Consumer<SolrPrometheusCoreExporter> consumer) {
+      Consumer<SolrPrometheusExporter> consumer) {
     String coreName;
     boolean cloudMode = false;
     Map<String, Metric> dropwizardMetrics = registry.getMetrics();
     String[] rawParsedRegistry = registryName.split("\\.");
     List<String> parsedRegistry = new ArrayList<>(Arrays.asList(rawParsedRegistry));
+    SolrPrometheusExporter solrPrometheusExporter;
 
-    if (parsedRegistry.size() == 3) {
-      coreName = parsedRegistry.get(2);
-    } else if (parsedRegistry.size() == 5) {
-      coreName = parsedRegistry.stream().skip(1).collect(Collectors.joining("_"));
-      cloudMode = true;
+    if (registryName.startsWith("solr.core")) {
+      if (parsedRegistry.size() == 3) {
+        coreName = parsedRegistry.get(2);
+      } else if (parsedRegistry.size() == 5) {
+        coreName = parsedRegistry.stream().skip(1).collect(Collectors.joining("_"));
+        cloudMode = true;
+      } else {
+        coreName = registryName;
+      }
+      solrPrometheusExporter = new SolrPrometheusCoreExporter(coreName, cloudMode);
+    } else if (registryName.startsWith("solr.jvm")) {
+      solrPrometheusExporter = new SolrPrometheusJvmExporter();
     } else {
-      coreName = registryName;
+      solrPrometheusExporter = new SolrPrometheusNoOpExporter();
     }
-
-    var solrPrometheusCoreExporter = new SolrPrometheusCoreExporter(coreName, cloudMode);
 
     MetricUtils.toMaps(
         registry,
@@ -115,13 +124,13 @@ public class PrometheusResponseWriter extends RawResponseWriter {
         (metricName, metric) -> {
           try {
             Metric dropwizardMetric = dropwizardMetrics.get(metricName);
-            solrPrometheusCoreExporter.exportDropwizardMetric(dropwizardMetric, metricName);
+            solrPrometheusExporter.exportDropwizardMetric(dropwizardMetric, metricName);
           } catch (Exception e) {
             // Do not fail entirely for metrics exporting. Log and try to export next metric
             log.warn("Error occurred exporting Dropwizard Metric to Prometheus", e);
           }
         });
 
-    consumer.accept(solrPrometheusCoreExporter);
+    consumer.accept(solrPrometheusExporter);
   }
 }

@@ -19,12 +19,10 @@ package org.apache.solr.metrics.prometheus.core;
 import static org.apache.solr.metrics.prometheus.PrometheusCoreExporterInfo.CLOUD_CORE_PATTERN;
 
 import com.codahale.metrics.Metric;
-import io.prometheus.metrics.model.snapshots.Labels;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
+
 import java.util.regex.Matcher;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.metrics.prometheus.SolrMetric;
 import org.apache.solr.metrics.prometheus.SolrPrometheusCoreExporter;
 
 /**
@@ -34,30 +32,18 @@ import org.apache.solr.metrics.prometheus.SolrPrometheusCoreExporter;
  * unlike prometheus. Metrics registered to the registry need to be parsed out from the metric name
  * to be exported to {@link io.prometheus.metrics.model.snapshots.DataPointSnapshot}
  */
-public abstract class SolrCoreMetric {
-  public Metric dropwizardMetric;
+public abstract class SolrCoreMetric extends SolrMetric {
   public String coreName;
-  public String metricName;
-  public Map<String, String> labels = new HashMap<>();
 
   public SolrCoreMetric(
       Metric dropwizardMetric, String coreName, String metricName, boolean cloudMode) {
-    this.dropwizardMetric = dropwizardMetric;
+    super(dropwizardMetric, metricName);
     this.coreName = coreName;
-    this.metricName = metricName;
     labels.put("core", coreName);
     if (cloudMode) {
       appendCloudModeLabels();
     }
   }
-
-  public Labels getLabels() {
-    return Labels.of(new ArrayList<>(labels.keySet()), new ArrayList<>(labels.values()));
-  }
-
-  public abstract SolrCoreMetric parseLabels();
-
-  public abstract void toPrometheus(SolrPrometheusCoreExporter exporter);
 
   private void appendCloudModeLabels() {
     Matcher m = CLOUD_CORE_PATTERN.matcher(coreName);

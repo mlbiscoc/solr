@@ -25,6 +25,8 @@ import io.prometheus.metrics.model.snapshots.Labels;
 import io.prometheus.metrics.model.snapshots.MetricMetadata;
 import io.prometheus.metrics.model.snapshots.MetricSnapshot;
 import io.prometheus.metrics.model.snapshots.MetricSnapshots;
+import org.apache.solr.metrics.AltBufferPoolMetricSet;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;

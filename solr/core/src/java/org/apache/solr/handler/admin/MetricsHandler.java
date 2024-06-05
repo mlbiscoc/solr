@@ -191,7 +191,7 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
     for (String registryName : requestedRegistries) {
       MetricRegistry dropwizardRegistry = metricManager.registry(registryName);
       // Currently only export Solr Core registries
-      if (registryName.startsWith("solr.core")) {
+      if (registryName.startsWith("solr.core") || (registryName.startsWith("solr.jvm"))) {
         PrometheusResponseWriter.toPrometheus(
             dropwizardRegistry,
             registryName,
