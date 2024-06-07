@@ -26,6 +26,7 @@ public class SolrPrometheusJvmExporter extends SolrPrometheusExporter {
             case "memory":
                 return new SolrJvmMemoryMetric(dropwizardMetric, metricName);
             case "os":
+            case "threads":
                 return new SolrJvmOsMetric(dropwizardMetric, metricName);
             default:
                 return new SolrJvmNoOpMetric(dropwizardMetric, metricName);

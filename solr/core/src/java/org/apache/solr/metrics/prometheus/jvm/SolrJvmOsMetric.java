@@ -21,29 +21,36 @@ public class SolrJvmOsMetric extends SolrJvmMetric {
     @Override
     public SolrMetric parseLabels() {
         String[] parsedMetric = metricName.split("\\.");
-        labels.put("item", parsedMetric[parsedMetric.length - 1]);
+        if(parsedMetric[0].equals("threads")){
+            labels.put("item", parsedMetric[1]);
+        } else {
+            labels.put("item", parsedMetric[parsedMetric.length - 1]);
+        }
         return this;
     }
 
     @Override
     public void toPrometheus(SolrPrometheusExporter exporter) {
-        String[] parsedMetric = metricName.split("\\.");
+        String exportName = "";
         if (dropwizardMetric instanceof Gauge) {
             if (metricName.endsWith("MemorySize") || metricName.endsWith("SpaceSize")) {
-                exporter.exportGauge(JVM_OS_MEMORY_BYTES, (Gauge<?>) dropwizardMetric, getLabels());
+                exportName = JVM_OS_MEMORY_BYTES;
             } else if (metricName.endsWith("FileDescriptorCount")) {
-                exporter.exportGauge(JVM_OS_FILE_DESCRIPTORS, (Gauge<?>) dropwizardMetric, getLabels());
+                exportName = JVM_OS_FILE_DESCRIPTORS;
             } else if (metricName.endsWith("CpuLoad")) {
-                exporter.exportGauge(JVM_OS_CPU_LOAD, (Gauge<?>) dropwizardMetric, getLabels());
+                exportName = JVM_OS_CPU_LOAD;
             } else if (metricName.equals("os.processCpuTime")) {
-                exporter.exportGauge(JVM_OS_CPU_TIME, (Gauge<?>) dropwizardMetric, getLabels());
+                exportName = JVM_OS_CPU_TIME;
             } else if (metricName.equals("os.systemLoadAverage")) {
-                exporter.exportGauge(JVM_OS_LOAD_AVERAGE, (Gauge<?>) dropwizardMetric, getLabels());
+                exportName = JVM_OS_LOAD_AVERAGE;
             } else if (metricName.startsWith("threads.")) {
                 if (metricName.endsWith(".count")) {
-                    exporter.exportGauge(JVM_OS_THREADS, (Gauge<?>) dropwizardMetric, getLabels());
+                    exportName = JVM_OS_THREADS;
                 }
             }
+        }
+        if (!exportName.isEmpty()) {
+            exporter.exportGauge(exportName, (Gauge<?>) dropwizardMetric, getLabels());
         }
     }
 }
