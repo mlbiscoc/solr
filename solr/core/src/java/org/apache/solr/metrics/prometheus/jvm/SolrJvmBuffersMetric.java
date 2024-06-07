@@ -2,8 +2,9 @@ package org.apache.solr.metrics.prometheus.jvm;
 
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Metric;
-import org.apache.solr.metrics.prometheus.SolrPrometheusExporter;
+import org.apache.solr.metrics.prometheus.exporters.SolrPrometheusExporter;
 
+/* Dropwizard metrics of name buffers.* */
 public class SolrJvmBuffersMetric extends SolrJvmMetric {
   public static final String JVM_BUFFERS = "solr_metrics_jvm_buffers";
   public static final String JVM_BUFFERS_BYTES = "solr_metrics_jvm_buffers_bytes";

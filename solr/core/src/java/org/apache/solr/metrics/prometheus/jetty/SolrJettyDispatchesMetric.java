@@ -3,8 +3,9 @@ package org.apache.solr.metrics.prometheus.jetty;
 import com.codahale.metrics.Metric;
 import com.codahale.metrics.Timer;
 import org.apache.solr.metrics.prometheus.SolrMetric;
-import org.apache.solr.metrics.prometheus.SolrPrometheusExporter;
+import org.apache.solr.metrics.prometheus.exporters.SolrPrometheusExporter;
 
+/* Dropwizard metrics of name *.dispatches */
 public class SolrJettyDispatchesMetric extends SolrJettyMetric {
   public static final String JETTY_DISPATCHES_TOTAL = "solr_metrics_jetty_dispatches";
 

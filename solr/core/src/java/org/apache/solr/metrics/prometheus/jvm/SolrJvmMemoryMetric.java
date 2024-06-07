@@ -3,8 +3,9 @@ package org.apache.solr.metrics.prometheus.jvm;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Metric;
 import org.apache.solr.metrics.prometheus.SolrMetric;
-import org.apache.solr.metrics.prometheus.SolrPrometheusExporter;
+import org.apache.solr.metrics.prometheus.exporters.SolrPrometheusExporter;
 
+/* Dropwizard metrics of name gc.* and memory.* */
 public class SolrJvmMemoryMetric extends SolrJvmMetric {
 
   public static String JVM_GC = "solr_metrics_jvm_gc";
@@ -32,22 +33,26 @@ public class SolrJvmMemoryMetric extends SolrJvmMetric {
   @Override
   public void toPrometheus(SolrPrometheusExporter exporter) {
     String[] parsedMetric = metricName.split("\\.");
+    String exportName = "";
     if (dropwizardMetric instanceof Gauge) {
       if (metricName.endsWith(".count")) {
-        exporter.exportGauge(JVM_GC, (Gauge<?>) dropwizardMetric, getLabels());
+        exportName = JVM_GC;
       } else if (metricName.endsWith(".time")) {
-        exporter.exportGauge(JVM_GC_SECONDS, (Gauge<?>) dropwizardMetric, getLabels());
+        exportName = JVM_GC_SECONDS;
       } else if (metricName.startsWith("memory.total.")) {
-        exporter.exportGauge(JVM_MEMORY_BYTES, (Gauge<?>) dropwizardMetric, getLabels());
+        exportName = JVM_MEMORY_BYTES;
       } else if (!metricName.endsWith(".usage")) {
         if (metricName.startsWith("memory.heap.")) {
-          exporter.exportGauge(JVM_MEMORY_HEAP_BYTES, (Gauge<?>) dropwizardMetric, getLabels());
+          exportName = JVM_MEMORY_HEAP_BYTES;
         } else if (metricName.startsWith("memory.non-heap.")) {
-          exporter.exportGauge(JVM_MEMORY_NON_HEAP_BYTES, (Gauge<?>) dropwizardMetric, getLabels());
+          exportName = JVM_MEMORY_NON_HEAP_BYTES;
         } else if (metricName.startsWith("memory.pools.")) {
+          exportName = JVM_MEMORY_POOL_BYTES;
           labels.put("space", parsedMetric[2]);
-          exporter.exportGauge(JVM_MEMORY_POOL_BYTES, (Gauge<?>) dropwizardMetric, getLabels());
         }
+      }
+      if (!exportName.isEmpty()) {
+        exporter.exportGauge(exportName, (Gauge<?>) dropwizardMetric, getLabels());
       }
     }
   }

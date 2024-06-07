@@ -14,22 +14,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.metrics.prometheus.jvm;
+package org.apache.solr.metrics.prometheus.exporters;
 
-import com.codahale.metrics.Metric;
-import org.apache.solr.metrics.prometheus.SolrPrometheusExporter;
-
-public class SolrJvmNoOpMetric extends SolrJvmMetric {
-
-  public SolrJvmNoOpMetric(Metric dropwizardMetric, String metricName) {
-    super(dropwizardMetric, metricName);
+public interface PrometheusJvmExporterInfo {
+  /** Category of prefix Solr JVM dropwizard handler metric names */
+  enum JvmCategory {
+    buffers,
+    gc,
+    memory,
+    os,
+    threads,
   }
-
-  @Override
-  public SolrJvmMetric parseLabels() {
-    return this;
-  }
-
-  @Override
-  public void toPrometheus(SolrPrometheusExporter exporter) {}
 }

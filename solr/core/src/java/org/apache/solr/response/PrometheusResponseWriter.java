@@ -34,12 +34,11 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.metrics.AggregateMetric;
-import org.apache.solr.metrics.prometheus.SolrPrometheusCoreExporter;
-import org.apache.solr.metrics.prometheus.SolrPrometheusExporter;
-import org.apache.solr.metrics.prometheus.SolrPrometheusJettyExporter;
-import org.apache.solr.metrics.prometheus.SolrPrometheusJvmExporter;
-import org.apache.solr.metrics.prometheus.SolrPrometheusNoOpExporter;
-import org.apache.solr.metrics.prometheus.SolrPrometheusNodeExporter;
+import org.apache.solr.metrics.prometheus.exporters.SolrPrometheusCoreExporter;
+import org.apache.solr.metrics.prometheus.exporters.SolrPrometheusExporter;
+import org.apache.solr.metrics.prometheus.exporters.SolrPrometheusJettyExporter;
+import org.apache.solr.metrics.prometheus.exporters.SolrPrometheusJvmExporter;
+import org.apache.solr.metrics.prometheus.exporters.SolrPrometheusNodeExporter;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.util.stats.MetricUtils;
 import org.slf4j.Logger;
@@ -91,31 +90,10 @@ public class PrometheusResponseWriter extends RawResponseWriter {
       boolean skipAggregateValues,
       boolean compact,
       Consumer<SolrPrometheusExporter> consumer) {
-    String coreName;
-    boolean cloudMode = false;
     Map<String, Metric> dropwizardMetrics = registry.getMetrics();
-    String[] rawParsedRegistry = registryName.split("\\.");
-    List<String> parsedRegistry = new ArrayList<>(Arrays.asList(rawParsedRegistry));
-    SolrPrometheusExporter solrPrometheusExporter;
-
-    if (registryName.startsWith("solr.core")) {
-      if (parsedRegistry.size() == 3) {
-        coreName = parsedRegistry.get(2);
-      } else if (parsedRegistry.size() == 5) {
-        coreName = parsedRegistry.stream().skip(1).collect(Collectors.joining("_"));
-        cloudMode = true;
-      } else {
-        coreName = registryName;
-      }
-      solrPrometheusExporter = new SolrPrometheusCoreExporter(coreName, cloudMode);
-    } else if (registryName.startsWith("solr.jvm")) {
-      solrPrometheusExporter = new SolrPrometheusJvmExporter();
-    } else if (registryName.startsWith("solr.jetty")) {
-      solrPrometheusExporter = new SolrPrometheusJettyExporter();
-    } else if (registryName.startsWith("solr.node")) {
-      solrPrometheusExporter = new SolrPrometheusNodeExporter();
-    } else {
-      solrPrometheusExporter = new SolrPrometheusNoOpExporter();
+    var exporter = getExporterType(registryName);
+    if (exporter == null) {
+      return;
     }
 
     MetricUtils.toMaps(
@@ -130,13 +108,41 @@ public class PrometheusResponseWriter extends RawResponseWriter {
         (metricName, metric) -> {
           try {
             Metric dropwizardMetric = dropwizardMetrics.get(metricName);
-            solrPrometheusExporter.exportDropwizardMetric(dropwizardMetric, metricName);
+            exporter.exportDropwizardMetric(dropwizardMetric, metricName);
           } catch (Exception e) {
             // Do not fail entirely for metrics exporting. Log and try to export next metric
             log.warn("Error occurred exporting Dropwizard Metric to Prometheus", e);
           }
         });
 
-    consumer.accept(solrPrometheusExporter);
+    consumer.accept(exporter);
+  }
+
+  public static SolrPrometheusExporter getExporterType(String registryName) {
+    String coreName;
+    boolean cloudMode = false;
+    String[] rawParsedRegistry = registryName.split("\\.");
+    List<String> parsedRegistry = new ArrayList<>(Arrays.asList(rawParsedRegistry));
+
+    switch (parsedRegistry.get(1)) {
+      case ("core"):
+        if (parsedRegistry.size() == 3) {
+          coreName = parsedRegistry.get(2);
+        } else if (parsedRegistry.size() == 5) {
+          coreName = parsedRegistry.stream().skip(1).collect(Collectors.joining("_"));
+          cloudMode = true;
+        } else {
+          coreName = registryName;
+        }
+        return new SolrPrometheusCoreExporter(coreName, cloudMode);
+      case ("jvm"):
+        return new SolrPrometheusJvmExporter();
+      case ("jetty"):
+        return new SolrPrometheusJettyExporter();
+      case ("node"):
+        return new SolrPrometheusNodeExporter();
+      default:
+        return null;
+    }
   }
 }

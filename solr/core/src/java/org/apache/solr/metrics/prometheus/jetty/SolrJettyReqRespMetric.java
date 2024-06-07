@@ -5,8 +5,9 @@ import com.codahale.metrics.Meter;
 import com.codahale.metrics.Metric;
 import com.codahale.metrics.Timer;
 import org.apache.solr.metrics.prometheus.SolrMetric;
-import org.apache.solr.metrics.prometheus.SolrPrometheusExporter;
+import org.apache.solr.metrics.prometheus.exporters.SolrPrometheusExporter;
 
+/* Dropwizard metrics of name requests and responses */
 public class SolrJettyReqRespMetric extends SolrJettyMetric {
   public static final String JETTY_RESPONSES_TOTAL = "solr_metrics_jetty_response";
   public static final String JETTY_REQUESTS_TOTAL = "solr_metrics_jetty_requests";

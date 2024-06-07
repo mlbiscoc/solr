@@ -3,7 +3,7 @@ package org.apache.solr.metrics.prometheus.jvm;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Metric;
 import org.apache.solr.metrics.prometheus.SolrMetric;
-import org.apache.solr.metrics.prometheus.SolrPrometheusExporter;
+import org.apache.solr.metrics.prometheus.exporters.SolrPrometheusExporter;
 
 public class SolrJvmOsMetric extends SolrJvmMetric {
 
@@ -14,6 +14,7 @@ public class SolrJvmOsMetric extends SolrJvmMetric {
   public static final String JVM_OS_LOAD_AVERAGE = "solr_metrics_jvm_os_load_average";
   public static final String JVM_OS_THREADS = "solr_metrics_jvm_threads";
 
+  /* Dropwizard metrics of name os.* and threads.* */
   public SolrJvmOsMetric(Metric dropwizardMetric, String metricName) {
     super(dropwizardMetric, metricName);
   }

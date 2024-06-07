@@ -14,16 +14,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.metrics.prometheus;
+package org.apache.solr.metrics.prometheus.exporters;
 
-import com.codahale.metrics.Meter;
 import com.codahale.metrics.Metric;
+import org.apache.solr.metrics.prometheus.SolrMetric;
+import org.apache.solr.metrics.prometheus.SolrNoOpMetric;
 import org.apache.solr.metrics.prometheus.core.SolrCoreCacheMetric;
 import org.apache.solr.metrics.prometheus.core.SolrCoreHandlerMetric;
 import org.apache.solr.metrics.prometheus.core.SolrCoreHighlighterMetric;
 import org.apache.solr.metrics.prometheus.core.SolrCoreIndexMetric;
-import org.apache.solr.metrics.prometheus.core.SolrCoreMetric;
-import org.apache.solr.metrics.prometheus.core.SolrCoreNoOpMetric;
 import org.apache.solr.metrics.prometheus.core.SolrCoreSearcherMetric;
 import org.apache.solr.metrics.prometheus.core.SolrCoreTlogMetric;
 
@@ -42,20 +41,14 @@ public class SolrPrometheusCoreExporter extends SolrPrometheusExporter
     this.cloudMode = cloudMode;
   }
 
-  /**
-   * Export {@link Metric} to {@link io.prometheus.metrics.model.snapshots.MetricSnapshot} and
-   * registers the Snapshot
-   *
-   * @param dropwizardMetric the {@link Meter} to be exported
-   * @param metricName Dropwizard metric name
-   */
   @Override
   public void exportDropwizardMetric(Metric dropwizardMetric, String metricName) {
-    SolrCoreMetric solrCoreMetric = categorizeCoreMetric(dropwizardMetric, metricName);
+    SolrMetric solrCoreMetric = categorizeMetric(dropwizardMetric, metricName);
     solrCoreMetric.parseLabels().toPrometheus(this);
   }
 
-  private SolrCoreMetric categorizeCoreMetric(Metric dropwizardMetric, String metricName) {
+  @Override
+  public SolrMetric categorizeMetric(Metric dropwizardMetric, String metricName) {
     String metricCategory = metricName.split("\\.", 2)[0];
     switch (CoreCategory.valueOf(metricCategory)) {
       case ADMIN:
@@ -75,7 +68,7 @@ public class SolrPrometheusCoreExporter extends SolrPrometheusExporter
         return new SolrCoreIndexMetric(dropwizardMetric, coreName, metricName, cloudMode);
       case CORE:
       default:
-        return new SolrCoreNoOpMetric(dropwizardMetric, coreName, metricName, cloudMode);
+        return new SolrNoOpMetric();
     }
   }
 }

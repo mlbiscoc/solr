@@ -16,21 +16,14 @@
  */
 package org.apache.solr.metrics.prometheus.core;
 
-import static org.apache.solr.metrics.prometheus.PrometheusCoreExporterInfo.CLOUD_CORE_PATTERN;
+import static org.apache.solr.metrics.prometheus.exporters.PrometheusCoreExporterInfo.CLOUD_CORE_PATTERN;
 
 import com.codahale.metrics.Metric;
 import java.util.regex.Matcher;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.metrics.prometheus.SolrMetric;
-import org.apache.solr.metrics.prometheus.SolrPrometheusCoreExporter;
 
-/**
- * Base class is a wrapper to categorize and export {@link com.codahale.metrics.Metric} to {@link
- * io.prometheus.metrics.model.snapshots.DataPointSnapshot} and register to a {@link
- * SolrPrometheusCoreExporter}. {@link com.codahale.metrics.MetricRegistry} does not support tags
- * unlike prometheus. Metrics registered to the registry need to be parsed out from the metric name
- * to be exported to {@link io.prometheus.metrics.model.snapshots.DataPointSnapshot}
- */
+/** Base class is a wrapper to export a solr.core {@link com.codahale.metrics.Metric} */
 public abstract class SolrCoreMetric extends SolrMetric {
   public String coreName;
 
