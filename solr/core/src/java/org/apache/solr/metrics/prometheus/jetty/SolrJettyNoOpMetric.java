@@ -11,7 +11,7 @@ public class SolrJettyNoOpMetric extends SolrJettyMetric {
 
   @Override
   public SolrMetric parseLabels() {
-    return null;
+    return this;
   }
 
   @Override

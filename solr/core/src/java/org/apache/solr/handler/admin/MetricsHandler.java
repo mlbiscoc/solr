@@ -190,10 +190,15 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
 
     for (String registryName : requestedRegistries) {
       MetricRegistry dropwizardRegistry = metricManager.registry(registryName);
+      Set<String> cats = new HashSet<>();
       // Currently only export Solr Core registries
-      if (registryName.startsWith("solr.core")
-          || (registryName.startsWith("solr.jvm"))
-          || (registryName.startsWith("solr.jetty"))) {
+      if (registryName.startsWith("solr.node")) {
+        dropwizardRegistry.getMetrics().forEach((metric, name) -> {
+          System.out.println((metric));
+          cats.add(metric.split("\\.")[0]);
+        });
+      }
+      if (registryName.startsWith("solr.core") || (registryName.startsWith("solr.jvm")) || (registryName.startsWith("solr.jetty")) || (registryName.startsWith("solr.node"))) {
         PrometheusResponseWriter.toPrometheus(
             dropwizardRegistry,
             registryName,

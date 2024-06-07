@@ -9,7 +9,7 @@ import org.apache.solr.metrics.prometheus.jvm.SolrJvmOsMetric;
 
 public class SolrPrometheusJvmExporter extends SolrPrometheusExporter {
 
-  public SolrPrometheusJvmExporter() {}
+  public SolrPrometheusJvmExporter() {super();}
 
   @Override
   public void exportDropwizardMetric(Metric dropwizardMetric, String metricName) {

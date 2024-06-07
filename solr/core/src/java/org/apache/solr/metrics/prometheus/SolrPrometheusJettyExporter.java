@@ -7,6 +7,9 @@ import org.apache.solr.metrics.prometheus.jetty.SolrJettyNoOpMetric;
 import org.apache.solr.metrics.prometheus.jetty.SolrJettyReqRespMetric;
 
 public class SolrPrometheusJettyExporter extends SolrPrometheusExporter {
+  public SolrPrometheusJettyExporter() {
+    super();
+  }
   @Override
   public void exportDropwizardMetric(Metric dropwizardMetric, String metricName) {
     SolrJettyMetric solrJettyMetric;
