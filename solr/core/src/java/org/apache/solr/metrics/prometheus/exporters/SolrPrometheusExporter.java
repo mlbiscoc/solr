@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.metrics.prometheus;
+package org.apache.solr.metrics.prometheus.exporters;
 
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.Metric;
@@ -29,6 +29,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.apache.solr.metrics.prometheus.SolrMetric;
 
 /**
  * Base class for all {@link SolrPrometheusExporter} holding {@link MetricSnapshot}s. Can export
@@ -52,6 +53,14 @@ public abstract class SolrPrometheusExporter {
    * @param metricName Dropwizard metric name
    */
   public abstract void exportDropwizardMetric(Metric dropwizardMetric, String metricName);
+
+  /**
+   * Categorize {@link Metric} based on the metric name
+   *
+   * @param dropwizardMetric the {@link Metric} to be exported
+   * @param metricName Dropwizard metric name
+   */
+  public abstract SolrMetric categorizeMetric(Metric dropwizardMetric, String metricName);
 
   /**
    * Export {@link Meter} to {@link
@@ -97,6 +106,21 @@ public abstract class SolrPrometheusExporter {
     GaugeSnapshot.GaugeDataPointSnapshot dataPoint =
         createGaugeDatapoint(dropwizardMetric.getSnapshot().getMean(), labels);
     collectGaugeDatapoint(metricName, dataPoint);
+  }
+
+  /**
+   * Export {@link Timer} ands its Count to {@link
+   * io.prometheus.metrics.model.snapshots.CounterSnapshot.CounterDataPointSnapshot} and collect
+   * datapoint
+   *
+   * @param metricName name of prometheus metric
+   * @param dropwizardMetric the {@link Timer} to be exported
+   * @param labels label names and values to record
+   */
+  public void exportTimerCount(String metricName, Timer dropwizardMetric, Labels labels) {
+    CounterSnapshot.CounterDataPointSnapshot dataPoint =
+        createCounterDatapoint(dropwizardMetric.getCount(), labels);
+    collectCounterDatapoint(metricName, dataPoint);
   }
 
   /**

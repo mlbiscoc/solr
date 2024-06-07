@@ -14,23 +14,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.metrics.prometheus.core;
+package org.apache.solr.metrics.prometheus.exporters;
 
-import com.codahale.metrics.Metric;
-import org.apache.solr.metrics.prometheus.SolrPrometheusCoreExporter;
+import java.util.regex.Pattern;
 
-public class SolrCoreNoOpMetric extends SolrCoreMetric {
-
-  public SolrCoreNoOpMetric(
-      Metric dropwizardMetric, String coreName, String metricName, boolean cloudMode) {
-    super(dropwizardMetric, coreName, metricName, cloudMode);
+public interface PrometheusCoreExporterInfo {
+  /** Category of prefix Solr Core dropwizard handler metric names */
+  enum CoreCategory {
+    ADMIN,
+    QUERY,
+    UPDATE,
+    REPLICATION,
+    TLOG,
+    CACHE,
+    SEARCHER,
+    HIGHLIGHTER,
+    INDEX,
+    CORE
   }
 
-  @Override
-  public SolrCoreMetric parseLabels() {
-    return this;
-  }
-
-  @Override
-  public void toPrometheus(SolrPrometheusCoreExporter exporter) {}
+  Pattern CLOUD_CORE_PATTERN = Pattern.compile("^core_(.*)_(shard[0-9]+)_(replica_n[0-9]+)$");
 }
