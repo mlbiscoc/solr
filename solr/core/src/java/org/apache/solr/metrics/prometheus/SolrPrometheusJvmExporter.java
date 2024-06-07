@@ -9,27 +9,27 @@ import org.apache.solr.metrics.prometheus.jvm.SolrJvmOsMetric;
 
 public class SolrPrometheusJvmExporter extends SolrPrometheusExporter {
 
-    public SolrPrometheusJvmExporter() {}
+  public SolrPrometheusJvmExporter() {}
 
-    @Override
-    public void exportDropwizardMetric(Metric dropwizardMetric, String metricName) {
-        SolrJvmMetric solrJvmMetric = categorizeMetric(dropwizardMetric, metricName);
-        solrJvmMetric.parseLabels().toPrometheus(this);
-    }
+  @Override
+  public void exportDropwizardMetric(Metric dropwizardMetric, String metricName) {
+    SolrJvmMetric solrJvmMetric = categorizeMetric(dropwizardMetric, metricName);
+    solrJvmMetric.parseLabels().toPrometheus(this);
+  }
 
-    private SolrJvmMetric categorizeMetric(Metric dropwizardMetric, String metricName) {
-        String metricCategory = metricName.split("\\.", 2)[0];
-        switch (metricCategory) {
-            case "buffers":
-                return new SolrJvmBuffersMetric(dropwizardMetric, metricName);
-            case "gc":
-            case "memory":
-                return new SolrJvmMemoryMetric(dropwizardMetric, metricName);
-            case "os":
-            case "threads":
-                return new SolrJvmOsMetric(dropwizardMetric, metricName);
-            default:
-                return new SolrJvmNoOpMetric(dropwizardMetric, metricName);
-        }
+  private SolrJvmMetric categorizeMetric(Metric dropwizardMetric, String metricName) {
+    String metricCategory = metricName.split("\\.", 2)[0];
+    switch (metricCategory) {
+      case "buffers":
+        return new SolrJvmBuffersMetric(dropwizardMetric, metricName);
+      case "gc":
+      case "memory":
+        return new SolrJvmMemoryMetric(dropwizardMetric, metricName);
+      case "os":
+      case "threads":
+        return new SolrJvmOsMetric(dropwizardMetric, metricName);
+      default:
+        return new SolrJvmNoOpMetric(dropwizardMetric, metricName);
     }
+  }
 }

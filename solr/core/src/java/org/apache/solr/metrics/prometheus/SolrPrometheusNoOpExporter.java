@@ -4,10 +4,8 @@ import com.codahale.metrics.Metric;
 
 public class SolrPrometheusNoOpExporter extends SolrPrometheusExporter {
 
-    public SolrPrometheusNoOpExporter() {}
+  public SolrPrometheusNoOpExporter() {}
 
-    @Override
-    public void exportDropwizardMetric(Metric dropwizardMetric, String metricName) {
-
-    }
+  @Override
+  public void exportDropwizardMetric(Metric dropwizardMetric, String metricName) {}
 }

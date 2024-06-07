@@ -16,17 +16,12 @@
  */
 package org.apache.solr.metrics.prometheus.jvm;
 
-import com.codahale.metrics.Counter;
 import com.codahale.metrics.Metric;
-import org.apache.solr.metrics.prometheus.SolrPrometheusCoreExporter;
 import org.apache.solr.metrics.prometheus.SolrPrometheusExporter;
-import org.apache.solr.metrics.prometheus.SolrPrometheusJvmExporter;
-import org.apache.solr.metrics.prometheus.core.SolrCoreMetric;
 
 public class SolrJvmNoOpMetric extends SolrJvmMetric {
 
-  public SolrJvmNoOpMetric(
-      Metric dropwizardMetric, String metricName) {
+  public SolrJvmNoOpMetric(Metric dropwizardMetric, String metricName) {
     super(dropwizardMetric, metricName);
   }
 
@@ -36,6 +31,5 @@ public class SolrJvmNoOpMetric extends SolrJvmMetric {
   }
 
   @Override
-  public void toPrometheus(SolrPrometheusExporter exporter) {
-  }
+  public void toPrometheus(SolrPrometheusExporter exporter) {}
 }

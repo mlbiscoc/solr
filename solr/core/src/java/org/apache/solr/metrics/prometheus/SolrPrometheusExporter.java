@@ -25,8 +25,6 @@ import io.prometheus.metrics.model.snapshots.Labels;
 import io.prometheus.metrics.model.snapshots.MetricMetadata;
 import io.prometheus.metrics.model.snapshots.MetricSnapshot;
 import io.prometheus.metrics.model.snapshots.MetricSnapshots;
-import org.apache.solr.metrics.AltBufferPoolMetricSet;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -99,6 +97,21 @@ public abstract class SolrPrometheusExporter {
     GaugeSnapshot.GaugeDataPointSnapshot dataPoint =
         createGaugeDatapoint(dropwizardMetric.getSnapshot().getMean(), labels);
     collectGaugeDatapoint(metricName, dataPoint);
+  }
+
+  /**
+   * Export {@link Timer} ands its Count to {@link
+   * io.prometheus.metrics.model.snapshots.CounterSnapshot.CounterDataPointSnapshot} and collect
+   * datapoint
+   *
+   * @param metricName name of prometheus metric
+   * @param dropwizardMetric the {@link Timer} to be exported
+   * @param labels label names and values to record
+   */
+  public void exportTimerCount(String metricName, Timer dropwizardMetric, Labels labels) {
+    CounterSnapshot.CounterDataPointSnapshot dataPoint =
+        createCounterDatapoint(dropwizardMetric.getCount(), labels);
+    collectCounterDatapoint(metricName, dataPoint);
   }
 
   /**

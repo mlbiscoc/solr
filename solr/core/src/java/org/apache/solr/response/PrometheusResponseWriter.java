@@ -36,6 +36,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.metrics.AggregateMetric;
 import org.apache.solr.metrics.prometheus.SolrPrometheusCoreExporter;
 import org.apache.solr.metrics.prometheus.SolrPrometheusExporter;
+import org.apache.solr.metrics.prometheus.SolrPrometheusJettyExporter;
 import org.apache.solr.metrics.prometheus.SolrPrometheusJvmExporter;
 import org.apache.solr.metrics.prometheus.SolrPrometheusNoOpExporter;
 import org.apache.solr.request.SolrQueryRequest;
@@ -108,6 +109,8 @@ public class PrometheusResponseWriter extends RawResponseWriter {
       solrPrometheusExporter = new SolrPrometheusCoreExporter(coreName, cloudMode);
     } else if (registryName.startsWith("solr.jvm")) {
       solrPrometheusExporter = new SolrPrometheusJvmExporter();
+    } else if (registryName.startsWith("solr.jetty")) {
+      solrPrometheusExporter = new SolrPrometheusJettyExporter();
     } else {
       solrPrometheusExporter = new SolrPrometheusNoOpExporter();
     }
