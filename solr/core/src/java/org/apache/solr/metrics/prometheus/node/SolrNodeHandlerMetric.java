@@ -25,12 +25,8 @@ import org.apache.solr.metrics.prometheus.SolrPrometheusExporter;
 
 /* Dropwizard metrics of name ADMIN.* and UPDATE.* */
 public class SolrNodeHandlerMetric extends SolrNodeMetric {
-  public static final String NODE_CLIENT_ERRORS = "solr_metrics_node_client_errors";
-  public static final String NODE_ERRORS = "solr_metrics_node_errors";
   public static final String NODE_REQUESTS = "solr_metrics_node_requests";
-  public static final String NODE_SERVER_ERRORS = "solr_metrics_node_server_errors";
-  public static final String NODE_TIMEOUTS = "solr_metrics_node_timeouts";
-  public static final String NODE_SECONDS_TOTAL = "solr_metrics_node_time_seconds";
+  public static final String NODE_SECONDS_TOTAL = "solr_metrics_node_requests_time";
   public static final String NODE_CONNECTIONS = "solr_metrics_node_connections";
 
   public SolrNodeHandlerMetric(Metric dropwizardMetric, String metricName) {
@@ -42,6 +38,7 @@ public class SolrNodeHandlerMetric extends SolrNodeMetric {
     String[] parsedMetric = metricName.split("\\.");
     labels.put("category", parsedMetric[0]);
     labels.put("handler", parsedMetric[1]);
+    labels.put("type", parsedMetric[2]);
     return this;
   }
 
@@ -49,19 +46,13 @@ public class SolrNodeHandlerMetric extends SolrNodeMetric {
   public void toPrometheus(SolrPrometheusExporter exporter) {
     String[] parsedMetric = metricName.split("\\.");
     if (dropwizardMetric instanceof Meter) {
-      if (metricName.endsWith(".clientErrors")) {
-        exporter.exportMeter(NODE_CLIENT_ERRORS, (Meter) dropwizardMetric, getLabels());
-      } else if (metricName.endsWith(".serverErrors")) {
-        exporter.exportMeter(NODE_SERVER_ERRORS, (Meter) dropwizardMetric, getLabels());
-      } else if (metricName.endsWith(".timeouts")) {
-        exporter.exportMeter(NODE_TIMEOUTS, (Meter) dropwizardMetric, getLabels());
-      } else if (metricName.endsWith((".errors"))) {
-        exporter.exportMeter(NODE_ERRORS, (Meter) dropwizardMetric, getLabels());
-      }
+      exporter.exportMeter(NODE_REQUESTS, (Meter) dropwizardMetric, getLabels());
     } else if (dropwizardMetric instanceof Counter) {
       if (metricName.endsWith(".requests")) {
         exporter.exportCounter(NODE_REQUESTS, (Counter) dropwizardMetric, getLabels());
       } else if (metricName.endsWith(".totalTime")) {
+        // Do not need type label for total time
+        labels.remove("type");
         exporter.exportCounter(NODE_SECONDS_TOTAL, (Counter) dropwizardMetric, getLabels());
       }
     } else if (dropwizardMetric instanceof Gauge) {
