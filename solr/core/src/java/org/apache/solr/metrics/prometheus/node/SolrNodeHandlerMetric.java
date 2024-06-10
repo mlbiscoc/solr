@@ -57,7 +57,6 @@ public class SolrNodeHandlerMetric extends SolrNodeMetric {
       }
     } else if (dropwizardMetric instanceof Gauge) {
       if (metricName.endsWith("Connections")) {
-        labels.put("item", parsedMetric[2]);
         exporter.exportGauge(NODE_CONNECTIONS, (Gauge<?>) dropwizardMetric, getLabels());
       }
     }

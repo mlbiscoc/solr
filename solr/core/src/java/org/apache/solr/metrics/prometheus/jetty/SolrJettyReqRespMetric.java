@@ -46,8 +46,10 @@ public class SolrJettyReqRespMetric extends SolrJettyMetric {
 
   @Override
   public void toPrometheus(SolrPrometheusExporter exporter) {
-    if (metricName.endsWith("xx-responses")) {
-      exporter.exportMeter(JETTY_RESPONSES_TOTAL, (Meter) dropwizardMetric, getLabels());
+    if (dropwizardMetric instanceof Meter) {
+      if (metricName.endsWith("xx-responses")) {
+        exporter.exportMeter(JETTY_RESPONSES_TOTAL, (Meter) dropwizardMetric, getLabels());
+      }
     } else if (metricName.endsWith("-requests")) {
       if (dropwizardMetric instanceof Counter) {
         exporter.exportCounter(JETTY_REQUESTS_TOTAL, (Counter) dropwizardMetric, getLabels());

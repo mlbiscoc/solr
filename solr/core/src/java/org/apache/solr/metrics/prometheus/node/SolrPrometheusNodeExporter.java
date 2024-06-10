@@ -21,6 +21,7 @@ import static org.apache.solr.metrics.prometheus.node.SolrNodeMetric.NODE_THREAD
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.Metric;
+import com.google.common.base.Enums;
 import io.prometheus.metrics.model.snapshots.Labels;
 import org.apache.solr.metrics.prometheus.SolrMetric;
 import org.apache.solr.metrics.prometheus.SolrNoOpMetric;
@@ -50,6 +51,10 @@ public class SolrPrometheusNodeExporter extends SolrPrometheusExporter
   @Override
   public SolrMetric categorizeMetric(Metric dropwizardMetric, String metricName) {
     String metricCategory = metricName.split("\\.", 2)[0];
+    if (!Enums.getIfPresent(PrometheusNodeExporterInfo.NodeCategory.class, metricCategory)
+        .isPresent()) {
+      return new SolrNoOpMetric();
+    }
     switch (NodeCategory.valueOf(metricCategory)) {
       case ADMIN:
       case UPDATE:

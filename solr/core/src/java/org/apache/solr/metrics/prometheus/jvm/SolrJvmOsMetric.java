@@ -23,7 +23,7 @@ import org.apache.solr.metrics.prometheus.SolrPrometheusExporter;
 
 public class SolrJvmOsMetric extends SolrJvmMetric {
   public static final String JVM_OS_THREADS = "solr_metrics_jvm_threads";
-  public static final String JVM_OS = "wt";
+  public static final String JVM_OS = "solr_metrics_os";
 
   /* Dropwizard metrics of name os.* and threads.* */
   public SolrJvmOsMetric(Metric dropwizardMetric, String metricName) {

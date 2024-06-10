@@ -19,8 +19,8 @@ package org.apache.solr.metrics;
 import com.codahale.metrics.Metric;
 import io.prometheus.metrics.model.snapshots.Labels;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.metrics.prometheus.SolrPrometheusExporter;
 import org.apache.solr.metrics.prometheus.core.SolrCoreMetric;
-import org.apache.solr.metrics.prometheus.core.SolrPrometheusCoreExporter;
 import org.junit.Test;
 
 public class SolrCoreMetricTest extends SolrTestCaseJ4 {
@@ -76,6 +76,6 @@ public class SolrCoreMetricTest extends SolrTestCaseJ4 {
     }
 
     @Override
-    public void toPrometheus(SolrPrometheusCoreExporter exporter) {}
+    public void toPrometheus(SolrPrometheusExporter exporter) {}
   }
 }

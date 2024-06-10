@@ -17,6 +17,7 @@
 package org.apache.solr.metrics.prometheus.jvm;
 
 import com.codahale.metrics.Metric;
+import com.google.common.base.Enums;
 import org.apache.solr.metrics.prometheus.SolrMetric;
 import org.apache.solr.metrics.prometheus.SolrNoOpMetric;
 import org.apache.solr.metrics.prometheus.SolrPrometheusExporter;
@@ -40,6 +41,9 @@ public class SolrPrometheusJvmExporter extends SolrPrometheusExporter
   @Override
   public SolrMetric categorizeMetric(Metric dropwizardMetric, String metricName) {
     String metricCategory = metricName.split("\\.", 2)[0];
+    if (!Enums.getIfPresent(JvmCategory.class, metricCategory).isPresent()) {
+      return new SolrNoOpMetric();
+    }
     switch (JvmCategory.valueOf(metricCategory)) {
       case gc:
         return new SolrJvmGcMetrics(dropwizardMetric, metricName);
