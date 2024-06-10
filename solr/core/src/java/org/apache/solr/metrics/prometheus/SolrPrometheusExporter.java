@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.metrics.prometheus.exporters;
+package org.apache.solr.metrics.prometheus;
 
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.Metric;
@@ -29,7 +29,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.apache.solr.metrics.prometheus.SolrMetric;
 
 /**
  * Base class for all {@link SolrPrometheusExporter} holding {@link MetricSnapshot}s. Can export
@@ -47,7 +46,7 @@ public abstract class SolrPrometheusExporter {
 
   /**
    * Export {@link Metric} to {@link io.prometheus.metrics.model.snapshots.MetricSnapshot} and
-   * registers the Snapshot
+   * register the Snapshot
    *
    * @param dropwizardMetric the {@link Metric} to be exported
    * @param metricName Dropwizard metric name

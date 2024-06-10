@@ -38,7 +38,7 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricsContext;
-import org.apache.solr.metrics.prometheus.exporters.SolrPrometheusExporter;
+import org.apache.solr.metrics.prometheus.SolrPrometheusExporter;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;

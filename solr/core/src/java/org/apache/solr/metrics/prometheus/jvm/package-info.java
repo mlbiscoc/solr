@@ -14,15 +14,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.metrics.prometheus.exporters;
 
-public interface PrometheusJvmExporterInfo {
-  /** Category of prefix Solr JVM dropwizard handler metric names */
-  enum JvmCategory {
-    buffers,
-    gc,
-    memory,
-    os,
-    threads,
-  }
-}
+/**
+ * The {@link org.apache.solr.metrics.prometheus.jvm.SolrPrometheusJvmExporter} is responsible for
+ * exporting solr.jvm registry metrics to Prometheus.
+ */
+package org.apache.solr.metrics.prometheus.jvm;

@@ -1,18 +1,29 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.apache.solr.metrics.prometheus.jvm;
 
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Metric;
 import org.apache.solr.metrics.prometheus.SolrMetric;
-import org.apache.solr.metrics.prometheus.exporters.SolrPrometheusExporter;
+import org.apache.solr.metrics.prometheus.SolrPrometheusExporter;
 
 public class SolrJvmOsMetric extends SolrJvmMetric {
-
-  public static final String JVM_OS_MEMORY_BYTES = "solr_metrics_jvm_os_memory_bytes";
-  public static final String JVM_OS_FILE_DESCRIPTORS = "solr_metrics_jvm_os_file_descriptors";
-  public static final String JVM_OS_CPU_LOAD = "solr_metrics_jvm_os_cpu_load";
-  public static final String JVM_OS_CPU_TIME = "solr_metrics_jvm_os_cpu_time";
-  public static final String JVM_OS_LOAD_AVERAGE = "solr_metrics_jvm_os_load_average";
   public static final String JVM_OS_THREADS = "solr_metrics_jvm_threads";
+  public static final String JVM_OS = "wt";
 
   /* Dropwizard metrics of name os.* and threads.* */
   public SolrJvmOsMetric(Metric dropwizardMetric, String metricName) {
@@ -34,20 +45,10 @@ public class SolrJvmOsMetric extends SolrJvmMetric {
   public void toPrometheus(SolrPrometheusExporter exporter) {
     String exportName = "";
     if (dropwizardMetric instanceof Gauge) {
-      if (metricName.endsWith("MemorySize") || metricName.endsWith("SpaceSize")) {
-        exportName = JVM_OS_MEMORY_BYTES;
-      } else if (metricName.endsWith("FileDescriptorCount")) {
-        exportName = JVM_OS_FILE_DESCRIPTORS;
-      } else if (metricName.endsWith("CpuLoad")) {
-        exportName = JVM_OS_CPU_LOAD;
-      } else if (metricName.equals("os.processCpuTime")) {
-        exportName = JVM_OS_CPU_TIME;
-      } else if (metricName.equals("os.systemLoadAverage")) {
-        exportName = JVM_OS_LOAD_AVERAGE;
-      } else if (metricName.startsWith("threads.")) {
-        if (metricName.endsWith(".count")) {
-          exportName = JVM_OS_THREADS;
-        }
+      if (metricName.startsWith("threads.")) {
+        exportName = JVM_OS_THREADS;
+      } else {
+        exportName = JVM_OS;
       }
     }
     if (!exportName.isEmpty()) {

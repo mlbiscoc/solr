@@ -18,34 +18,31 @@ package org.apache.solr.metrics.prometheus.jvm;
 
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Metric;
+import org.apache.solr.metrics.prometheus.SolrMetric;
 import org.apache.solr.metrics.prometheus.SolrPrometheusExporter;
 
-/* Dropwizard metrics of name buffers.* */
-public class SolrJvmBuffersMetric extends SolrJvmMetric {
-  public static final String JVM_BUFFERS = "solr_metrics_jvm_buffers";
-  public static final String JVM_BUFFERS_BYTES = "solr_metrics_jvm_buffers_bytes";
+public class SolrJvmGcMetrics extends SolrJvmMetric {
+  public static String JVM_GC = "solr_metrics_jvm_gc";
+  public static String JVM_GC_SECONDS = "solr_metrics_jvm_gc_seconds";
 
-  public SolrJvmBuffersMetric(Metric dropwizardMetric, String metricName) {
+  public SolrJvmGcMetrics(Metric dropwizardMetric, String metricName) {
     super(dropwizardMetric, metricName);
   }
 
   @Override
-  public SolrJvmMetric parseLabels() {
+  public SolrMetric parseLabels() {
     String[] parsedMetric = metricName.split("\\.");
-    labels.put("pool", parsedMetric[1]);
-    labels.put("item", parsedMetric[2]);
+    labels.put("item", parsedMetric[1]);
     return this;
   }
 
   @Override
   public void toPrometheus(SolrPrometheusExporter exporter) {
     if (dropwizardMetric instanceof Gauge) {
-      String[] parsedMetric = metricName.split("\\.");
-      String metricType = parsedMetric[parsedMetric.length - 1];
-      if (metricType.equals("Count")) {
-        exporter.exportGauge(JVM_BUFFERS, (Gauge<?>) dropwizardMetric, getLabels());
-      } else if (metricType.equals(("MemoryUsed")) || metricType.equals(("TotalCapacity"))) {
-        exporter.exportGauge(JVM_BUFFERS_BYTES, (Gauge<?>) dropwizardMetric, getLabels());
+      if (metricName.endsWith(".count")) {
+        exporter.exportGauge(JVM_GC, (Gauge<?>) dropwizardMetric, getLabels());
+      } else if (metricName.endsWith(".time")) {
+        exporter.exportGauge(JVM_GC_SECONDS, (Gauge<?>) dropwizardMetric, getLabels());
       }
     }
   }

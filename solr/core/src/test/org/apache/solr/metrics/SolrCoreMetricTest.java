@@ -20,7 +20,7 @@ import com.codahale.metrics.Metric;
 import io.prometheus.metrics.model.snapshots.Labels;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.metrics.prometheus.core.SolrCoreMetric;
-import org.apache.solr.metrics.prometheus.exporters.SolrPrometheusCoreExporter;
+import org.apache.solr.metrics.prometheus.core.SolrPrometheusCoreExporter;
 import org.junit.Test;
 
 public class SolrCoreMetricTest extends SolrTestCaseJ4 {

@@ -14,24 +14,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.metrics.prometheus.exporters;
 
-import java.util.regex.Pattern;
-
-public interface PrometheusCoreExporterInfo {
-  /** Category of prefix Solr Core dropwizard handler metric names */
-  enum CoreCategory {
-    ADMIN,
-    QUERY,
-    UPDATE,
-    REPLICATION,
-    TLOG,
-    CACHE,
-    SEARCHER,
-    HIGHLIGHTER,
-    INDEX,
-    CORE
-  }
-
-  Pattern CLOUD_CORE_PATTERN = Pattern.compile("^core_(.*)_(shard[0-9]+)_(replica_n[0-9]+)$");
-}
+/**
+ * The {@link org.apache.solr.metrics.prometheus.node.SolrPrometheusNodeExporter} is responsible for
+ * exporting solr.node registry metrics to Prometheus.
+ */
+package org.apache.solr.metrics.prometheus.node;

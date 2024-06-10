@@ -14,16 +14,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.metrics.prometheus;
+package org.apache.solr.metrics.prometheus.jvm;
 
-public class SolrNoOpMetric extends SolrMetric {
-  public SolrNoOpMetric() {}
-
-  @Override
-  public SolrMetric parseLabels() {
-    return this;
+public interface PrometheusJvmExporterInfo {
+  /** Category of prefix Solr JVM dropwizard handler metric names */
+  enum JvmCategory {
+    buffers,
+    gc,
+    memory,
+    os,
+    threads,
+    classes,
+    system
   }
-
-  @Override
-  public void toPrometheus(SolrPrometheusExporter exporter) {}
 }

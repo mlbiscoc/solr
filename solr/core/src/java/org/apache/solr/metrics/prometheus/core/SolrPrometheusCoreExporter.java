@@ -14,17 +14,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.metrics.prometheus.exporters;
+package org.apache.solr.metrics.prometheus.core;
 
 import com.codahale.metrics.Metric;
 import org.apache.solr.metrics.prometheus.SolrMetric;
 import org.apache.solr.metrics.prometheus.SolrNoOpMetric;
-import org.apache.solr.metrics.prometheus.core.SolrCoreCacheMetric;
-import org.apache.solr.metrics.prometheus.core.SolrCoreHandlerMetric;
-import org.apache.solr.metrics.prometheus.core.SolrCoreHighlighterMetric;
-import org.apache.solr.metrics.prometheus.core.SolrCoreIndexMetric;
-import org.apache.solr.metrics.prometheus.core.SolrCoreSearcherMetric;
-import org.apache.solr.metrics.prometheus.core.SolrCoreTlogMetric;
+import org.apache.solr.metrics.prometheus.SolrPrometheusExporter;
 
 /**
  * This class maintains a {@link io.prometheus.metrics.model.snapshots.MetricSnapshot}s exported

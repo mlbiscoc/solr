@@ -21,7 +21,7 @@ import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.Metric;
 import com.codahale.metrics.Timer;
-import org.apache.solr.metrics.prometheus.exporters.SolrPrometheusExporter;
+import org.apache.solr.metrics.prometheus.SolrPrometheusExporter;
 
 /** Dropwizard metrics of name ADMIN/QUERY/UPDATE/REPLICATION.* */
 public class SolrCoreHandlerMetric extends SolrCoreMetric {

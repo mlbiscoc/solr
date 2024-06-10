@@ -14,16 +14,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.metrics.prometheus;
 
-public class SolrNoOpMetric extends SolrMetric {
-  public SolrNoOpMetric() {}
-
-  @Override
-  public SolrMetric parseLabels() {
-    return this;
-  }
-
-  @Override
-  public void toPrometheus(SolrPrometheusExporter exporter) {}
-}
+/**
+ * The {@link org.apache.solr.metrics.prometheus.jetty.SolrPrometheusJettyExporter} is responsible
+ * for exporting solr.jetty registry metrics to Prometheus.
+ */
+package org.apache.solr.metrics.prometheus.jetty;

@@ -18,7 +18,7 @@ package org.apache.solr.metrics.prometheus.core;
 
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.Metric;
-import org.apache.solr.metrics.prometheus.exporters.SolrPrometheusExporter;
+import org.apache.solr.metrics.prometheus.SolrPrometheusExporter;
 
 /** Dropwizard metrics of name TLOG.* */
 public class SolrCoreTlogMetric extends SolrCoreMetric {
