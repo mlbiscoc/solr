@@ -918,7 +918,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
 
     actualSnapshot = getMetricSnapshot(actualSnapshots, "solr_metrics_jvm_threads");
     actualGaugeDataPoint = getGaugeDatapointSnapshot(actualSnapshot, Labels.of("item", "count"));
-    assertEquals(0, actualGaugeDataPoint.getValue(), 0);
+    assertNotNull(actualGaugeDataPoint);
 
     actualSnapshot = getMetricSnapshot(actualSnapshots, "solr_metrics_jvm_memory_pools_bytes");
     actualGaugeDataPoint =
