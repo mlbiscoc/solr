@@ -23,7 +23,6 @@ import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
 
-import java.io.File;
 import java.io.FileOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -369,29 +368,29 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
   public void testSharedLib() throws Exception {
     Path tmpRoot = createTempDir("testSharedLib");
 
-    File lib = new File(tmpRoot.toFile(), "lib");
-    lib.mkdirs();
+    Path lib = Path.of(tmpRoot.toString(), "lib");
+    Files.createDirectories(lib);
 
     try (JarOutputStream jar1 =
-        new JarOutputStream(new FileOutputStream(new File(lib, "jar1.jar")))) {
+        new JarOutputStream(new FileOutputStream(Path.of(lib.toString(), "jar1.jar").toFile()))) {
       jar1.putNextEntry(new JarEntry("defaultSharedLibFile"));
       jar1.closeEntry();
     }
 
-    File customLib = new File(tmpRoot.toFile(), "customLib");
-    customLib.mkdirs();
+    Path customLib = Path.of(tmpRoot.toString(), "customLib");
+    Files.createDirectories(customLib);
 
     try (JarOutputStream jar2 =
-        new JarOutputStream(new FileOutputStream(new File(customLib, "jar2.jar")))) {
+        new JarOutputStream(new FileOutputStream(Path.of(customLib.toString(), "jar2.jar").toFile()))) {
       jar2.putNextEntry(new JarEntry("customSharedLibFile"));
       jar2.closeEntry();
     }
 
-    File customLib2 = new File(tmpRoot.toFile(), "customLib2");
-    customLib2.mkdirs();
+    Path customLib2 = Path.of(tmpRoot.toString(), "customLib2");
+    Files.createDirectories(customLib2);
 
     try (JarOutputStream jar3 =
-        new JarOutputStream(new FileOutputStream(new File(customLib2, "jar3.jar")))) {
+        new JarOutputStream(new FileOutputStream(Path.of(customLib2.toString(), "jar3.jar").toFile()))) {
       jar3.putNextEntry(new JarEntry("jar3File"));
       jar3.closeEntry();
     }
@@ -436,11 +435,11 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
   public void testModuleLibs() throws Exception {
     Path tmpRoot = createTempDir("testModLib");
 
-    File lib = Files.createDirectories(ModuleUtils.getModuleLibPath(tmpRoot, "mod1")).toFile();
+    Path lib = Files.createDirectories(ModuleUtils.getModuleLibPath(tmpRoot, "mod1"));
     ;
 
     try (JarOutputStream jar1 =
-        new JarOutputStream(new FileOutputStream(new File(lib, "jar1.jar")))) {
+        new JarOutputStream(new FileOutputStream(Path.of(lib.toString(), "jar1.jar").toFile()))) {
       jar1.putNextEntry(new JarEntry("moduleLibFile"));
       jar1.closeEntry();
     }

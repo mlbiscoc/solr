@@ -16,7 +16,7 @@
  */
 package org.apache.solr.cloud.api.collections;
 
-import java.io.File;
+import java.io.File; //ALLOWED
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.cloud.MiniSolrCloudCluster;

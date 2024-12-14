@@ -16,7 +16,8 @@
  */
 package org.apache.solr.cloud;
 
-import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
@@ -74,26 +75,26 @@ public class CleanupOldIndexTest extends SolrCloudTestCase {
     // create some "old" index directories
     JettySolrRunner jetty = cluster.getRandomJetty(random());
     CoreContainer coreContainer = jetty.getCoreContainer();
-    File dataDir = null;
+    Path dataDir = null;
     try (SolrCore solrCore =
         coreContainer.getCore(coreContainer.getCoreDescriptors().get(0).getName())) {
-      dataDir = new File(solrCore.getDataDir());
+      dataDir = Path.of(solrCore.getDataDir());
     }
-    assertTrue(dataDir.isDirectory());
+    assertTrue(Files.isDirectory(dataDir));
 
     long msInDay = 60 * 60 * 24L;
     String timestamp1 =
         new SimpleDateFormat(SnapShooter.DATE_FMT, Locale.ROOT).format(new Date(1 * msInDay));
     String timestamp2 =
         new SimpleDateFormat(SnapShooter.DATE_FMT, Locale.ROOT).format(new Date(2 * msInDay));
-    File oldIndexDir1 = new File(dataDir, "index." + timestamp1);
-    FileUtils.forceMkdir(oldIndexDir1);
-    File oldIndexDir2 = new File(dataDir, "index." + timestamp2);
-    FileUtils.forceMkdir(oldIndexDir2);
+    Path oldIndexDir1 = Path.of(dataDir.toString(), "index." + timestamp1);
+    FileUtils.forceMkdir(oldIndexDir1.toFile());
+    Path oldIndexDir2 = Path.of(dataDir.toString(), "index." + timestamp2);
+    FileUtils.forceMkdir(oldIndexDir2.toFile());
 
     // verify the "old" index directories exist
-    assertTrue(oldIndexDir1.isDirectory());
-    assertTrue(oldIndexDir2.isDirectory());
+    assertTrue(Files.isDirectory(oldIndexDir1));
+    assertTrue(Files.isDirectory(oldIndexDir2));
 
     // bring shard replica down
     jetty.stop();
@@ -119,7 +120,7 @@ public class CleanupOldIndexTest extends SolrCloudTestCase {
             TimeUnit.SECONDS,
             (n, c) -> DocCollection.isFullyActive(n, c, 1, 2));
 
-    assertFalse(oldIndexDir1.isDirectory());
-    assertFalse(oldIndexDir2.isDirectory());
+    assertFalse(Files.isDirectory(oldIndexDir1));
+    assertFalse(Files.isDirectory(oldIndexDir2));
   }
 }

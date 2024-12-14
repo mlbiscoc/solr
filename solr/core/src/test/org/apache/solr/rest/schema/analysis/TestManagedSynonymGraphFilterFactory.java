@@ -19,8 +19,8 @@ package org.apache.solr.rest.schema.analysis;
 
 import static org.apache.solr.common.util.Utils.toJSONString;
 
-import java.io.File;
 import java.net.URLEncoder;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -40,20 +40,20 @@ import org.junit.Test;
 // machines occasionally
 public class TestManagedSynonymGraphFilterFactory extends RestTestBase {
 
-  private static File tmpSolrHome;
+  private static Path tmpSolrHome;
 
   /** Setup to make the schema mutable */
   @Before
   public void before() throws Exception {
-    tmpSolrHome = createTempDir().toFile();
-    FileUtils.copyDirectory(new File(TEST_HOME()), tmpSolrHome.getAbsoluteFile());
+    tmpSolrHome = createTempDir();
+    FileUtils.copyDirectory(Path.of(TEST_HOME()).toFile(), tmpSolrHome.toAbsolutePath().toFile());
 
     final SortedMap<ServletHolder, String> extraServlets = new TreeMap<>();
 
     System.setProperty("managed.schema.mutable", "true");
     System.setProperty("enable.update.log", "false");
     createJettyAndHarness(
-        tmpSolrHome.getAbsolutePath(),
+        tmpSolrHome.toAbsolutePath().toString(),
         "solrconfig-managed-schema.xml",
         "schema-rest.xml",
         "/solr",
@@ -65,7 +65,7 @@ public class TestManagedSynonymGraphFilterFactory extends RestTestBase {
   public void after() throws Exception {
     solrClientTestRule.reset();
     if (null != tmpSolrHome) {
-      PathUtils.deleteDirectory(tmpSolrHome.toPath());
+      PathUtils.deleteDirectory(tmpSolrHome);
     }
     System.clearProperty("managed.schema.mutable");
     System.clearProperty("enable.update.log");

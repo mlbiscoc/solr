@@ -16,7 +16,7 @@
  */
 package org.apache.solr.handler;
 
-import java.io.File;
+import java.io.File; //ALLOWED
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
@@ -104,7 +104,7 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
     }
     leader =
         new ReplicationTestHelper.SolrInstance(
-            createTempDir("solr-instance").toFile(), "leader", null);
+            createTempDir("solr-instance"), "leader", null);
     leader.setUp();
     leader.copyConfigFile(CONF_DIR + configFile, "solrconfig.xml");
 

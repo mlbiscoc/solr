@@ -16,7 +16,7 @@
  */
 package org.apache.solr.handler;
 
-import java.io.File;
+import java.io.File; //ALLOWED
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -85,7 +85,7 @@ public class TestRestoreCore extends SolrJettyTestBase {
 
     leader =
         new ReplicationTestHelper.SolrInstance(
-            createTempDir("solr-instance").toFile(), "leader", null);
+            createTempDir("solr-instance"), "leader", null);
     leader.setUp();
     leader.copyConfigFile(CONF_DIR + configFile, "solrconfig.xml");
 

@@ -20,7 +20,6 @@ package org.apache.solr.cloud;
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Metric;
 import com.codahale.metrics.Timer;
-import java.io.File;
 import java.io.FileOutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -188,10 +187,10 @@ public class TestCloudRecovery extends SolrCloudTestCase {
     Map<String, byte[]> contentFiles = new HashMap<>();
     for (JettySolrRunner solrRunner : cluster.getJettySolrRunners()) {
       for (SolrCore solrCore : solrRunner.getCoreContainer().getCores()) {
-        File tlogFolder = new File(solrCore.getUpdateHandler().getUpdateLog().getTlogDir());
-        String[] tLogFiles = tlogFolder.list();
+        Path tlogFolder = Path.of(solrCore.getUpdateHandler().getUpdateLog().getTlogDir());
+        String[] tLogFiles = tlogFolder.toFile().list();
         Arrays.sort(tLogFiles);
-        String lastTLogFile = tlogFolder.getAbsolutePath() + "/" + tLogFiles[tLogFiles.length - 1];
+        String lastTLogFile = tlogFolder.toAbsolutePath() + "/" + tLogFiles[tLogFiles.length - 1];
         byte[] tlogBytes = Files.readAllBytes(Path.of(lastTLogFile));
         contentFiles.put(lastTLogFile, tlogBytes);
         logHeaderSize = Math.min(tlogBytes.length, logHeaderSize);

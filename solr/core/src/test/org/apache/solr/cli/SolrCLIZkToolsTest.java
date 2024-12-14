@@ -18,7 +18,7 @@
 package org.apache.solr.cli;
 
 import java.io.ByteArrayOutputStream;
-import java.io.File;
+import java.io.File; //ALLOWED
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
@@ -83,10 +83,10 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
     // Now just use a name in the configsets directory, do we find it?
     configSet = TEST_PATH().resolve("configsets");
 
-    File confDir = new File(configSet.toFile(), "cloud-subdirs");
+    Path confDir = Path.of(configSet.toString(), "cloud-subdirs");
     String[] args =
         new String[] {
-          "--conf-name", "upconfig2", "--conf-dir", confDir.getAbsolutePath(), "-z", zkAddr
+          "--conf-name", "upconfig2", "--conf-dir", confDir.toAbsolutePath().toString(), "-z", zkAddr
         };
 
     ConfigSetUploadTool tool = new ConfigSetUploadTool();

@@ -19,7 +19,7 @@ package org.apache.solr.core;
 import static org.apache.solr.core.FileSystemConfigSetService.METADATA_FILE;
 import static org.hamcrest.Matchers.hasItem;
 
-import java.io.File;
+import java.io.File; //ALLOWED
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;

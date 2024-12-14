@@ -16,7 +16,7 @@
  */
 package org.apache.solr.schema;
 
-import java.io.File;
+import java.io.File; //ALLOWED
 import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.Date;

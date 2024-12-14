@@ -16,9 +16,9 @@
  */
 package org.apache.solr.core;
 
-import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.AbstractMap;
 import java.util.ArrayList;
@@ -129,7 +129,7 @@ public class CachingDirectoryFactoryTest extends SolrTestCaseJ4 {
             pathA.toFile().exists()); // parent must still be present
         for (Map.Entry<String, Directory> e : subdirs) {
           String pathString = e.getKey();
-          boolean exists = new File(pathString).exists();
+          boolean exists = Files.exists(Path.of(pathString));
           if (deleteAfter.contains(pathString)) {
             assertTrue(exists);
           } else {

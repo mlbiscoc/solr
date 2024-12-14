@@ -17,11 +17,11 @@
 package org.apache.solr.core;
 
 import java.io.BufferedWriter;
-import java.io.File;
 import java.io.FileOutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.Properties;
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
@@ -29,14 +29,14 @@ import org.junit.Test;
 
 public class TestCorePropertiesReload extends SolrTestCaseJ4 {
 
-  private final File solrHomeDirectory = createTempDir().toFile();
+  private final Path solrHomeDirectory = createTempDir();
 
   public void setMeUp() throws Exception {
-    FileUtils.copyDirectory(new File(TEST_HOME()), solrHomeDirectory);
+    FileUtils.copyDirectory(Path.of(TEST_HOME()).toFile(), solrHomeDirectory.toFile());
     Properties props = new Properties();
     props.setProperty("test", "Before reload");
     writeProperties(props);
-    initCore("solrconfig.xml", "schema.xml", solrHomeDirectory.getAbsolutePath());
+    initCore("solrconfig.xml", "schema.xml", solrHomeDirectory.toAbsolutePath().toString());
   }
 
   @Test
@@ -63,11 +63,11 @@ public class TestCorePropertiesReload extends SolrTestCaseJ4 {
   private void writeProperties(Properties props) throws Exception {
     Writer out = null;
     try {
-      File confDir = new File(new File(solrHomeDirectory, "collection1"), "conf");
+      Path confDir = Path.of(solrHomeDirectory.toString(), "collection1", "conf");
       out =
           new BufferedWriter(
               new OutputStreamWriter(
-                  new FileOutputStream(new File(confDir, "solrcore.properties")),
+                  new FileOutputStream(Path.of(confDir.toString(), "solrcore.properties").toFile()),
                   StandardCharsets.UTF_8));
       props.store(out, "Reload Test");
 

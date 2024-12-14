@@ -16,7 +16,7 @@
  */
 package org.apache.solr.cloud;
 
-import java.io.File;
+import java.io.File; //ALLOWED
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -60,6 +60,7 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     fixShardCount(3);
   }
 
+  // TODO SOLR-8282 move to PATH
   /**
    * Overrides the parent implementation so that we can configure a socket proxy to sit in front of
    * each Jetty server, which gives us the ability to simulate network partitions without having to

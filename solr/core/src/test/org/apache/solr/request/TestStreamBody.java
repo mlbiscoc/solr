@@ -16,8 +16,8 @@
  */
 package org.apache.solr.request;
 
-import java.io.File;
 import java.lang.invoke.MethodHandles;
+import java.nio.file.Path;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import org.apache.commons.io.FileUtils;
@@ -38,8 +38,8 @@ public class TestStreamBody extends RestTestBase {
   private static final String collection = "collection1";
 
   public void startSolr() throws Exception {
-    File tmpSolrHome = createTempDir().toFile();
-    FileUtils.copyDirectory(new File(TEST_HOME()), tmpSolrHome.getAbsoluteFile());
+    Path tmpSolrHome = createTempDir();
+    FileUtils.copyDirectory(Path.of(TEST_HOME()).toFile(), tmpSolrHome.toAbsolutePath().toFile());
 
     final SortedMap<ServletHolder, String> extraServlets = new TreeMap<>();
 
@@ -47,7 +47,7 @@ public class TestStreamBody extends RestTestBase {
     System.setProperty("enable.update.log", "false");
 
     createJettyAndHarness(
-        tmpSolrHome.getAbsolutePath(),
+        tmpSolrHome.toAbsolutePath().toString(),
         "solrconfig-minimal.xml",
         "schema-rest.xml",
         "/solr",

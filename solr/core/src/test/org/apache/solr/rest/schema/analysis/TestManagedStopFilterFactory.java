@@ -16,7 +16,7 @@
  */
 package org.apache.solr.rest.schema.analysis;
 
-import java.io.File;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.SortedMap;
 import java.util.TreeMap;
@@ -42,8 +42,8 @@ public class TestManagedStopFilterFactory extends RestTestBase {
 
   @Before
   public void before() throws Exception {
-    File tmpSolrHome = createTempDir().toFile();
-    FileUtils.copyDirectory(new File(TEST_HOME()), tmpSolrHome.getAbsoluteFile());
+    Path tmpSolrHome = createTempDir();
+    FileUtils.copyDirectory(Path.of(TEST_HOME()).toFile(), tmpSolrHome.toAbsolutePath().toFile());
 
     final SortedMap<ServletHolder, String> extraServlets = new TreeMap<>();
 
@@ -51,7 +51,7 @@ public class TestManagedStopFilterFactory extends RestTestBase {
     System.setProperty("enable.update.log", "false");
 
     createJettyAndHarness(
-        tmpSolrHome.getAbsolutePath(),
+        tmpSolrHome.toAbsolutePath().toString(),
         "solrconfig-managed-schema.xml",
         "schema-rest.xml",
         "/solr",

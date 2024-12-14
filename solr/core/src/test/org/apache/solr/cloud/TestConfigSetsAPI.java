@@ -22,7 +22,7 @@ import static org.apache.solr.core.ConfigSetProperties.DEFAULT_FILENAME;
 import static org.hamcrest.CoreMatchers.containsString;
 
 import java.io.ByteArrayInputStream;
-import java.io.File;
+import java.io.File; //ALLOWED
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -1496,7 +1496,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
       boolean forbiddenContent)
       throws IOException {
 
-    File zipFile;
+    Path zipFile;
     if (forbiddenTypes) {
       log.info("Uploading configset with forbidden file endings");
       zipFile =
@@ -1518,7 +1518,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
 
     // Read single file from sample configs. This should fail the unzipping
     return uploadGivenConfigSet(
-        SolrTestCaseJ4.getFile("solr/configsets/upload/regular/solrconfig.xml").toFile(),
+        SolrTestCaseJ4.getFile("solr/configsets/upload/regular/solrconfig.xml"),
         configSetName,
         suffix,
         username,
@@ -1528,7 +1528,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
   }
 
   private long uploadGivenConfigSet(
-      File file,
+      Path file,
       String configSetName,
       String suffix,
       String username,
@@ -1541,7 +1541,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
       // TODO: switch to using V2Request
 
       final ByteBuffer fileBytes =
-          TestSolrConfigHandler.getFileContent(file.getAbsolutePath(), false);
+          TestSolrConfigHandler.getFileContent(file.toAbsolutePath().toString(), false);
       final String uriEnding =
           "/cluster/configs/"
               + configSetName
@@ -1563,7 +1563,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     try {
       return (new Upload())
           .setConfigSetName(configSetName + suffix)
-          .setUploadFile(file.toPath(), "application/zip")
+          .setUploadFile(file, "application/zip")
           .setOverwrite(overwrite ? true : null) // expect server default to be 'false'
           .setCleanup(cleanup ? true : null) // expect server default to be 'false'
           .setBasicAuthCredentials(username, username) // for our MockAuthenticationPlugin
@@ -1587,13 +1587,13 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
       boolean v2)
       throws IOException {
     // Read single file from sample configs
-    final File file = SolrTestCaseJ4.getFile(localFilePath).toFile();
+    final Path file = SolrTestCaseJ4.getFile(localFilePath);
 
     if (v2) {
       // TODO: switch to use V2Request
 
       final ByteBuffer sampleConfigFile =
-          TestSolrConfigHandler.getFileContent(file.getAbsolutePath(), false);
+          TestSolrConfigHandler.getFileContent(file.toAbsolutePath().toString(), false);
       final String uriEnding =
           "/cluster/configs/"
               + configSetName
@@ -1620,7 +1620,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
           .setConfigSetName(configSetName + suffix)
           .setFilePath(uploadPath)
           // NOTE: server doesn't actually care, and test plumbing doesn't tell us
-          .setUploadFile(file.toPath(), "application/octet-stream")
+          .setUploadFile(file, "application/octet-stream")
           .setOverwrite(overwrite ? true : null) // expect server default to be 'false'
           .setCleanup(cleanup ? true : null) // expect server default to be 'false'
           .setBasicAuthCredentials(username, username) // for our MockAuthenticationPlugin
@@ -1637,16 +1637,16 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
    * Create a zip file (in the temp directory) containing all the files within the specified
    * directory and return the zip file.
    */
-  private File createTempZipFile(String directoryPath) {
+  private Path createTempZipFile(String directoryPath) {
     try {
-      final File zipFile = createTempFile("configset", "zip").toFile();
-      final File directory = SolrTestCaseJ4.getFile(directoryPath).toFile();
+      final Path zipFile = createTempFile("configset", "zip");
+      final Path directory = SolrTestCaseJ4.getFile(directoryPath);
       if (log.isInfoEnabled()) {
-        log.info("Directory: {}", directory.getAbsolutePath());
+        log.info("Directory: {}", directory.toAbsolutePath().toString());
       }
       zip(directory, zipFile);
       if (log.isInfoEnabled()) {
-        log.info("Zipfile: {}", zipFile.getAbsolutePath());
+        log.info("Zipfile: {}", zipFile.toAbsolutePath().toString());
       }
       return zipFile;
     } catch (IOException e) {
@@ -1658,16 +1658,16 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
    * Create a zip file (in the temp directory) containing a file with all forbidden types (named
    * "test.fileType")
    */
-  private File createTempZipFileWithForbiddenTypes(String file) {
+  private Path createTempZipFileWithForbiddenTypes(String file) {
     try {
-      final File zipFile = createTempFile("configset", "zip").toFile();
-      final File directory = SolrTestCaseJ4.getFile(file).toFile();
+      final Path zipFile = createTempFile("configset", "zip");
+      final Path directory = SolrTestCaseJ4.getFile(file);
       if (log.isInfoEnabled()) {
-        log.info("Directory: {}", directory.getAbsolutePath());
+        log.info("Directory: {}", directory.toAbsolutePath());
       }
       zipWithForbiddenEndings(directory, zipFile);
       if (log.isInfoEnabled()) {
-        log.info("Zipfile: {}", zipFile.getAbsolutePath());
+        log.info("Zipfile: {}", zipFile.toAbsolutePath().toString());
       }
       return zipFile;
     } catch (IOException e) {
@@ -1676,16 +1676,16 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
   }
 
   /** Create a zip file (in the temp directory) containing files with forbidden content */
-  private File createTempZipFileWithForbiddenContent(String resourcePath) {
+  private Path createTempZipFileWithForbiddenContent(String resourcePath) {
     try {
-      final File zipFile = createTempFile("configset", "zip").toFile();
-      final File directory = SolrTestCaseJ4.getFile(resourcePath).toFile();
+      final Path zipFile = createTempFile("configset", "zip");
+      final Path directory = SolrTestCaseJ4.getFile(resourcePath);
       if (log.isInfoEnabled()) {
-        log.info("Directory: {}", directory.getAbsolutePath());
+        log.info("Directory: {}", directory.toAbsolutePath().toString());
       }
       zipWithForbiddenContent(directory, zipFile);
       if (log.isInfoEnabled()) {
-        log.info("Zipfile: {}", zipFile.getAbsolutePath());
+        log.info("Zipfile: {}", zipFile.toAbsolutePath().toString());
       }
       return zipFile;
     } catch (IOException e) {
@@ -1693,12 +1693,13 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     }
   }
 
-  private static void zipWithForbiddenContent(File directory, File zipfile) throws IOException {
-    OutputStream out = Files.newOutputStream(zipfile.toPath());
-    assertTrue(directory.isDirectory());
+  private static void zipWithForbiddenContent(Path directory, Path zipfile) throws IOException {
+    OutputStream out = Files.newOutputStream(zipfile);
+    assertTrue(Files.isDirectory(directory));
     try (ZipOutputStream zout = new ZipOutputStream(out)) {
+      // TODO SOLR-8282 move to PATH
       // Copy in all files from the directory
-      for (File file : Objects.requireNonNull(directory.listFiles())) {
+      for (File file : Objects.requireNonNull(directory.toFile().listFiles())) {
         zout.putNextEntry(new ZipEntry(file.getName()));
         zout.write(Files.readAllBytes(file.toPath()));
         zout.closeEntry();
@@ -1706,25 +1707,26 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     }
   }
 
-  private static void zipWithForbiddenEndings(File fileOrDirectory, File zipfile)
+  private static void zipWithForbiddenEndings(Path fileOrDirectory, Path zipfile)
       throws IOException {
-    OutputStream out = new FileOutputStream(zipfile);
+    OutputStream out = new FileOutputStream(zipfile.toFile());
     try (ZipOutputStream zout = new ZipOutputStream(out)) {
-      if (fileOrDirectory.isFile()) {
+      if (Files.isRegularFile(fileOrDirectory)) {
         // Create entries with given file, one for each forbidden endding
         for (String fileType : ZkMaintenanceUtils.DEFAULT_FORBIDDEN_FILE_TYPES) {
           zout.putNextEntry(new ZipEntry("test." + fileType));
 
-          try (InputStream in = new FileInputStream(fileOrDirectory)) {
+          try (InputStream in = new FileInputStream(fileOrDirectory.toFile())) {
             in.transferTo(zout);
           }
 
           zout.closeEntry();
         }
       }
-      if (fileOrDirectory.isDirectory()) {
+      if (Files.isDirectory(fileOrDirectory)) {
+        // TODO SOLR-8282 move to PATH
         // Copy in all files from the directory
-        for (File file : Objects.requireNonNull(fileOrDirectory.listFiles())) {
+        for (File file : Objects.requireNonNull(fileOrDirectory.toFile().listFiles())) {
           zout.putNextEntry(new ZipEntry(file.getName()));
           zout.write(Files.readAllBytes(file.toPath()));
           zout.closeEntry();
@@ -1733,15 +1735,16 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     }
   }
 
-  private static void zip(File directory, File zipfile) throws IOException {
-    URI base = directory.toURI();
+  private static void zip(Path directory, Path zipfile) throws IOException {
+    // TODO SOLR-8282 move to PATH
+    URI base = directory.toFile().toURI();
     Deque<File> queue = new ArrayDeque<>();
-    queue.push(directory);
-    OutputStream out = new FileOutputStream(zipfile);
+    queue.push(directory.toFile());
+    OutputStream out = new FileOutputStream(zipfile.toFile());
     try (ZipOutputStream zout = new ZipOutputStream(out)) {
       while (!queue.isEmpty()) {
-        directory = queue.pop();
-        for (File kid : directory.listFiles()) {
+        directory = queue.pop().toPath();
+        for (File kid : directory.toFile().listFiles()) {
           String name = base.relativize(kid.toURI()).getPath();
           if (kid.isDirectory()) {
             queue.push(kid);

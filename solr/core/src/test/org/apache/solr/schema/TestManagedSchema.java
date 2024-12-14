@@ -16,11 +16,12 @@
  */
 package org.apache.solr.schema;
 
-import java.io.File;
+//import java.io.File;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -43,37 +44,37 @@ public class TestManagedSchema extends AbstractBadConfigTestBase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private static File tmpSolrHome;
-  private static File tmpConfDir;
+  private static Path tmpSolrHome;
+  private static Path tmpConfDir;
 
   private static final String collection = "collection1";
   private static final String confDir = collection + "/conf";
 
   @Before
   public void initManagedSchemaCore() throws Exception {
-    tmpSolrHome = createTempDir().toFile();
-    tmpConfDir = new File(tmpSolrHome, confDir);
-    File testHomeConfDir = new File(TEST_HOME(), confDir);
+    tmpSolrHome = createTempDir();
+    tmpConfDir = Path.of(tmpSolrHome.toString(), confDir.toString());
+    Path testHomeConfDir = Path.of(TEST_HOME(), confDir);
     FileUtils.copyFileToDirectory(
-        new File(testHomeConfDir, "solrconfig-managed-schema.xml"), tmpConfDir);
-    FileUtils.copyFileToDirectory(new File(testHomeConfDir, "solrconfig-basic.xml"), tmpConfDir);
+        Path.of(testHomeConfDir.toString(), "solrconfig-managed-schema.xml").toFile(), tmpConfDir.toFile());
+    FileUtils.copyFileToDirectory(Path.of(testHomeConfDir.toString(), "solrconfig-basic.xml").toFile(), tmpConfDir.toFile());
     FileUtils.copyFileToDirectory(
-        new File(testHomeConfDir, "solrconfig-managed-schema-test.xml"), tmpConfDir);
+            Path.of(testHomeConfDir.toString(), "solrconfig-managed-schema-test.xml").toFile(), tmpConfDir.toFile());
     FileUtils.copyFileToDirectory(
-        new File(testHomeConfDir, "solrconfig.snippet.randomindexconfig.xml"), tmpConfDir);
+            Path.of(testHomeConfDir.toString(), "solrconfig.snippet.randomindexconfig.xml").toFile(), tmpConfDir.toFile());
     FileUtils.copyFileToDirectory(
-        new File(testHomeConfDir, "schema-one-field-no-dynamic-field.xml"), tmpConfDir);
+            Path.of(testHomeConfDir.toString(), "schema-one-field-no-dynamic-field.xml").toFile(), tmpConfDir.toFile());
     FileUtils.copyFileToDirectory(
-        new File(testHomeConfDir, "schema-one-field-no-dynamic-field-unique-key.xml"), tmpConfDir);
-    FileUtils.copyFileToDirectory(new File(testHomeConfDir, "schema-minimal.xml"), tmpConfDir);
-    FileUtils.copyFileToDirectory(new File(testHomeConfDir, "schema_codec.xml"), tmpConfDir);
-    FileUtils.copyFileToDirectory(new File(testHomeConfDir, "schema-bm25.xml"), tmpConfDir);
+            Path.of(testHomeConfDir.toString(), "schema-one-field-no-dynamic-field-unique-key.xml").toFile(), tmpConfDir.toFile());
+    FileUtils.copyFileToDirectory(Path.of(testHomeConfDir.toString(), "schema-minimal.xml").toFile(), tmpConfDir.toFile());
+    FileUtils.copyFileToDirectory(Path.of(testHomeConfDir.toString(), "schema_codec.xml").toFile(), tmpConfDir.toFile());
+    FileUtils.copyFileToDirectory(Path.of(testHomeConfDir.toString(), "schema-bm25.xml").toFile(), tmpConfDir.toFile());
 
     // initCore will trigger an upgrade to managed schema, since the solrconfig has
     // <schemaFactory class="ManagedIndexSchemaFactory" ... />
     System.setProperty("managed.schema.mutable", "false");
     System.setProperty("enable.update.log", "false");
-    initCore("solrconfig-managed-schema.xml", "schema-minimal.xml", tmpSolrHome.getPath());
+    initCore("solrconfig-managed-schema.xml", "schema-minimal.xml", tmpSolrHome.toString());
   }
 
   @After
@@ -84,27 +85,27 @@ public class TestManagedSchema extends AbstractBadConfigTestBase {
   }
 
   public void testUpgrade() throws Exception {
-    File managedSchemaFile = new File(tmpConfDir, "managed-schema.xml");
-    assertTrue(managedSchemaFile.exists());
-    String managedSchema = Files.readString(managedSchemaFile.toPath(), StandardCharsets.UTF_8);
+    Path managedSchemaFile = Path.of(tmpConfDir.toString(), "managed-schema.xml");
+    assertTrue(Files.exists(managedSchemaFile));
+    String managedSchema = Files.readString(managedSchemaFile, StandardCharsets.UTF_8);
     assertTrue(managedSchema.contains("DO NOT EDIT"));
-    File upgradedOriginalSchemaFile = new File(tmpConfDir, "schema-minimal.xml.bak");
-    assertTrue(upgradedOriginalSchemaFile.exists());
+    Path upgradedOriginalSchemaFile = Path.of(tmpConfDir.toString(), "schema-minimal.xml.bak");
+    assertTrue(Files.exists(upgradedOriginalSchemaFile));
     assertSchemaResource(collection, "managed-schema.xml");
   }
 
   public void testUpgradeThenRestart() throws Exception {
     assertSchemaResource(collection, "managed-schema.xml");
     deleteCore();
-    File nonManagedSchemaFile = new File(tmpConfDir, "schema-minimal.xml");
-    assertFalse(nonManagedSchemaFile.exists());
-    initCore("solrconfig-managed-schema.xml", "schema-minimal.xml", tmpSolrHome.getPath());
-    File managedSchemaFile = new File(tmpConfDir, "managed-schema.xml");
-    assertTrue(managedSchemaFile.exists());
-    String managedSchema = Files.readString(managedSchemaFile.toPath(), StandardCharsets.UTF_8);
+    Path nonManagedSchemaFile = Path.of(tmpConfDir.toString(), "schema-minimal.xml");
+    assertFalse(Files.exists(Path.of(nonManagedSchemaFile.toString())));
+    initCore("solrconfig-managed-schema.xml", "schema-minimal.xml", tmpSolrHome.toString());
+    Path managedSchemaFile = Path.of(tmpConfDir.toString(), "managed-schema.xml");
+    assertTrue(Files.exists(managedSchemaFile));
+    String managedSchema = Files.readString(managedSchemaFile, StandardCharsets.UTF_8);
     assertTrue(managedSchema.contains("DO NOT EDIT"));
-    File upgradedOriginalSchemaFile = new File(tmpConfDir, "schema-minimal.xml.bak");
-    assertTrue(upgradedOriginalSchemaFile.exists());
+    Path upgradedOriginalSchemaFile = Path.of(tmpConfDir.toString(), "schema-minimal.xml.bak");
+    assertTrue(Files.exists(upgradedOriginalSchemaFile));
     assertSchemaResource(collection, "managed-schema.xml");
   }
 
@@ -115,28 +116,28 @@ public class TestManagedSchema extends AbstractBadConfigTestBase {
     assertConfigs(
         "solrconfig-basic.xml",
         "schema-minimal.xml",
-        tmpSolrHome.getPath(),
+        tmpSolrHome.toString(),
         "Can't find resource 'schema-minimal.xml'");
   }
 
   public void testUpgradeThenRestartNonManagedAfterPuttingBackNonManagedSchema() throws Exception {
     assertSchemaResource(collection, "managed-schema.xml");
     deleteCore();
-    File nonManagedSchemaFile = new File(tmpConfDir, "schema-minimal.xml");
-    assertFalse(nonManagedSchemaFile.exists());
-    File upgradedOriginalSchemaFile = new File(tmpConfDir, "schema-minimal.xml.bak");
-    assertTrue(upgradedOriginalSchemaFile.exists());
+    Path nonManagedSchemaFile = Path.of(tmpConfDir.toString(), "schema-minimal.xml");
+    assertFalse(Files.exists(nonManagedSchemaFile));
+    Path upgradedOriginalSchemaFile = Path.of(tmpConfDir.toString(), "schema-minimal.xml.bak");
+    assertTrue(Files.exists(upgradedOriginalSchemaFile));
 
     // After upgrade to managed schema, downgrading to non-managed should work after putting back
     // the non-managed schema.
-    FileUtils.moveFile(upgradedOriginalSchemaFile, nonManagedSchemaFile);
-    initCore("solrconfig-basic.xml", "schema-minimal.xml", tmpSolrHome.getPath());
+    FileUtils.moveFile(upgradedOriginalSchemaFile.toFile(), nonManagedSchemaFile.toFile());
+    initCore("solrconfig-basic.xml", "schema-minimal.xml", tmpSolrHome);
     assertSchemaResource(collection, "schema-minimal.xml");
   }
 
   public void testDefaultSchemaFactory() throws Exception {
     deleteCore();
-    initCore("solrconfig-managed-schema-test.xml", "schema-minimal.xml", tmpSolrHome.getPath());
+    initCore("solrconfig-managed-schema-test.xml", "schema-minimal.xml", tmpSolrHome);
 
     final CoreContainer cores = h.getCoreContainer();
     final CoreAdminHandler admin = new CoreAdminHandler(cores);

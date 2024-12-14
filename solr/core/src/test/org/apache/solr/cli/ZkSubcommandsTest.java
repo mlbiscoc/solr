@@ -19,7 +19,7 @@ package org.apache.solr.cli;
 import static org.apache.solr.cli.SolrCLI.parseCmdLine;
 
 import java.io.ByteArrayOutputStream;
-import java.io.File;
+import java.io.File; //ALLOWED
 import java.io.FileWriter;
 import java.io.PrintStream;
 import java.lang.invoke.MethodHandles;
@@ -121,14 +121,14 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
   public void testPut() throws Exception {
     // test put
     String data = "my data";
-    File localFile = File.createTempFile("temp", ".data");
-    FileWriter writer = new FileWriter(localFile, StandardCharsets.UTF_8);
+    Path localFile = Files.createTempFile("temp", ".data");
+    FileWriter writer = new FileWriter(localFile.toFile(), StandardCharsets.UTF_8);
     writer.write(data);
     writer.close();
 
     String[] args =
         new String[] {
-          "cp", "-z", zkServer.getZkAddress(), localFile.getAbsolutePath(), "zk:/data.txt"
+          "cp", "-z", zkServer.getZkAddress(), localFile.toAbsolutePath().toString(), "zk:/data.txt"
         };
 
     ZkCpTool tool = new ZkCpTool();
@@ -141,7 +141,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
     data = "my data deux";
 
     // Write text to the temporary file
-    writer = new FileWriter(localFile, StandardCharsets.UTF_8);
+    writer = new FileWriter(localFile.toFile(), StandardCharsets.UTF_8);
     writer.write(data);
     writer.close();
 
@@ -159,8 +159,8 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
 
     String data = "my data";
 
-    File localFile = File.createTempFile("state", ".json");
-    FileWriter writer = new FileWriter(localFile, StandardCharsets.UTF_8);
+    Path localFile = Files.createTempFile("state", ".json");
+    FileWriter writer = new FileWriter(localFile.toFile(), StandardCharsets.UTF_8);
     writer.write(data);
     writer.close();
 
@@ -173,7 +173,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
 
     String[] args =
         new String[] {
-          "cp", "-z", zkServer.getZkAddress(), localFile.getAbsolutePath(), "zk:/state.json"
+          "cp", "-z", zkServer.getZkAddress(), localFile.toAbsolutePath().toString(), "zk:/state.json"
         };
     ZkCpTool tool = new ZkCpTool();
     assertEquals(0, runTool(args, tool));
@@ -182,8 +182,8 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
 
     // test re-put to existing
     data = "my data deux";
-    localFile = File.createTempFile("state", ".json");
-    writer = new FileWriter(localFile, StandardCharsets.UTF_8);
+    localFile = Files.createTempFile("state", ".json");
+    writer = new FileWriter(localFile.toFile(), StandardCharsets.UTF_8);
     writer.write(data);
     writer.close();
 
@@ -192,19 +192,19 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
 
     byte[] fromLoca =
         new ZLibCompressor()
-            .compressBytes(Files.readAllBytes(Path.of(localFile.getAbsolutePath())));
+            .compressBytes(Files.readAllBytes(Path.of(localFile.toAbsolutePath().toString())));
     assertArrayEquals("Should get back what we put in ZK", fromLoca, expected);
 
     args =
         new String[] {
-          "cp", "-z", zkServer.getZkAddress(), localFile.getAbsolutePath(), "zk:/state.json"
+          "cp", "-z", zkServer.getZkAddress(), localFile.toAbsolutePath().toString(), "zk:/state.json"
         };
     assertEquals(0, runTool(args, tool));
 
     byte[] fromZk = zkClient.getCuratorFramework().getData().forPath("/state.json");
     byte[] fromLoc =
         new ZLibCompressor()
-            .compressBytes(Files.readAllBytes(Path.of(localFile.getAbsolutePath())));
+            .compressBytes(Files.readAllBytes(Path.of(localFile.toAbsolutePath().toString())));
     assertArrayEquals("Should get back what we put in ZK", fromLoc, fromZk);
 
     assertArrayEquals(zkClient.getCuratorFramework().getData().forPath("/state.json"), expected);
@@ -325,7 +325,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
 
   @Test
   public void testUpConfigLinkConfigClearZk() throws Exception {
-    File tmpDir = createTempDir().toFile();
+    Path tmpDir = createTempDir();
 
     // test upconfig
     String confsetname = "confsetone";
@@ -343,7 +343,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
 
     ConfigSetUploadTool configSetUploadTool = new ConfigSetUploadTool();
     assertEquals(0, runTool(args, configSetUploadTool));
-
+    // TODO SOLR-8282 move to PATH
     assertTrue(zkClient.exists(ZkConfigSetService.CONFIGS_ZKNODE + "/" + confsetname, true));
     File confDir = new File(ExternalPaths.TECHPRODUCTS_CONFIGSET);
     File[] files = confDir.listFiles();
@@ -373,10 +373,10 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
     assertEquals(confsetname, collectionProps.getStr("configName"));
 
     // test down config
-    File configSetDir =
-        new File(
-            tmpDir, "solrtest-confdropspot-" + this.getClass().getName() + "-" + System.nanoTime());
-    assertFalse(configSetDir.exists());
+    Path configSetDir =
+        Path.of(
+            tmpDir.toString(), "solrtest-confdropspot-" + this.getClass().getName() + "-" + System.nanoTime());
+    assertFalse(Files.exists(configSetDir));
 
     args =
         new String[] {
@@ -384,14 +384,14 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
           "--conf-name",
           confsetname,
           "--conf-dir",
-          configSetDir.getAbsolutePath(),
+          configSetDir.toAbsolutePath().toString(),
           "-z",
           zkServer.getZkAddress()
         };
 
     ConfigSetDownloadTool configSetDownloadTool = new ConfigSetDownloadTool();
     assertEquals(0, runTool(args, configSetDownloadTool));
-
+    // TODO SOLR-8282 move to PATH
     confDir = new File(configSetDir, "conf");
     files = confDir.listFiles();
     zkFiles =
@@ -403,6 +403,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
     assertEquals("Comparing downloaded files to what is in ZK", files.length, zkFiles.size());
 
     File sourceConfDir = new File(ExternalPaths.TECHPRODUCTS_CONFIGSET);
+    // TODO SOLR-8282 move to PATH
     // filter out all directories starting with . (e.g. .svn)
     Collection<File> sourceFiles =
         FileUtils.listFiles(
@@ -450,11 +451,11 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
     byte[] data = "getNode-data".getBytes(StandardCharsets.UTF_8);
     zkClient.create(getNode, data, CreateMode.PERSISTENT, true);
 
-    File localFile = File.createTempFile("temp", ".data");
+    Path localFile = Files.createTempFile("temp", ".data");
 
     String[] args =
         new String[] {
-          "cp", "-z", zkServer.getZkAddress(), "zk:" + getNode, localFile.getAbsolutePath()
+          "cp", "-z", zkServer.getZkAddress(), "zk:" + getNode, localFile.toAbsolutePath().toString()
         };
 
     ByteArrayOutputStream byteStream2 = new ByteArrayOutputStream();
@@ -465,7 +466,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
 
     final String standardOutput2 = byteStream2.toString(StandardCharsets.UTF_8);
     assertTrue(standardOutput2.startsWith("Copying from 'zk:/getNode'"));
-    byte[] fileBytes = Files.readAllBytes(Paths.get(localFile.getAbsolutePath()));
+    byte[] fileBytes = Files.readAllBytes(Paths.get(localFile.toAbsolutePath().toString()));
     assertArrayEquals(data, fileBytes);
   }
 
@@ -483,17 +484,17 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
             : zLibCompressor.compressBytes(data, data.length / 10);
     zkClient.create(getNode, compressedData, CreateMode.PERSISTENT, true);
 
-    File localFile = File.createTempFile("temp", ".data");
+    Path localFile = Files.createTempFile("temp", ".data");
 
     String[] args =
         new String[] {
-          "cp", "-z", zkServer.getZkAddress(), "zk:" + getNode, localFile.getAbsolutePath()
+          "cp", "-z", zkServer.getZkAddress(), "zk:" + getNode, localFile.toAbsolutePath().toString()
         };
 
     ZkCpTool tool = new ZkCpTool();
     assertEquals(0, runTool(args, tool));
 
-    assertArrayEquals(data, Files.readAllBytes(Path.of(localFile.getAbsolutePath())));
+    assertArrayEquals(data, Files.readAllBytes(Path.of(localFile.toAbsolutePath().toString())));
   }
 
   @Test
@@ -548,10 +549,10 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
   public void testGetFileNotExists() throws Exception {
     String getNode = "/getFileNotExistsNode";
 
-    File file = createTempFile("newfile", null).toFile();
+    Path file = createTempFile("newfile", null);
 
     String[] args =
-        new String[] {"cp", "-z", zkServer.getZkAddress(), "zk:" + getNode, file.getAbsolutePath()};
+        new String[] {"cp", "-z", zkServer.getZkAddress(), "zk:" + getNode, file.toAbsolutePath().toString()};
 
     ZkCpTool tool = new ZkCpTool();
     assertEquals(1, runTool(args, tool));

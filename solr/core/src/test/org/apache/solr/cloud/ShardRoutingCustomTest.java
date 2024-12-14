@@ -16,13 +16,15 @@
  */
 package org.apache.solr.cloud;
 
-import java.io.File;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 public class ShardRoutingCustomTest extends AbstractFullDistribZkTestBase {
 
@@ -56,8 +58,8 @@ public class ShardRoutingCustomTest extends AbstractFullDistribZkTestBase {
   private void doCustomSharding() throws Exception {
     printLayout();
 
-    File jettyDir = createTempDir("jetty").toFile();
-    jettyDir.mkdirs();
+    Path jettyDir = createTempDir("jetty");
+    Files.createDirectories(jettyDir);
     setupJettySolrHome(jettyDir);
     JettySolrRunner j =
         createJetty(

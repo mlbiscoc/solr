@@ -16,9 +16,10 @@
  */
 package org.apache.solr.cloud;
 
-import java.io.File;
+import java.io.File; //ALLOWED
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.List;
@@ -91,9 +92,10 @@ public class MissingSegmentRecoveryTest extends SolrCloudTestCase {
   public void testLeaderRecovery() throws Exception {
     System.setProperty("CoreInitFailedAction", "fromleader");
 
+    // TODO SOLR-8282 move to PATH
     // Simulate failure by truncating the segment_* files
     for (File segment : getSegmentFiles(replica)) {
-      truncate(segment);
+      truncate(segment.toPath());
     }
 
     // Might not need a sledge-hammer to reload the core
@@ -108,6 +110,7 @@ public class MissingSegmentRecoveryTest extends SolrCloudTestCase {
     assertEquals(10, resp.getResults().getNumFound());
   }
 
+  // TODO SOLR-8282 move to PATH
   private File[] getSegmentFiles(Replica replica) {
     try (SolrCore core =
         cluster.getReplicaJetty(replica).getCoreContainer().getCore(replica.getCoreName())) {
@@ -119,7 +122,7 @@ public class MissingSegmentRecoveryTest extends SolrCloudTestCase {
     }
   }
 
-  private void truncate(File file) throws IOException {
-    Files.write(file.toPath(), new byte[0], StandardOpenOption.TRUNCATE_EXISTING);
+  private void truncate(Path file) throws IOException {
+    Files.write(file, new byte[0], StandardOpenOption.TRUNCATE_EXISTING);
   }
 }

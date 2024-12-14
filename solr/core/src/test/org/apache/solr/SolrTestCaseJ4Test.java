@@ -16,7 +16,6 @@
  */
 package org.apache.solr;
 
-import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import org.apache.commons.io.FileUtils;
@@ -42,11 +41,11 @@ public class SolrTestCaseJ4Test extends SolrTestCaseJ4 {
         Path.of(top, "solrconfig.snippet.randomindexconfig.xml"),
         subHome.resolve("solrconfig.snippet.randomindexconfig.xml"));
 
-    FileUtils.copyDirectory(new File(tmpSolrHome, "core0"), new File(tmpSolrHome, "core1"));
+    FileUtils.copyDirectory(Path.of(tmpSolrHome, "core0").toFile(), Path.of(tmpSolrHome, "core1").toFile());
     // Core discovery will default to the name of the dir the core.properties file is in. So if
     // everything else is OK as defaults, just the _presence_ of this file is sufficient.
-    FileUtils.touch(new File(tmpSolrHome, "core0/core.properties"));
-    FileUtils.touch(new File(tmpSolrHome, "core1/core.properties"));
+    FileUtils.touch(Path.of(tmpSolrHome, "core0/core.properties").toFile());
+    FileUtils.touch(Path.of(tmpSolrHome, "core1/core.properties").toFile());
 
     Files.copy(getFile("solr/solr.xml"), Path.of(tmpSolrHome, "solr.xml"));
 

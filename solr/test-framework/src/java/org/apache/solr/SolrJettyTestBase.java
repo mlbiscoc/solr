@@ -134,7 +134,7 @@ public abstract class SolrJettyTestBase extends SolrTestCaseJ4 {
   // from the test file directory are used, but some also require that the solr.xml file be
   // explicitly there as of SOLR-4817
   @Deprecated // Instead use a basic config + whatever is needed or default config
-  protected static void setupJettyTestHome(File solrHome, String collection) throws Exception {
+  protected static void setupJettyTestHome(Path solrHome, String collection) throws Exception {
     // TODO remove these sys props!
     System.setProperty("solr.test.sys.prop1", "propone");
     System.setProperty("solr.test.sys.prop2", "proptwo");

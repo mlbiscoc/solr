@@ -18,7 +18,7 @@ package org.apache.solr.core;
 
 import static org.hamcrest.core.StringContains.containsString;
 
-import java.io.File;
+import java.io.File; //ALLOWED
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;

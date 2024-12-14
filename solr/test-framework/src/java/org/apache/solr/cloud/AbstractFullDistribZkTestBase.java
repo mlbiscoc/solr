@@ -828,9 +828,9 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     } else if (random().nextBoolean()) {
       props.setProperty("replicaType", Replica.Type.NRT.toString());
     }
-    props.setProperty("coreRootDirectory", solrHome.toPath().resolve("cores").toString());
+    props.setProperty("coreRootDirectory", solrHome.resolve("cores").toString());
 
-    JettySolrRunner jetty = new JettySolrRunner(solrHome.getPath(), props, jettyconfig, true);
+    JettySolrRunner jetty = new JettySolrRunner(solrHome.toString(), props, jettyconfig, true);
 
     return jetty;
   }

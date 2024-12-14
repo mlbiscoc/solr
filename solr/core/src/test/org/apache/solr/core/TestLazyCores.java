@@ -16,7 +16,6 @@
  */
 package org.apache.solr.core;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -57,7 +56,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
   /** Transient core cache max size defined in the test solr-transientCores.xml */
   private static final int TRANSIENT_CORE_CACHE_MAX_SIZE = 4;
 
-  private File solrHomeDirectory;
+  private Path solrHomeDirectory;
 
   @BeforeClass
   public static void setupClass() throws Exception {
@@ -96,11 +95,11 @@ public class TestLazyCores extends SolrTestCaseJ4 {
       };
 
   private CoreContainer init() throws Exception {
-    solrHomeDirectory = createTempDir().toFile();
+    solrHomeDirectory = createTempDir();
 
-    copyXmlToHome(solrHomeDirectory.getAbsoluteFile(), "solr-transientCores.xml");
+    copyXmlToHome(solrHomeDirectory.toAbsolutePath(), "solr-transientCores.xml");
     for (int idx = 1; idx < 10; ++idx) {
-      copyMinConf(new File(solrHomeDirectory, "collection" + idx));
+      copyMinConf(Path.of(solrHomeDirectory, "collection" + idx));
     }
 
     NodeConfig cfg = NodeConfig.loadNodeConfig(solrHomeDirectory.toPath(), null);

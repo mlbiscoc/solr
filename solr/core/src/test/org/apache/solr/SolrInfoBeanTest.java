@@ -16,7 +16,7 @@
  */
 package org.apache.solr;
 
-import java.io.File;
+import java.io.File; //ALLOWED
 import java.net.URI;
 import java.net.URL;
 import java.util.ArrayList;
@@ -88,6 +88,7 @@ public class SolrInfoBeanTest extends SolrTestCaseJ4 {
   }
 
   private static List<Class<?>> getClassesForPackage(String pckgname) throws Exception {
+    // TODO SOLR-8282 move to PATH
     ArrayList<File> directories = new ArrayList<>();
     ClassLoader cld = h.getCore().getResourceLoader().getClassLoader();
     String path = pckgname.replace('.', '/');

@@ -19,8 +19,8 @@ package org.apache.solr.rest.schema;
 import static org.apache.solr.common.util.Utils.fromJSONString;
 import static org.hamcrest.Matchers.containsString;
 
-import java.io.File;
 import java.lang.invoke.MethodHandles;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -58,14 +58,14 @@ public class TestBulkSchemaAPI extends RestTestBase {
 
   @Before
   public void before() throws Exception {
-    File tmpSolrHome = createTempDir().toFile();
-    FileUtils.copyDirectory(new File(TEST_HOME()), tmpSolrHome.getAbsoluteFile());
+    Path tmpSolrHome = createTempDir();
+    FileUtils.copyDirectory(Path.of(TEST_HOME()).toFile(), tmpSolrHome.toAbsolutePath().toFile());
 
     System.setProperty("managed.schema.mutable", "true");
     System.setProperty("enable.update.log", "false");
 
     createJettyAndHarness(
-        tmpSolrHome.getAbsolutePath(),
+        tmpSolrHome.toAbsolutePath().toString(),
         "solrconfig-managed-schema.xml",
         "schema-rest.xml",
         "/solr",

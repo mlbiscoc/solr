@@ -16,8 +16,8 @@
  */
 package org.apache.solr.handler.component;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -49,18 +49,18 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
   private static String shard1;
   private static String shard2;
 
-  private static File createSolrHome() throws Exception {
-    File workDir = createTempDir().toFile();
+  private static Path createSolrHome() throws Exception {
+    Path workDir = createTempDir();
     setupJettyTestHome(workDir, "collection1");
-    FileUtils.copyDirectory(new File(workDir, "collection1"), new File(workDir, "collection2"));
+    FileUtils.copyDirectory(Path.of(workDir.toString(), "collection1").toFile(), Path.of(workDir.toString(), "collection2").toFile());
     return workDir;
   }
 
   @BeforeClass
   public static void createThings() throws Exception {
     systemSetPropertySolrDisableUrlAllowList("true");
-    File solrHome = createSolrHome();
-    createAndStartJetty(solrHome.getAbsolutePath());
+    Path solrHome = createSolrHome();
+    createAndStartJetty(solrHome.toAbsolutePath().toString());
     String url = getBaseUrl();
 
     collection1 = getHttpSolrClient(url, "collection1");

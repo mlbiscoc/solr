@@ -22,7 +22,7 @@ import static org.apache.solr.core.CoreContainer.LOAD_COMPLETE;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.core.StringContains.containsString;
 
-import java.io.File;
+import java.io.File; //ALLOWED
 import java.io.FileInputStream;
 import java.io.InputStreamReader;
 import java.io.Writer;
@@ -45,6 +45,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+// TODO SOLR-8282 move all File to PATH
 public class TestCoreDiscovery extends SolrTestCaseJ4 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 

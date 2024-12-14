@@ -16,7 +16,6 @@
  */
 package org.apache.solr;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Files;
@@ -45,7 +44,7 @@ public class TestTolerantSearch extends SolrJettyTestBase {
   private static String shard1;
   private static String shard2;
 
-  private static File createSolrHome() throws Exception {
+  private static Path createSolrHome() throws Exception {
     Path workDir = createTempDir();
     setupJettyTestHome(workDir.toFile(), "collection1");
     Files.copy(
@@ -54,14 +53,14 @@ public class TestTolerantSearch extends SolrJettyTestBase {
         StandardCopyOption.REPLACE_EXISTING);
     FileUtils.copyDirectory(
         workDir.resolve("collection1").toFile(), workDir.resolve("collection2").toFile());
-    return workDir.toFile();
+    return workDir;
   }
 
   @BeforeClass
   public static void createThings() throws Exception {
     systemSetPropertySolrDisableUrlAllowList("true");
-    File solrHome = createSolrHome();
-    createAndStartJetty(solrHome.getAbsolutePath());
+    Path solrHome = createSolrHome();
+    createAndStartJetty(solrHome.toAbsolutePath().toString());
     String url = getBaseUrl();
     collection1 = getHttpSolrClient(url, "collection1");
     collection2 = getHttpSolrClient(url, "collection2");

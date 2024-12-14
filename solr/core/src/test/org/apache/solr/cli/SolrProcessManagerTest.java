@@ -17,7 +17,7 @@
 package org.apache.solr.cli;
 
 import java.io.BufferedReader;
-import java.io.File;
+import java.io.File; //ALLOWED
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
