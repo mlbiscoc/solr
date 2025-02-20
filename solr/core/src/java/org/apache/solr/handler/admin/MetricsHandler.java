@@ -38,6 +38,12 @@ import java.util.function.BiConsumer;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+
+import io.opentelemetry.api.GlobalOpenTelemetry;
+import io.opentelemetry.api.common.AttributeKey;
+import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.api.metrics.LongCounter;
+import io.opentelemetry.api.metrics.MeterProvider;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
@@ -126,6 +132,12 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
       consumer.accept("error", "metrics collection is disabled");
       return;
     }
+
+    MeterProvider mp = MetricUtils.getGlobalMeterProvider();
+    io.opentelemetry.api.metrics.Meter firstMeter = mp.get("solr.metrics.handler.foobar");
+    LongCounter lc = firstMeter.counterBuilder("MyCounter").setDescription("This is a test OTEL counter").setUnit("solrUnits").build();
+    lc.add(1, Attributes.of(AttributeKey.stringKey("mykey"), "myValue"));
+
 
     if (PROMETHEUS_METRICS_WT.equals(params.get(CommonParams.WT))) {
       response = handlePrometheusExport(params);
