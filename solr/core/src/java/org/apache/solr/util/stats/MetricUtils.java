@@ -48,6 +48,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+
+import io.opentelemetry.api.GlobalOpenTelemetry;
+import io.opentelemetry.api.metrics.MeterProvider;
 import org.apache.solr.common.ConditionalKeyMapWriter;
 import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.MapWriter;
@@ -851,5 +854,9 @@ public class MetricUtils {
         // ignore
       }
     }
+  }
+
+  public static MeterProvider getGlobalMeterProvider() {
+      return GlobalOpenTelemetry.getMeterProvider();
   }
 }
