@@ -39,7 +39,7 @@ import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import io.opentelemetry.api.GlobalOpenTelemetry;
+import io.opentelemetry.exporter.prometheus.*;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.metrics.LongCounter;

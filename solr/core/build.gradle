@@ -156,6 +156,7 @@ dependencies {
   // Distributed Tracing
   api libs.opentelemetry.api // Tracer is exposed on some methods
   implementation libs.opentelemetry.context
+  implementation libs.opentelemetry.exporter.prometheus
 
   implementation libs.apache.commons.exec
 
