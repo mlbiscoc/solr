@@ -138,7 +138,6 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
     LongCounter lc = firstMeter.counterBuilder("MyCounter").setDescription("This is a test OTEL counter").setUnit("solrUnits").build();
     lc.add(1, Attributes.of(AttributeKey.stringKey("mykey"), "myValue"));
 
-
     if (PROMETHEUS_METRICS_WT.equals(params.get(CommonParams.WT))) {
       response = handlePrometheusExport(params);
       consumer.accept("metrics", response);
