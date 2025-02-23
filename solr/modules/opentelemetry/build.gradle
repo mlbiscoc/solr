@@ -32,6 +32,7 @@ dependencies {
   implementation libs.opentelemetry.api
   implementation libs.opentelemetry.sdkextension.autoconfigure
   runtimeOnly libs.opentelemetry.exporter.otlp
+  runtimeOnly libs.opentelemetry.exporter.prometheus
   // End users must recompile with jaeger exporter and/or zipkin exporter if they need these
 
   // NOTE: sdk-autoconfigure needs both opentelemetry-sdk-metrics and opentelemetry-sdk-logs even if we don't use them
