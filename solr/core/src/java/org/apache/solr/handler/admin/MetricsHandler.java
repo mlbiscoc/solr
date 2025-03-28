@@ -25,6 +25,8 @@ import com.codahale.metrics.Metric;
 import com.codahale.metrics.MetricFilter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
+
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -39,11 +41,15 @@ import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import io.opentelemetry.api.GlobalOpenTelemetry;
+import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.exporter.prometheus.*;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.metrics.LongCounter;
 import io.opentelemetry.api.metrics.MeterProvider;
+import io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdk;
+import io.opentelemetry.sdk.metrics.SdkMeterProvider;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
@@ -137,6 +143,7 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
     io.opentelemetry.api.metrics.Meter firstMeter = mp.get("solr.metrics.handler.foobar");
     LongCounter lc = firstMeter.counterBuilder("MyCounter").setDescription("This is a test OTEL counter").setUnit("solrUnits").build();
     lc.add(1, Attributes.of(AttributeKey.stringKey("mykey"), "myValue"));
+    GlobalOpenTelemetry.get().getMeter(PROMETHEUS_METRICS_WT);
 
     if (PROMETHEUS_METRICS_WT.equals(params.get(CommonParams.WT))) {
       response = handlePrometheusExport(params);
