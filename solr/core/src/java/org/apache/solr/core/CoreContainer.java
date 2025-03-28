@@ -420,6 +420,7 @@ public class CoreContainer {
     this.solrHome = config.getSolrHome();
     this.solrCores = SolrCores.newSolrCores(this);
     this.nodeKeyPair = new SolrNodeKeyPair(cfg.getCloudConfig());
+    this.tracer = TracerConfigurator.loadTracer(loader, cfg.getTracerConfiguratorPluginInfo());
     containerHandlers.put(PublicKeyHandler.PATH, new PublicKeyHandler(nodeKeyPair));
     if (null != this.cfg.getBooleanQueryMaxClauseCount()) {
       IndexSearcher.setMaxClauseCount(this.cfg.getBooleanQueryMaxClauseCount());
@@ -826,8 +827,6 @@ public class CoreContainer {
     metricManager = new SolrMetricManager(loader, cfg.getMetricsConfig());
     String registryName = SolrMetricManager.getRegistryName(SolrInfoBean.Group.node);
     solrMetricsContext = new SolrMetricsContext(metricManager, registryName, metricTag);
-
-    tracer = TracerConfigurator.loadTracer(loader, cfg.getTracerConfiguratorPluginInfo());
 
     MeterProvider mp = MetricUtils.getGlobalMeterProvider();
     io.opentelemetry.api.metrics.Meter firstMeter = mp.get("solr.CoreContainer.foobar");
