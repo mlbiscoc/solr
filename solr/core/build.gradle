@@ -156,14 +156,16 @@ dependencies {
   // Distributed Tracing
   api libs.opentelemetry.api // Tracer is exposed on some methods
   implementation libs.opentelemetry.context
-  implementation(libs.opentelemetry.exporter.prometheus, {
-    exclude group: "io.opentelemetry", module: "opentelemetry-exporter-common"
-    exclude group: "io.opentelemetry", module: "opentelemetry-sdk-common"
-    exclude group: "io.opentelemetry", module: "opentelemetry-sdk-extension-autoconfigure-spi"
-    exclude group: "io.opentelemetry", module: "opentelemetry-sdk-logs"
-    exclude group: "io.opentelemetry", module: "opentelemetry-sdk-metrics"
-    exclude group: "io.opentelemetry", module: "opentelemetry-sdk-trace"
-  })
+  implementation libs.opentelemetry.exporter.prometheus
+//  implementation(libs.opentelemetry.exporter.prometheus, {
+//    exclude group: "io.opentelemetry", module: "opentelemetry-exporter-common"
+//    exclude group: "io.opentelemetry", module: "opentelemetry-sdk-common"
+//    exclude group: "io.opentelemetry", module: "opentelemetry-sdk-extension-autoconfigure-spi"
+//    exclude group: "io.opentelemetry", module: "opentelemetry-sdk-logs"
+//    exclude group: "io.opentelemetry", module: "opentelemetry-sdk-metrics"
+//    exclude group: "io.opentelemetry", module: "opentelemetry-sdk-trace"
+//  })
+  runtimeOnly libs.opentelemetry.exporter.sender.okhttp
 
   implementation libs.apache.commons.exec
 
@@ -174,8 +176,8 @@ dependencies {
   // For the PrometheusResponseWriter
   implementation libs.prometheus.metrics.model
   implementation(libs.prometheus.metrics.expositionformats, {
-    exclude group: "io.prometheus", module: "prometheus-metrics-shaded-protobuf"
-    exclude group: "io.prometheus", module: "prometheus-metrics-config"
+//    exclude group: "io.prometheus", module: "prometheus-metrics-shaded-protobuf"
+//    exclude group: "io.prometheus", module: "prometheus-metrics-config"
   })
 
   // For faster XML processing than the JDK
