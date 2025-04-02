@@ -211,7 +211,7 @@ public abstract class RequestHandlerBase
       io.opentelemetry.api.metrics.Meter requests = mp.get("org.apache.solr.handler");
       LongCounter lc = requests.counterBuilder("requests").setDescription("# of requests to Solr").build();
       if (metricPath.length != 0) {
-        lc.add(1, Attributes.of(AttributeKey.stringKey("path"), metricPath[0] + metricPath[1]));
+        lc.add(1, Attributes.of(AttributeKey.stringKey("type"), metricPath[0], AttributeKey.stringKey("path"), metricPath[1]));
       }
     }
   }
