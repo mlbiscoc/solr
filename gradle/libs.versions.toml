@@ -427,6 +427,7 @@ opentelemetry-sdk = { module = "io.opentelemetry:opentelemetry-sdk", version.ref
 opentelemetry-sdkextension-autoconfigure = { module = "io.opentelemetry:opentelemetry-sdk-extension-autoconfigure", version.ref = "opentelemetry" }
 opentelemetry-sdktesting = { module = "io.opentelemetry:opentelemetry-sdk-testing", version.ref = "opentelemetry" }
 opentelemetry-sdktrace = { module = "io.opentelemetry:opentelemetry-sdk-trace", version.ref = "opentelemetry" }
+opentelemetry-exporter-sender-okhttp = { module = "io.opentelemetry:opentelemetry-exporter-sender-okhttp", version.ref = "opentelemetry" }
 osgi-annotation = { module = "org.osgi:osgi.annotation", version.ref = "osgi-annotation" }
 # @keep transitive dependency for version alignment
 ow2-asm = { module = "org.ow2.asm:asm", version.ref = "ow2-asm" }
