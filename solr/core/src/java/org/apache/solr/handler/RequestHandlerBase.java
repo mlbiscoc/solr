@@ -22,15 +22,14 @@ import static org.apache.solr.response.SolrQueryResponse.haveCompleteResults;
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.Timer;
-import java.lang.invoke.MethodHandles;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Optional;
-
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.metrics.LongCounter;
 import io.opentelemetry.api.metrics.MeterProvider;
+import java.lang.invoke.MethodHandles;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Optional;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.api.ApiSupport;
@@ -209,9 +208,16 @@ public abstract class RequestHandlerBase
       totalTime = solrMetricsContext.counter("totalTime", metricPath);
       MeterProvider mp = MetricUtils.getGlobalMeterProvider();
       io.opentelemetry.api.metrics.Meter requests = mp.get("org.apache.solr.handler");
-      LongCounter lc = requests.counterBuilder("requests").setDescription("# of requests to Solr").build();
+      LongCounter lc =
+          requests.counterBuilder("requests").setDescription("# of requests to Solr").build();
       if (metricPath.length != 0) {
-        lc.add(1, Attributes.of(AttributeKey.stringKey("type"), metricPath[0], AttributeKey.stringKey("path"), metricPath[1]));
+        lc.add(
+            1,
+            Attributes.of(
+                AttributeKey.stringKey("type"),
+                metricPath[0],
+                AttributeKey.stringKey("path"),
+                metricPath[1]));
       }
     }
   }

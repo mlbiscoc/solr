@@ -16,12 +16,9 @@
  */
 package org.apache.solr.opentelemetry;
 
-import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
 import io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdk;
-
-import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -29,9 +26,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
-
-import io.opentelemetry.sdk.metrics.export.MetricExporter;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.TracerConfigurator;
@@ -62,7 +56,6 @@ public class OtelTracerConfigurator extends TracerConfigurator {
     return TraceUtils.getGlobalTracer();
   }
 
-
   @Override
   public void init(NamedList<?> args) {
     prepareConfiguration(args);
@@ -92,7 +85,7 @@ public class OtelTracerConfigurator extends TracerConfigurator {
           "The opentelemetry module does not support METRICS or LOGS. Ignoring faulty environment setting");
     }
     // Lets turn it on temporarily
-//    System.setProperty("otel.metrics.exporter", "none");
+    //    System.setProperty("otel.metrics.exporter", "none");
     System.setProperty("otel.logs.exporter", "none");
   }
 

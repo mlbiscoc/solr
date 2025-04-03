@@ -28,6 +28,10 @@ import static org.apache.solr.request.SolrRequestInfo.getQueryLimits;
 import static org.apache.solr.response.SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_DETAILS_KEY;
 
 import com.codahale.metrics.Counter;
+import io.opentelemetry.api.common.AttributeKey;
+import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.api.metrics.LongCounter;
+import io.opentelemetry.api.metrics.MeterProvider;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -42,11 +46,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
-
-import io.opentelemetry.api.common.AttributeKey;
-import io.opentelemetry.api.common.Attributes;
-import io.opentelemetry.api.metrics.LongCounter;
-import io.opentelemetry.api.metrics.MeterProvider;
 import org.apache.lucene.index.ExitableDirectoryReader;
 import org.apache.lucene.search.TotalHits;
 import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
@@ -172,8 +171,15 @@ public class SearchHandler extends RequestHandlerBase
         scope + SHARD_HANDLER_SUFFIX);
     MeterProvider mp = MetricUtils.getGlobalMeterProvider();
     io.opentelemetry.api.metrics.Meter requests = mp.get("org.apache.solr.handler");
-    LongCounter lc = requests.counterBuilder("requests").setDescription("# of requests to Solr").build();
-    lc.add(1, Attributes.of(AttributeKey.stringKey("type"), getCategory().toString(), AttributeKey.stringKey("path"), scope + SHARD_HANDLER_SUFFIX));
+    LongCounter lc =
+        requests.counterBuilder("requests").setDescription("# of requests to Solr").build();
+    lc.add(
+        1,
+        Attributes.of(
+            AttributeKey.stringKey("type"),
+            getCategory().toString(),
+            AttributeKey.stringKey("path"),
+            scope + SHARD_HANDLER_SUFFIX));
   }
 
   @Override
