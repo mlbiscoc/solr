@@ -157,6 +157,10 @@ dependencies {
   api libs.opentelemetry.api // Tracer is exposed on some methods
   implementation libs.opentelemetry.context
   implementation libs.opentelemetry.exporter.prometheus
+  implementation libs.opentelemetry.instrumentation
+//  runtimeOnly libs.opentelemetry.runtime.telemetry.java17
+  implementation("io.opentelemetry.instrumentation:opentelemetry-runtime-telemetry-java17:2.13.3-alpha")
+
 //  implementation(libs.opentelemetry.exporter.prometheus, {
 //    exclude group: "io.opentelemetry", module: "opentelemetry-exporter-common"
 //    exclude group: "io.opentelemetry", module: "opentelemetry-sdk-common"

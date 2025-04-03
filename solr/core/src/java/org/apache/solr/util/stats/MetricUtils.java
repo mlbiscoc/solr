@@ -26,6 +26,8 @@ import com.codahale.metrics.MetricFilter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Snapshot;
 import com.codahale.metrics.Timer;
+import io.opentelemetry.api.GlobalOpenTelemetry;
+import io.opentelemetry.api.metrics.MeterProvider;
 import java.beans.BeanInfo;
 import java.beans.IntrospectionException;
 import java.beans.Introspector;
@@ -48,9 +50,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
-
-import io.opentelemetry.api.GlobalOpenTelemetry;
-import io.opentelemetry.api.metrics.MeterProvider;
 import org.apache.solr.common.ConditionalKeyMapWriter;
 import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.MapWriter;
@@ -857,6 +856,6 @@ public class MetricUtils {
   }
 
   public static MeterProvider getGlobalMeterProvider() {
-      return GlobalOpenTelemetry.getMeterProvider();
+    return GlobalOpenTelemetry.getMeterProvider();
   }
 }

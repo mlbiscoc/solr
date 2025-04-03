@@ -170,7 +170,9 @@ nodejs = "16.20.2"
 openapi = "7.6.0"
 openjdk-jmh = "1.37"
 opentelemetry = "1.47.0"
+opentelemetry-instrumentation = "2.14.0"
 opentelemetry-prometheus = "1.47.0-alpha"
+opentelemetry-runtime-java17 = "2.14.0-alpha"
 osgi-annotation = "8.1.0"
 oshai-logging = "7.0.3"
 # @keep for version alignment
@@ -466,11 +468,13 @@ opentelemetry-bom = { module = "io.opentelemetry:opentelemetry-bom", version.ref
 opentelemetry-context = { module = "io.opentelemetry:opentelemetry-context", version.ref = "opentelemetry" }
 opentelemetry-exporter-otlp = { module = "io.opentelemetry:opentelemetry-exporter-otlp", version.ref = "opentelemetry" }
 opentelemetry-exporter-prometheus = { module = "io.opentelemetry:opentelemetry-exporter-prometheus", version.ref = "opentelemetry-prometheus" }
+opentelemetry-exporter-sender-okhttp = { module = "io.opentelemetry:opentelemetry-exporter-sender-okhttp", version.ref = "opentelemetry" }
+opentelemetry-instrumentation = { module = "io.opentelemetry.instrumentation:opentelemetry-instrumentation-api", version.ref = "opentelemetry-instrumentation" }
+opentelemetry-runtime-telemetry-java17 = { module = "io.opentelemetry.instrumentation:opentelemetry-runtime-telemetry-java17", version.ref = "opentelemetry-runtime-java17" }
 opentelemetry-sdk = { module = "io.opentelemetry:opentelemetry-sdk", version.ref = "opentelemetry" }
 opentelemetry-sdkextension-autoconfigure = { module = "io.opentelemetry:opentelemetry-sdk-extension-autoconfigure", version.ref = "opentelemetry" }
 opentelemetry-sdktesting = { module = "io.opentelemetry:opentelemetry-sdk-testing", version.ref = "opentelemetry" }
 opentelemetry-sdktrace = { module = "io.opentelemetry:opentelemetry-sdk-trace", version.ref = "opentelemetry" }
-opentelemetry-exporter-sender-okhttp = { module = "io.opentelemetry:opentelemetry-exporter-sender-okhttp", version.ref = "opentelemetry" }
 osgi-annotation = { module = "org.osgi:osgi.annotation", version.ref = "osgi-annotation" }
 oshai-logging = { module = "io.github.oshai:kotlin-logging", version.ref = "oshai-logging" }
 # @keep transitive dependency for version alignment

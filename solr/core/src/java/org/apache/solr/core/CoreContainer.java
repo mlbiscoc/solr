@@ -30,12 +30,14 @@ import static org.apache.solr.security.AuthenticationPlugin.AUTHENTICATION_PLUGI
 
 import com.github.benmanes.caffeine.cache.Interner;
 import com.google.common.annotations.VisibleForTesting;
+import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.metrics.LongCounter;
 import io.opentelemetry.api.metrics.MeterProvider;
 import io.opentelemetry.api.trace.Tracer;
+import io.opentelemetry.instrumentation.runtimemetrics.java17.RuntimeMetrics;
 import jakarta.inject.Singleton;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -830,8 +832,17 @@ public class CoreContainer {
 
     MeterProvider mp = MetricUtils.getGlobalMeterProvider();
     io.opentelemetry.api.metrics.Meter firstMeter = mp.get("solr.CoreContainer.foobar");
-    LongCounter lc = firstMeter.counterBuilder("CoreContainerCounter").setDescription("Test CC counter").setUnit("myCores").build();
+    LongCounter lc =
+        firstMeter
+            .counterBuilder("CoreContainerCounter")
+            .setDescription("Test CC counter")
+            .setUnit("myCores")
+            .build();
     lc.add(999, Attributes.of(AttributeKey.stringKey("coreKey"), "RandomCore"));
+    OpenTelemetry openTelemetry = GlobalOpenTelemetry.get();
+
+    RuntimeMetrics runtimeMetrics =
+        RuntimeMetrics.builder(openTelemetry).enableAllFeatures().build();
 
     coreContainerWorkExecutor =
         MetricUtils.instrumentedExecutorService(
