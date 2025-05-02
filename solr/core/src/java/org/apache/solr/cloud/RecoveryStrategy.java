@@ -59,6 +59,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.CommitUpdateCommand;
+import org.apache.solr.update.IndexFingerprint;
 import org.apache.solr.update.PeerSyncWithLeader;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.update.UpdateLog.RecoveryInfo;
@@ -260,6 +261,9 @@ public class RecoveryStrategy implements Runnable, Closeable {
     } finally {
       replicationHandlerDoingFetch = null;
     }
+
+    // Lets recalculate the fingerprint for the core to cache fingerprint changes
+    IndexFingerprint.getFingerprint(core, Long.MAX_VALUE);
 
     // solrcloud_debug
     if (log.isDebugEnabled()) {

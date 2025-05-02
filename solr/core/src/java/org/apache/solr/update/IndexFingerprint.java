@@ -21,16 +21,14 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.queries.function.FunctionValues;
-import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.util.Bits;
 import org.apache.solr.common.MapSerializable;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.Hash;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.RTimer;
 import org.apache.solr.util.RefCounted;
@@ -89,6 +87,34 @@ public class IndexFingerprint implements MapSerializable {
     return maxDoc;
   }
 
+  public void setMaxVersionSpecified(long maxVersionSpecified) {
+    this.maxVersionSpecified = maxVersionSpecified;
+  }
+
+  public void setMaxVersionEncountered(long maxVersionEncountered) {
+    this.maxVersionEncountered = maxVersionEncountered;
+  }
+
+  public void setMaxInHash(long maxInHash) {
+    this.maxInHash = maxInHash;
+  }
+
+  public void setVersionsHash(long versionsHash) {
+    this.versionsHash = versionsHash;
+  }
+
+  public void setNumVersions(long numVersions) {
+    this.numVersions = numVersions;
+  }
+
+  public void setNumDocs(long numDocs) {
+    this.numDocs = numDocs;
+  }
+
+  public void setMaxDoc(long maxDoc) {
+    this.maxDoc = maxDoc;
+  }
+
   /** Opens a new realtime searcher and returns it's (possibly cached) fingerprint */
   public static IndexFingerprint getFingerprint(SolrCore core, long maxVersion) throws IOException {
     RTimer timer = new RTimer();
@@ -96,7 +122,7 @@ public class IndexFingerprint implements MapSerializable {
     RefCounted<SolrIndexSearcher> newestSearcher =
         core.getUpdateHandler().getUpdateLog().uhandler.core.getRealtimeSearcher();
     try {
-      IndexFingerprint f = newestSearcher.get().getIndexFingerprint(maxVersion);
+      IndexFingerprint f = newestSearcher.get().getIndexFingerprintFromAllSegments(maxVersion);
       final double duration = timer.stop();
       log.info("IndexFingerprint millis:{} result:{}", duration, f);
       return f;
@@ -107,22 +133,15 @@ public class IndexFingerprint implements MapSerializable {
     }
   }
 
-  public static IndexFingerprint getFingerprint(
-      SolrIndexSearcher searcher, LeafReaderContext ctx, Long maxVersion) throws IOException {
-    SchemaField versionField = VersionInfo.getAndCheckVersionField(searcher.getSchema());
-    ValueSource vs = versionField.getType().getValueSource(versionField, null);
-    Map<Object, Object> funcContext = ValueSource.newContext(searcher);
-    vs.createWeight(funcContext, searcher);
-
+  public static IndexFingerprint getFullFingerprintOfLiveDocsOnly(
+      FunctionValues fv, LeafReader leafReader, Long maxVersion) throws IOException {
     IndexFingerprint f = new IndexFingerprint();
     f.maxVersionSpecified = maxVersion;
-    f.maxDoc = ctx.reader().maxDoc();
-    f.numDocs = ctx.reader().numDocs();
+    f.maxDoc = leafReader.maxDoc();
+    f.numDocs = leafReader.numDocs();
+    Bits liveDocs = leafReader.getLiveDocs();
 
-    int maxDoc = ctx.reader().maxDoc();
-    Bits liveDocs = ctx.reader().getLiveDocs();
-    FunctionValues fv = vs.getValues(funcContext, ctx);
-    for (int doc = 0; doc < maxDoc; doc++) {
+    for (int doc = 0; doc < leafReader.maxDoc(); doc++) {
       if (liveDocs != null && !liveDocs.get(doc)) continue;
       long v = fv.longVal(doc);
       f.maxVersionEncountered = Math.max(v, f.maxVersionEncountered);
@@ -132,8 +151,44 @@ public class IndexFingerprint implements MapSerializable {
         f.numVersions++;
       }
     }
-
     return f;
+  }
+
+  public static IndexFingerprint removeDeletedDocumentsFromFingerprint(
+      IndexFingerprint fingerprint, FunctionValues fv, LeafReader leafReader) throws IOException {
+    Bits liveDocs = leafReader.getLiveDocs();
+
+    if (liveDocs == null) {
+      log.info("There were no deleted documents in live docs");
+      return fingerprint;
+    }
+
+    boolean thereisNewMax = false;
+    for (int doc = 0; doc < leafReader.maxDoc(); doc++) {
+      boolean isLiveDoc = liveDocs.get(doc);
+      if (!isLiveDoc) {
+        long v = fv.longVal(doc);
+        fingerprint.maxVersionEncountered = Math.max(v, fingerprint.maxVersionEncountered);
+        if (v <= fingerprint.maxVersionSpecified) {
+          if (fingerprint.maxInHash == v) {
+            log.info("Turned out, we deleted the oldest hashed version {}", v);
+            thereisNewMax = true;
+          }
+          fingerprint.versionsHash -= Hash.fmix64(v);
+          fingerprint.numVersions--;
+        }
+      }
+    }
+
+    // We deleted the max in hash, we need to recheck who is the new max in hash
+    if (thereisNewMax) {
+      for (int doc = 0; doc < leafReader.maxDoc(); doc++) {
+        long v = fv.longVal(doc);
+        fingerprint.maxInHash = Math.max(v, fingerprint.maxInHash);
+      }
+      log.info("New max hash in fingerprint {}", fingerprint.maxInHash);
+    }
+    return fingerprint;
   }
 
   public static IndexFingerprint reduce(IndexFingerprint acc, IndexFingerprint f2) {

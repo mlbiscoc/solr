@@ -2544,7 +2544,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   /**
    * @lucene.internal gets a cached version of the IndexFingerprint for this searcher
    */
-  public IndexFingerprint getIndexFingerprint(long maxVersion) throws IOException {
+  public IndexFingerprint getIndexFingerprintFromAllSegments(long maxVersion) throws IOException {
     final SolrIndexSearcher searcher = this;
     final AtomicReference<IOException> exception = new AtomicReference<>();
     try {
@@ -2552,7 +2552,9 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
           .map(
               ctx -> {
                 try {
-                  return searcher.getCore().getIndexFingerprint(searcher, ctx, maxVersion);
+                  return searcher
+                      .getCore()
+                      .getIndexFingerprintForASegment(searcher, leafReader, maxVersion);
                 } catch (IOException e) {
                   exception.set(e);
                   return null;

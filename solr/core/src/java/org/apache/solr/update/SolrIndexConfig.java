@@ -283,6 +283,9 @@ public class SolrIndexConfig implements MapSerializable {
                   new Class<?>[] {InfoStream.class},
                   new Object[] {iwc.getInfoStream()});
       iwc.setMergedSegmentWarmer(warmer);
+    } else {
+      CustomIndexReaderWarmer warmer = new CustomIndexReaderWarmer(core);
+      iwc.setMergedSegmentWarmer(warmer);
     }
 
     return iwc;

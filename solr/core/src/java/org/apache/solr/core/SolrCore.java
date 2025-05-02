@@ -18,6 +18,7 @@ package org.apache.solr.core;
 
 import static org.apache.solr.common.params.CommonParams.PATH;
 import static org.apache.solr.handler.admin.MetricsHandler.PROMETHEUS_METRICS_WT;
+import static org.apache.solr.update.IndexFingerprint.removeDeletedDocumentsFromFingerprint;
 
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Timer;
@@ -72,7 +73,9 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexDeletionPolicy;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.queries.function.FunctionValues;
+import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
@@ -141,6 +144,7 @@ import org.apache.solr.rest.RestManager;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.ManagedIndexSchema;
+import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.SimilarityFactory;
 import org.apache.solr.search.QParserPlugin;
 import org.apache.solr.search.SolrFieldCacheBean;
@@ -2136,64 +2140,68 @@ public class SolrCore implements SolrInfoBean, Closeable {
    * do so rather than locking entire map.
    *
    * @param searcher searcher that includes specified LeaderReaderContext
-   * @param ctx LeafReaderContext of a segment to compute fingerprint of
+   * @param leafReader LeafReaderContext of a segment to compute fingerprint of
    * @param maxVersion maximum version number to consider for fingerprint computation
    * @return IndexFingerprint of the segment
    * @throws IOException Can throw IOException
    */
-  public IndexFingerprint getIndexFingerprint(
-      SolrIndexSearcher searcher, LeafReaderContext ctx, long maxVersion) throws IOException {
-    IndexReader.CacheHelper cacheHelper = ctx.reader().getReaderCacheHelper();
+  public IndexFingerprint getIndexFingerprintForASegment(
+      SolrIndexSearcher searcher, LeafReader leafReader, long maxVersion) throws IOException {
+    // Lets initialize the value source for version field
+    SchemaField versionField = VersionInfo.getAndCheckVersionField(searcher.getSchema());
+    ValueSource vs = versionField.getType().getValueSource(versionField, null);
+    Map<Object, Object> funcContext = ValueSource.newContext(searcher);
+    vs.createWeight(funcContext, searcher);
+    FunctionValues fv = vs.getValues(funcContext, leafReader.getContext());
+
+    IndexReader.CacheHelper cacheHelper = leafReader.getReaderCacheHelper();
     if (cacheHelper == null) {
       if (log.isDebugEnabled()) {
         log.debug(
             "Cannot cache IndexFingerprint as reader does not support caching. searcher:{} reader:{} readerHash:{} maxVersion:{}",
             searcher,
-            ctx.reader(),
-            ctx.reader().hashCode(),
+            leafReader,
+            leafReader.hashCode(),
             maxVersion);
       }
-      return IndexFingerprint.getFingerprint(searcher, ctx, maxVersion);
+      return IndexFingerprint.getFullFingerprintOfLiveDocsOnly(fv, leafReader, maxVersion);
     }
-
-    IndexFingerprint f = null;
-    f = perSegmentFingerprintCache.get(cacheHelper.getKey());
+    IndexFingerprint cachedFingerprint = null;
+    cachedFingerprint = perSegmentFingerprintCache.get(cacheHelper.getKey());
     // fingerprint is either not cached or if we want fingerprint only up to a version less than
     // maxVersionEncountered in the segment, or documents were deleted from segment for which
     // fingerprint was cached
     //
-    if (f == null
-        || (f.getMaxInHash() > maxVersion)
-        || (f.getNumDocs() != ctx.reader().numDocs())) {
-      if (log.isDebugEnabled()) {
-        log.debug(
-            "IndexFingerprint cache miss for searcher:{} reader:{} readerHash:{} maxVersion:{}",
-            searcher,
-            ctx.reader(),
-            ctx.reader().hashCode(),
-            maxVersion);
-      }
-      f = IndexFingerprint.getFingerprint(searcher, ctx, maxVersion);
+    if (cachedFingerprint == null || cachedFingerprint.getMaxInHash() > maxVersion) {
+      log.info("We had a full cache miss. Lets recalculate the fingerprint for the whole segment");
+      log.info(
+          "IndexFingerprint cache miss for searcher:{} reader:{} readerHash:{} maxVersion:{}",
+          searcher,
+          leafReader,
+          leafReader.hashCode(),
+          maxVersion);
+
+      cachedFingerprint = IndexFingerprint.getFullFingerprintOfLiveDocsOnly(fv, leafReader, maxVersion);
       // cache fingerprint for the segment only if all the versions in the segment are included in
       // the fingerprint
-      if (f.getMaxVersionEncountered() == f.getMaxInHash()) {
-        log.debug(
-            "Caching fingerprint for searcher:{} leafReaderContext:{} mavVersion:{}",
-            searcher,
-            ctx,
-            maxVersion);
-        perSegmentFingerprintCache.put(cacheHelper.getKey(), f);
+      if (cachedFingerprint.getMaxVersionEncountered() == cachedFingerprint.getMaxInHash()) {
+        perSegmentFingerprintCache.put(cacheHelper.getKey(), cachedFingerprint);
       }
-
+    } else if (cachedFingerprint.getNumDocs() != leafReader.numDocs()) {
+      log.info("Looks like we had some deletes in the segment. Lets recalculate the fingerprint but only delete the old hashes");
+      cachedFingerprint = removeDeletedDocumentsFromFingerprint(cachedFingerprint, fv, leafReader);
+      // cache fingerprint for the segment only if all the versions in the segment are included in
+      // the fingerprint
+      if (cachedFingerprint.getMaxVersionEncountered() == cachedFingerprint.getMaxInHash()) {
+        perSegmentFingerprintCache.put(cacheHelper.getKey(), cachedFingerprint);
+      }
     } else {
-      if (log.isDebugEnabled()) {
-        log.debug(
-            "IndexFingerprint cache hit for searcher:{} reader:{} readerHash:{} maxVersion:{}",
-            searcher,
-            ctx.reader(),
-            ctx.reader().hashCode(),
-            maxVersion);
-      }
+      log.info(
+          "IndexFingerprint cache hit for searcher:{} reader:{} readerHash:{} maxVersion:{}",
+          searcher,
+          leafReader,
+          leafReader.hashCode(),
+          maxVersion);
     }
     if (log.isDebugEnabled()) {
       log.debug(
@@ -2201,7 +2209,8 @@ public class SolrCore implements SolrInfoBean, Closeable {
           perSegmentFingerprintCache.size(),
           searcher.getTopReaderContext().leaves().size());
     }
-    return f;
+
+    return cachedFingerprint;
   }
 
   /**
