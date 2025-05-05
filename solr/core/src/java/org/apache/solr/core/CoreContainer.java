@@ -287,6 +287,8 @@ public class CoreContainer {
 
   protected volatile Tracer tracer;
 
+  protected volatile MeterProvider meterProvider;
+
   protected MetricsHandler metricsHandler;
 
   private volatile SolrClientCache solrClientCache;
@@ -423,6 +425,7 @@ public class CoreContainer {
     this.solrCores = SolrCores.newSolrCores(this);
     this.nodeKeyPair = new SolrNodeKeyPair(cfg.getCloudConfig());
     this.tracer = TracerConfigurator.loadTracer(loader, cfg.getTracerConfiguratorPluginInfo());
+    this.meterProvider = GlobalOpenTelemetry.getMeterProvider();
     containerHandlers.put(PublicKeyHandler.PATH, new PublicKeyHandler(nodeKeyPair));
     if (null != this.cfg.getBooleanQueryMaxClauseCount()) {
       IndexSearcher.setMaxClauseCount(this.cfg.getBooleanQueryMaxClauseCount());
@@ -732,6 +735,10 @@ public class CoreContainer {
     return tracer;
   }
 
+  public MeterProvider getMeterProvider() {
+    return meterProvider;
+  }
+
   public OrderedExecutor<BytesRef> getReplayUpdatesExecutor() {
     return replayUpdatesExecutor;
   }
@@ -826,12 +833,11 @@ public class CoreContainer {
     containerPluginsRegistry.registerListener(
         clusterEventProducerFactory.getPluginRegistryListener());
 
-    metricManager = new SolrMetricManager(loader, cfg.getMetricsConfig());
+    metricManager = new SolrMetricManager(loader, cfg.getMetricsConfig(), getMeterProvider());
     String registryName = SolrMetricManager.getRegistryName(SolrInfoBean.Group.node);
     solrMetricsContext = new SolrMetricsContext(metricManager, registryName, metricTag);
 
-    MeterProvider mp = MetricUtils.getGlobalMeterProvider();
-    io.opentelemetry.api.metrics.Meter firstMeter = mp.get("solr.CoreContainer.foobar");
+    io.opentelemetry.api.metrics.Meter firstMeter = meterProvider.get("solr.CoreContainer.foobar");
     LongCounter lc =
         firstMeter
             .counterBuilder("CoreContainerCounter")
@@ -841,8 +847,9 @@ public class CoreContainer {
     lc.add(999, Attributes.of(AttributeKey.stringKey("coreKey"), "RandomCore"));
     OpenTelemetry openTelemetry = GlobalOpenTelemetry.get();
 
-    RuntimeMetrics runtimeMetrics =
-        RuntimeMetrics.builder(openTelemetry).enableAllFeatures().build();
+    // Lets turn this off temporarily
+//    RuntimeMetrics runtimeMetrics =
+//        RuntimeMetrics.builder(openTelemetry).enableAllFeatures().build();
 
     coreContainerWorkExecutor =
         MetricUtils.instrumentedExecutorService(

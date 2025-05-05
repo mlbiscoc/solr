@@ -169,7 +169,7 @@ public class SearchHandler extends RequestHandlerBase
         "purposes",
         getCategory().toString(),
         scope + SHARD_HANDLER_SUFFIX);
-    MeterProvider mp = MetricUtils.getGlobalMeterProvider();
+    MeterProvider mp = core.getCoreContainer().getMeterProvider();
     io.opentelemetry.api.metrics.Meter requests = mp.get("org.apache.solr.handler");
     LongCounter lc =
         requests.counterBuilder("requests").setDescription("# of requests to Solr").build();

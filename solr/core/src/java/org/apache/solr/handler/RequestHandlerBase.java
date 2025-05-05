@@ -22,6 +22,7 @@ import static org.apache.solr.response.SolrQueryResponse.haveCompleteResults;
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.Timer;
+import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.metrics.LongCounter;
@@ -186,7 +187,7 @@ public abstract class RequestHandlerBase
         new HandlerMetrics(
             new SolrMetricsContext(
                 new SolrMetricManager(
-                    null, new MetricsConfig.MetricsConfigBuilder().setEnabled(false).build()),
+                    null, new MetricsConfig.MetricsConfigBuilder().setEnabled(false).build(), GlobalOpenTelemetry.getMeterProvider()),
                 "NO_OP",
                 "NO_OP"));
 
@@ -206,7 +207,7 @@ public abstract class RequestHandlerBase
       requests = solrMetricsContext.counter("requests", metricPath);
       requestTimes = solrMetricsContext.timer("requestTimes", metricPath);
       totalTime = solrMetricsContext.counter("totalTime", metricPath);
-      MeterProvider mp = MetricUtils.getGlobalMeterProvider();
+      MeterProvider mp = GlobalOpenTelemetry.getMeterProvider();
       io.opentelemetry.api.metrics.Meter requests = mp.get("org.apache.solr.handler");
       LongCounter lc =
           requests.counterBuilder("requests").setDescription("# of requests to Solr").build();

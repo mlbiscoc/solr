@@ -54,6 +54,7 @@ import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.PrometheusResponseWriter;
@@ -131,8 +132,9 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
       consumer.accept("error", "metrics collection is disabled");
       return;
     }
+    var context = solrMetricsContext.getMetricNames();
 
-    MeterProvider mp = MetricUtils.getGlobalMeterProvider();
+    MeterProvider mp = GlobalOpenTelemetry.getMeterProvider();
     io.opentelemetry.api.metrics.Meter firstMeter = mp.get("solr.metrics.handler.foobar");
     LongCounter lc =
         firstMeter

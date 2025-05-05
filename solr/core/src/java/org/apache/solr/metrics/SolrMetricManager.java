@@ -47,6 +47,10 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import java.util.stream.Collectors;
+
+import io.opentelemetry.api.GlobalOpenTelemetry;
+import io.opentelemetry.api.metrics.LongCounter;
+import io.opentelemetry.api.metrics.MeterProvider;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.MetricsConfig;
@@ -120,21 +124,26 @@ public class SolrMetricManager {
   private final MetricRegistry.MetricSupplier<Timer> timerSupplier;
   private final MetricRegistry.MetricSupplier<Histogram> histogramSupplier;
 
+  private final MeterProvider meterProvider;
+  private final Map<String, io.opentelemetry.api.metrics.Meter> meters = new ConcurrentHashMap<>();
+
   public SolrMetricManager() {
     metricsConfig = new MetricsConfig.MetricsConfigBuilder().build();
     counterSupplier = MetricSuppliers.counterSupplier(null, null);
     meterSupplier = MetricSuppliers.meterSupplier(null, null);
     timerSupplier = MetricSuppliers.timerSupplier(null, null);
     histogramSupplier = MetricSuppliers.histogramSupplier(null, null);
+    meterProvider = GlobalOpenTelemetry.getMeterProvider();
   }
 
-  public SolrMetricManager(SolrResourceLoader loader, MetricsConfig metricsConfig) {
+  public SolrMetricManager(SolrResourceLoader loader, MetricsConfig metricsConfig, MeterProvider meterProvider) {
     this.metricsConfig = metricsConfig;
     counterSupplier = MetricSuppliers.counterSupplier(loader, metricsConfig.getCounterSupplier());
     meterSupplier = MetricSuppliers.meterSupplier(loader, metricsConfig.getMeterSupplier());
     timerSupplier = MetricSuppliers.timerSupplier(loader, metricsConfig.getTimerSupplier());
     histogramSupplier =
         MetricSuppliers.histogramSupplier(loader, metricsConfig.getHistogramSupplier());
+    this.meterProvider = meterProvider;
   }
 
   // for unit tests
@@ -381,11 +390,16 @@ public class SolrMetricManager {
   }
 
   /** Return a set of existing registry names. */
+  // TODO don't need
   public Set<String> registryNames() {
     Set<String> set = new HashSet<>();
     set.addAll(registries.keySet());
     set.addAll(SharedMetricRegistries.names());
     return set;
+  }
+
+  public Set<String> otelRegistryNames() {
+    return Set.copyOf(meters.keySet());
   }
 
   /**
@@ -394,10 +408,15 @@ public class SolrMetricManager {
    * @param name registry name
    * @return true if this name points to a registry that already exists, false otherwise
    */
+  // TODO don't really need
   public boolean hasRegistry(String name) {
     Set<String> names = registryNames();
     name = enforcePrefix(name);
     return names.contains(name);
+  }
+
+  public boolean otelHasRegistry(String name) {
+    return meters.containsKey(enforcePrefix(name));
   }
 
   /**
@@ -407,6 +426,7 @@ public class SolrMetricManager {
    *     with a wildcard use the full registry name starting with {@link #REGISTRY_NAME_PREFIX}
    * @return set of existing registry names where at least one pattern matched.
    */
+  // TODO CHANGE TO CHECK ON OTEL REGISTRIES
   public Set<String> registryNames(String... patterns) throws PatternSyntaxException {
     if (patterns == null || patterns.length == 0) {
       return registryNames();
@@ -418,6 +438,7 @@ public class SolrMetricManager {
     return registryNames(compiled.toArray(new Pattern[0]));
   }
 
+  // TODO this relates to functon above
   public Set<String> registryNames(Pattern... patterns) {
     Set<String> allNames = registryNames();
     if (patterns == null || patterns.length == 0) {
@@ -443,6 +464,7 @@ public class SolrMetricManager {
    * @param registry already normalized name
    * @return true if the name matches one of shared registries
    */
+  // TODO Maybe this isnt needed anymore?
   private static boolean isSharedRegistry(String registry) {
     return JETTY_REGISTRY.equals(registry) || JVM_REGISTRY.equals(registry);
   }
@@ -453,6 +475,7 @@ public class SolrMetricManager {
    * @param registry name of the registry
    * @return existing or newly created registry
    */
+  // TODO I don't think we'll need this anymore? Otel is also thread safe
   public MetricRegistry registry(String registry) {
     registry = enforcePrefix(registry);
     if (isSharedRegistry(registry)) {
@@ -467,6 +490,11 @@ public class SolrMetricManager {
     }
   }
 
+  public io.opentelemetry.api.metrics.Meter registry(String registry, String noop) {
+    return meterProvider.get(enforcePrefix(registry));
+  }
+
+  // TODO Do we really need to getOrCreate?
   private static MetricRegistry getOrCreateRegistry(
       ConcurrentMap<String, MetricRegistry> map, String registry) {
     final MetricRegistry existing = map.get(registry);
@@ -488,6 +516,7 @@ public class SolrMetricManager {
    *
    * @param registry name of the registry to remove
    */
+  // TODO seems like you can't delete otel meters. They are facotry methods. Just stop using
   public void removeRegistry(String registry) {
     // close any reporters for this registry first
     closeReporters(registry, null);
@@ -514,6 +543,7 @@ public class SolrMetricManager {
    *     exist, so the swap operation will only rename the existing registry without creating an
    *     empty one under the previous name.
    */
+  // TODO I don't think we need this for otel?
   public void swapRegistries(String registry1, String registry2) {
     registry1 = enforcePrefix(registry1);
     registry2 = enforcePrefix(registry2);
@@ -545,6 +575,7 @@ public class SolrMetricManager {
    * Potential conflict resolution strategies when attempting to register a new metric that already
    * exists
    */
+  // TODO may or may not need this. Lets come back
   public enum ResolutionStrategy {
     /**
      * The existing metric will be kept and the new metric will be ignored. If no metric exists,
@@ -567,6 +598,7 @@ public class SolrMetricManager {
    * @param metricPath (optional) additional top-most metric name path elements
    * @throws Exception if a metric with this name already exists.
    */
+  // I don't think we do something like this for OTEL?
   public void registerAll(
       String registry, MetricSet metrics, ResolutionStrategy strategy, String... metricPath)
       throws Exception {
@@ -594,6 +626,10 @@ public class SolrMetricManager {
     registry(registry).removeMatching(MetricFilter.ALL);
   }
 
+  public void clearOtelRegistry(String registry) {
+    meters.remove(registry);
+  }
+
   /**
    * Remove some metrics from a named registry
    *
@@ -604,6 +640,7 @@ public class SolrMetricManager {
    *     start with the prefix will be removed.
    * @return set of metrics names that have been removed.
    */
+  // TODO This is not supported in otel. Metrics are immutable
   public Set<String> clearMetrics(String registry, String... metricPath) {
     PrefixFilter filter;
     if (metricPath == null || metricPath.length == 0) {
@@ -623,6 +660,7 @@ public class SolrMetricManager {
    * @param metricFilter filter (null is equivalent to {@link MetricFilter#ALL}).
    * @return map of matching names and metrics
    */
+  // TODO Otel API only allows creation to work with the SDK. You cannot read without a InMemoryMetricReader. Remove this most likely
   public Map<String, Metric> getMetrics(String registry, MetricFilter metricFilter) {
     if (metricFilter == null || metricFilter == MetricFilter.ALL) {
       return registry(registry).getMetrics();
@@ -641,13 +679,23 @@ public class SolrMetricManager {
    * @param metricPath (optional) additional top-most metric name path elements
    * @return existing or a newly created {@link Meter}
    */
+  // TODO Remove this
   public Meter meter(
       SolrMetricsContext context, String registry, String metricName, String... metricPath) {
     final String name = mkName(metricName, metricPath);
     if (context != null) {
       context.registerMetricName(name);
     }
+    meterProvider.get("sd").counterBuilder("name").build()
     return registry(registry).meter(name, meterSupplier);
+  }
+
+  public LongCounter counter(SolrMetricsContext context, String registry, String counterName, String description, String unit) {
+    return meterProvider.get(registry)
+            .counterBuilder(counterName)
+            .setDescription(description)
+            .setUnit(unit)
+            .build();
   }
 
   /**

@@ -854,8 +854,4 @@ public class MetricUtils {
       }
     }
   }
-
-  public static MeterProvider getGlobalMeterProvider() {
-    return GlobalOpenTelemetry.getMeterProvider();
-  }
 }
