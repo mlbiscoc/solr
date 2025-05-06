@@ -26,6 +26,13 @@ import com.codahale.metrics.Timer;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+
+import io.opentelemetry.api.metrics.DoubleCounter;
+import io.opentelemetry.api.metrics.DoubleGauge;
+import io.opentelemetry.api.metrics.DoubleHistogram;
+import io.opentelemetry.api.metrics.LongCounter;
+import io.opentelemetry.api.metrics.LongGauge;
+import io.opentelemetry.api.metrics.LongHistogram;
 import org.apache.solr.util.stats.MetricUtils;
 
 /**
@@ -48,6 +55,7 @@ public class SolrMetricsContext {
   }
 
   /** See {@link SolrMetricManager#nullNumber()}. */
+  // TODO I don't think we need any of this stuff
   public Object nullNumber() {
     return metricManager.nullNumber();
   }
@@ -68,6 +76,7 @@ public class SolrMetricsContext {
   }
 
   /** Metrics tag that represents objects with the same life-cycle. */
+  // TODO do we need this?
   public String getTag() {
     return tag;
   }
@@ -94,6 +103,7 @@ public class SolrMetricsContext {
    * </code>) of components that register gauge metrics with references to the current object's
    * instance. Failure to do so may result in hard-to-debug memory leaks.</b>
    */
+  // TODO don't need this
   public void unregister() {
     metricManager.unregisterGauges(registryName, tag);
   }
@@ -105,6 +115,7 @@ public class SolrMetricsContext {
    *
    * @param child child object that produces metrics with a different life-cycle than the parent.
    */
+  // TODO idk do we need this?
   public SolrMetricsContext getChildContext(Object child) {
     SolrMetricsContext childContext =
         new SolrMetricsContext(
@@ -118,27 +129,83 @@ public class SolrMetricsContext {
    * what metric names are reported from this component (which in turn is called from {@link
    * org.apache.solr.metrics.SolrMetricProducer#initializeMetrics(SolrMetricsContext, String)}).
    */
+  // TODO idk do we need this as well?
   public void registerMetricName(String name) {
     metricNames.add(name);
   }
 
   /** Return a snapshot of metric values that this component reports. */
+  // TODO I don't think we need this
   public Map<String, Object> getMetricsSnapshot() {
     return MetricUtils.convertMetrics(getMetricRegistry(), metricNames);
+  }
+
+  public DoubleCounter doubleCounter(String metricName, String description) {
+    return doubleCounter(metricName, description, null);
+  }
+
+  public DoubleCounter doubleCounter(String metricName, String description, String unit) {
+    return metricManager.doubleCounter(this, registryName, metricName, description, unit);
+  }
+
+  public LongCounter longCounter(String metricName, String description) {
+    return longCounter(metricName, description, null);
+  }
+
+  public LongCounter longCounter(String metricName, String description, String unit) {
+    return metricManager.longCounter(this, registryName, metricName, description, unit);
+  }
+
+  public DoubleHistogram doubleHistogram(String metricName, String description) {
+    return metricManager.doubleHistogram(this, registryName, metricName, description, null);
+  }
+
+  public DoubleHistogram doubleHistogram(String metricName, String description, String unit) {
+    return metricManager.doubleHistogram(this, registryName, metricName, description, unit);
+  }
+
+  public LongHistogram longHistogram(String metricName, String description) {
+    return metricManager.longHistogram(this, registryName, metricName, description, null);
+  }
+
+  public LongHistogram longHistogram(String metricName, String description, String unit) {
+    return metricManager.longHistogram(this, registryName, metricName, description, unit);
+  }
+
+  public LongGauge longGauge(String metricName, String description) {
+    return metricManager.longGauge(this, registryName, metricName, description, null);
+  }
+
+  public LongGauge longGauge(String metricName, String description, String unit) {
+    return metricManager.longGauge(this, registryName, metricName, description, unit);
+  }
+
+  public DoubleGauge doubleGauge(String metricName, String description) {
+    return metricManager.doubleGauge(this, registryName, metricName, description, null);
+  }
+
+  public DoubleGauge doubleGauge(String metricName, String description, String unit) {
+    return metricManager.doubleGauge(this, registryName, metricName, description, unit);
   }
 
   /**
    * Convenience method for {@link SolrMetricManager#meter(SolrMetricsContext, String, String,
    * String...)}.
    */
+  // TODO Remove
   public Meter meter(String metricName, String... metricPath) {
     return metricManager.meter(this, registryName, metricName, metricPath);
+  }
+
+  public io.opentelemetry.api.metrics.Meter getOtelRegistry(String registryName) {
+    return metricManager.getOtelRegistry(registryName);
   }
 
   /**
    * Convenience method for {@link SolrMetricManager#counter(SolrMetricsContext, String, String,
    * String...)}.
    */
+  // TODO Remove
   public Counter counter(String metricName, String... metricPath) {
     return metricManager.counter(this, registryName, metricName, metricPath);
   }
@@ -147,6 +214,7 @@ public class SolrMetricsContext {
    * Convenience method for {@link SolrMetricManager#registerGauge(SolrMetricsContext, String,
    * Gauge, String, SolrMetricManager.ResolutionStrategy, String, String...)}.
    */
+  // TODO Remove
   public void gauge(Gauge<?> gauge, boolean force, String metricName, String... metricPath) {
     metricManager.registerGauge(
         this,
@@ -164,6 +232,7 @@ public class SolrMetricsContext {
    * Convenience method for {@link SolrMetricManager#meter(SolrMetricsContext, String, String,
    * String...)}.
    */
+  // TODO Remove
   public Timer timer(String metricName, String... metricPath) {
     return metricManager.timer(this, registryName, metricName, metricPath);
   }
@@ -172,6 +241,7 @@ public class SolrMetricsContext {
    * Convenience method for {@link SolrMetricManager#histogram(SolrMetricsContext, String, String,
    * String...)}.
    */
+  // TODO Remove
   public Histogram histogram(String metricName, String... metricPath) {
     return metricManager.histogram(this, registryName, metricName, metricPath);
   }

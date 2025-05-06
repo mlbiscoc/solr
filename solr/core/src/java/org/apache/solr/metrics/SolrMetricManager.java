@@ -49,8 +49,16 @@ import java.util.regex.PatternSyntaxException;
 import java.util.stream.Collectors;
 
 import io.opentelemetry.api.GlobalOpenTelemetry;
+import io.opentelemetry.api.metrics.DoubleCounter;
+import io.opentelemetry.api.metrics.DoubleCounterBuilder;
+import io.opentelemetry.api.metrics.DoubleGauge;
+import io.opentelemetry.api.metrics.DoubleHistogram;
 import io.opentelemetry.api.metrics.LongCounter;
+import io.opentelemetry.api.metrics.LongCounterBuilder;
+import io.opentelemetry.api.metrics.LongGauge;
+import io.opentelemetry.api.metrics.LongHistogram;
 import io.opentelemetry.api.metrics.MeterProvider;
+import io.opentelemetry.sdk.metrics.data.HistogramData;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.MetricsConfig;
@@ -144,6 +152,61 @@ public class SolrMetricManager {
     histogramSupplier =
         MetricSuppliers.histogramSupplier(loader, metricsConfig.getHistogramSupplier());
     this.meterProvider = meterProvider;
+  }
+
+  public io.opentelemetry.api.metrics.Meter registry(String registry, String noop) {
+    return meterProvider.get(enforcePrefix(registry));
+  }
+
+  public void clearOtelRegistry(String registry) {
+    meters.remove(registry);
+  }
+
+  public LongCounter longCounter(SolrMetricsContext context, String registry, String counterName, String description) {
+    return longCounter(context, registry, counterName, description, null);
+  }
+
+  public LongCounter longCounter(SolrMetricsContext context, String registry, String counterName, String description, String unit) {
+    LongCounterBuilder builder = meterProvider.get(registry)
+            .counterBuilder(counterName)
+            .setDescription(description);
+    if (unit != null) {
+      builder.setUnit(unit);
+    }
+    return  builder.build();
+  }
+
+  public DoubleCounter doubleCounter(SolrMetricsContext context, String registry, String counterName, String description, String unit) {
+    return meterProvider.get(registry)
+            .counterBuilder(counterName)
+            .setDescription(description)
+            .setUnit(unit)
+            .ofDoubles()
+            .build();
+  }
+
+  public DoubleHistogram doubleHistogram(SolrMetricsContext context, String registry, String histogramName, String description, String unit) {
+    return meterProvider.get(registry).histogramBuilder(histogramName).setDescription(description).setUnit(unit).build();
+  }
+
+  public LongHistogram longHistogram(SolrMetricsContext context, String registry, String histogramName, String description, String unit) {
+    return meterProvider.get(registry).histogramBuilder(histogramName).setDescription(description).ofLongs().build();
+  }
+
+  public DoubleGauge doubleGauge(SolrMetricsContext context, String registry, String gaugeName, String description, String unit) {
+    return meterProvider.get(registry).gaugeBuilder(registry).setDescription(description).build();
+  }
+
+  public LongGauge longGauge(SolrMetricsContext context, String registry, String gaugeName, String description, String unit) {
+    return meterProvider.get(registry).gaugeBuilder(registry).setDescription(description).ofLongs().build();
+  }
+
+  public boolean otelHasRegistry(String name) {
+    return meters.containsKey(enforcePrefix(name));
+  }
+
+  public io.opentelemetry.api.metrics.Meter getOtelRegistry(String registryName) {
+    return meters.get(registryName);
   }
 
   // for unit tests
@@ -415,10 +478,6 @@ public class SolrMetricManager {
     return names.contains(name);
   }
 
-  public boolean otelHasRegistry(String name) {
-    return meters.containsKey(enforcePrefix(name));
-  }
-
   /**
    * Return set of existing registry names that match a regex pattern
    *
@@ -488,10 +547,6 @@ public class SolrMetricManager {
         swapLock.unlock();
       }
     }
-  }
-
-  public io.opentelemetry.api.metrics.Meter registry(String registry, String noop) {
-    return meterProvider.get(enforcePrefix(registry));
   }
 
   // TODO Do we really need to getOrCreate?
@@ -622,12 +677,9 @@ public class SolrMetricManager {
    *
    * @param registry registry name
    */
+  // TODO might not need this
   public void clearRegistry(String registry) {
     registry(registry).removeMatching(MetricFilter.ALL);
-  }
-
-  public void clearOtelRegistry(String registry) {
-    meters.remove(registry);
   }
 
   /**
@@ -686,16 +738,7 @@ public class SolrMetricManager {
     if (context != null) {
       context.registerMetricName(name);
     }
-    meterProvider.get("sd").counterBuilder("name").build()
     return registry(registry).meter(name, meterSupplier);
-  }
-
-  public LongCounter counter(SolrMetricsContext context, String registry, String counterName, String description, String unit) {
-    return meterProvider.get(registry)
-            .counterBuilder(counterName)
-            .setDescription(description)
-            .setUnit(unit)
-            .build();
   }
 
   /**
@@ -707,6 +750,7 @@ public class SolrMetricManager {
    * @param metricPath (optional) additional top-most metric name path elements
    * @return existing or a newly created {@link Timer}
    */
+  // TODO remove this
   public Timer timer(
       SolrMetricsContext context, String registry, String metricName, String... metricPath) {
     final String name = mkName(metricName, metricPath);
@@ -725,6 +769,7 @@ public class SolrMetricManager {
    * @param metricPath (optional) additional top-most metric name path elements
    * @return existing or a newly created {@link Counter}
    */
+  // TODO remove this
   public Counter counter(
       SolrMetricsContext context, String registry, String metricName, String... metricPath) {
     final String name = mkName(metricName, metricPath);
@@ -743,6 +788,7 @@ public class SolrMetricManager {
    * @param metricPath (optional) additional top-most metric name path elements
    * @return existing or a newly created {@link Histogram}
    */
+  // TODO remove this
   public Histogram histogram(
       SolrMetricsContext context, String registry, String metricName, String... metricPath) {
     final String name = mkName(metricName, metricPath);
@@ -756,6 +802,7 @@ public class SolrMetricManager {
    * @deprecated use {@link #registerMetric(SolrMetricsContext, String, Metric, ResolutionStrategy,
    *     String, String...)}
    */
+  // TODO dont think we need this
   @Deprecated
   public void registerMetric(
       SolrMetricsContext context,
@@ -783,6 +830,7 @@ public class SolrMetricManager {
    *     notation
    * @param metricPath (optional) additional top-most metric name path elements
    */
+  // TODO dont think we need this
   public void registerMetric(
       SolrMetricsContext context,
       String registry,

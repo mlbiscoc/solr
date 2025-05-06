@@ -25,7 +25,9 @@ import com.codahale.metrics.Timer;
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.api.common.AttributesBuilder;
 import io.opentelemetry.api.metrics.LongCounter;
+import io.opentelemetry.api.metrics.LongHistogram;
 import io.opentelemetry.api.metrics.MeterProvider;
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
@@ -199,6 +201,16 @@ public abstract class RequestHandlerBase
     public final Timer requestTimes;
     public final Counter totalTime;
 
+    public LongCounter oNumRequsests = null;
+    public Attributes errorAttributes = null;
+    public Attributes serverErrorAttributes = null;
+    public Attributes clientErrorAttributes = null;
+    public Attributes requestsAttributes = null;
+    // TODO We need the timeouts and more
+    //    public final Meter numTimeouts;
+    //    public final Timer requestTimes;
+    //    public final Counter totalTime;
+
     public HandlerMetrics(SolrMetricsContext solrMetricsContext, String... metricPath) {
       numErrors = solrMetricsContext.meter("errors", metricPath);
       numServerErrors = solrMetricsContext.meter("serverErrors", metricPath);
@@ -207,19 +219,62 @@ public abstract class RequestHandlerBase
       requests = solrMetricsContext.counter("requests", metricPath);
       requestTimes = solrMetricsContext.timer("requestTimes", metricPath);
       totalTime = solrMetricsContext.counter("totalTime", metricPath);
-      MeterProvider mp = GlobalOpenTelemetry.getMeterProvider();
-      io.opentelemetry.api.metrics.Meter requests = mp.get("org.apache.solr.handler");
-      LongCounter lc =
-          requests.counterBuilder("requests").setDescription("# of requests to Solr").build();
-      if (metricPath.length != 0) {
-        lc.add(
-            1,
-            Attributes.of(
-                AttributeKey.stringKey("type"),
-                metricPath[0],
-                AttributeKey.stringKey("path"),
-                metricPath[1]));
-      }
+
+      String category = (metricPath.length != 0) ? metricPath[0] : "noop";
+      String path = (metricPath.length != 0) ? metricPath[1] : "noop";
+      this.requestsAttributes = Attributes.builder()
+              .put(AttributeKey.stringKey("category"), category)
+              .put(AttributeKey.stringKey("path"), path)
+              .put(AttributeKey.stringKey("type"), "requests")
+              .build();
+      oNumRequsests = solrMetricsContext.longCounter("solr_handler_requests", "Metric is track requests from handler base");
+      oNumRequsests.add(0, requestsAttributes);
+      this.errorAttributes = Attributes.builder()
+              .put(AttributeKey.stringKey("category"), category)
+              .put(AttributeKey.stringKey("path"), path)
+              .put(AttributeKey.stringKey("type"), "errors")
+              .build();
+      oNumRequsests.add(0, errorAttributes);
+      this.serverErrorAttributes = Attributes.builder()
+              .put(AttributeKey.stringKey("category"), category)
+              .put(AttributeKey.stringKey("path"), path)
+              .put(AttributeKey.stringKey("type"), "serverErrors")
+              .build();
+      oNumRequsests.add(0, serverErrorAttributes);
+      this.clientErrorAttributes = Attributes.builder()
+              .put(AttributeKey.stringKey("category"), category)
+              .put(AttributeKey.stringKey("path"), path)
+              .put(AttributeKey.stringKey("type"), "clientErrors")
+              .build();
+      oNumRequsests.add(0, clientErrorAttributes);
+    }
+
+    public void incRequests() {
+      oNumRequsests.add(1L, requestsAttributes);
+    }
+    public void incRequests(long val) {
+      oNumRequsests.add(val, requestsAttributes);
+    }
+
+    public void incErrors() {
+      oNumRequsests.add(1L, errorAttributes);
+    }
+    public void incErrors(long val) {
+      oNumRequsests.add(val, errorAttributes);
+    }
+
+    public void incServerErrors() {
+      oNumRequsests.add(1L, serverErrorAttributes);
+    }
+    public void incServerErrors(long val) {
+      oNumRequsests.add(val, serverErrorAttributes);
+    }
+
+    public void incClientErrors() {
+      oNumRequsests.add(1L, clientErrorAttributes);
+    }
+    public void incClientErrors(long val) {
+      oNumRequsests.add(val, clientErrorAttributes);
     }
   }
 
@@ -245,6 +300,7 @@ public abstract class RequestHandlerBase
     }
     HandlerMetrics metrics = getMetricsForThisRequest(req);
     metrics.requests.inc();
+    metrics.incRequests();
 
     Timer.Context timer = metrics.requestTimes.time();
     try {
