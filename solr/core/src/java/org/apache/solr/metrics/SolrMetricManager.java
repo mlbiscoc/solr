@@ -26,6 +26,15 @@ import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.MetricSet;
 import com.codahale.metrics.SharedMetricRegistries;
 import com.codahale.metrics.Timer;
+import io.opentelemetry.api.GlobalOpenTelemetry;
+import io.opentelemetry.api.metrics.DoubleCounter;
+import io.opentelemetry.api.metrics.DoubleGauge;
+import io.opentelemetry.api.metrics.DoubleHistogram;
+import io.opentelemetry.api.metrics.LongCounter;
+import io.opentelemetry.api.metrics.LongCounterBuilder;
+import io.opentelemetry.api.metrics.LongGauge;
+import io.opentelemetry.api.metrics.LongHistogram;
+import io.opentelemetry.api.metrics.MeterProvider;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -47,18 +56,6 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import java.util.stream.Collectors;
-
-import io.opentelemetry.api.GlobalOpenTelemetry;
-import io.opentelemetry.api.metrics.DoubleCounter;
-import io.opentelemetry.api.metrics.DoubleCounterBuilder;
-import io.opentelemetry.api.metrics.DoubleGauge;
-import io.opentelemetry.api.metrics.DoubleHistogram;
-import io.opentelemetry.api.metrics.LongCounter;
-import io.opentelemetry.api.metrics.LongCounterBuilder;
-import io.opentelemetry.api.metrics.LongGauge;
-import io.opentelemetry.api.metrics.LongHistogram;
-import io.opentelemetry.api.metrics.MeterProvider;
-import io.opentelemetry.sdk.metrics.data.HistogramData;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.MetricsConfig;
@@ -144,7 +141,8 @@ public class SolrMetricManager {
     meterProvider = GlobalOpenTelemetry.getMeterProvider();
   }
 
-  public SolrMetricManager(SolrResourceLoader loader, MetricsConfig metricsConfig, MeterProvider meterProvider) {
+  public SolrMetricManager(
+      SolrResourceLoader loader, MetricsConfig metricsConfig, MeterProvider meterProvider) {
     this.metricsConfig = metricsConfig;
     counterSupplier = MetricSuppliers.counterSupplier(loader, metricsConfig.getCounterSupplier());
     meterSupplier = MetricSuppliers.meterSupplier(loader, metricsConfig.getMeterSupplier());
@@ -162,43 +160,89 @@ public class SolrMetricManager {
     meters.remove(registry);
   }
 
-  public LongCounter longCounter(SolrMetricsContext context, String registry, String counterName, String description) {
+  public LongCounter longCounter(
+      SolrMetricsContext context, String registry, String counterName, String description) {
     return longCounter(context, registry, counterName, description, null);
   }
 
-  public LongCounter longCounter(SolrMetricsContext context, String registry, String counterName, String description, String unit) {
-    LongCounterBuilder builder = meterProvider.get(registry)
-            .counterBuilder(counterName)
-            .setDescription(description);
+  public LongCounter longCounter(
+      SolrMetricsContext context,
+      String registry,
+      String counterName,
+      String description,
+      String unit) {
+    LongCounterBuilder builder =
+        meterProvider.get(registry).counterBuilder(counterName).setDescription(description);
     if (unit != null) {
       builder.setUnit(unit);
     }
-    return  builder.build();
+    return builder.build();
   }
 
-  public DoubleCounter doubleCounter(SolrMetricsContext context, String registry, String counterName, String description, String unit) {
-    return meterProvider.get(registry)
-            .counterBuilder(counterName)
-            .setDescription(description)
-            .setUnit(unit)
-            .ofDoubles()
-            .build();
+  public DoubleCounter doubleCounter(
+      SolrMetricsContext context,
+      String registry,
+      String counterName,
+      String description,
+      String unit) {
+    return meterProvider
+        .get(registry)
+        .counterBuilder(counterName)
+        .setDescription(description)
+        .setUnit(unit)
+        .ofDoubles()
+        .build();
   }
 
-  public DoubleHistogram doubleHistogram(SolrMetricsContext context, String registry, String histogramName, String description, String unit) {
-    return meterProvider.get(registry).histogramBuilder(histogramName).setDescription(description).setUnit(unit).build();
+  public DoubleHistogram doubleHistogram(
+      SolrMetricsContext context,
+      String registry,
+      String histogramName,
+      String description,
+      String unit) {
+    return meterProvider
+        .get(registry)
+        .histogramBuilder(histogramName)
+        .setDescription(description)
+        .setUnit(unit)
+        .build();
   }
 
-  public LongHistogram longHistogram(SolrMetricsContext context, String registry, String histogramName, String description, String unit) {
-    return meterProvider.get(registry).histogramBuilder(histogramName).setDescription(description).ofLongs().build();
+  public LongHistogram longHistogram(
+      SolrMetricsContext context,
+      String registry,
+      String histogramName,
+      String description,
+      String unit) {
+    return meterProvider
+        .get(registry)
+        .histogramBuilder(histogramName)
+        .setDescription(description)
+        .ofLongs()
+        .build();
   }
 
-  public DoubleGauge doubleGauge(SolrMetricsContext context, String registry, String gaugeName, String description, String unit) {
+  public DoubleGauge doubleGauge(
+      SolrMetricsContext context,
+      String registry,
+      String gaugeName,
+      String description,
+      String unit) {
     return meterProvider.get(registry).gaugeBuilder(registry).setDescription(description).build();
   }
 
-  public LongGauge longGauge(SolrMetricsContext context, String registry, String gaugeName, String description, String unit) {
-    return meterProvider.get(registry).gaugeBuilder(registry).setDescription(description).ofLongs().build();
+  public LongGauge longGauge(
+      SolrMetricsContext context,
+      String registry,
+      String gaugeName,
+      String description,
+      String unit) {
+    return meterProvider
+        .get(registry)
+        .gaugeBuilder(registry)
+        .setDescription(description)
+        .ofLongs()
+        .build();
   }
 
   public boolean otelHasRegistry(String name) {
@@ -712,7 +756,8 @@ public class SolrMetricManager {
    * @param metricFilter filter (null is equivalent to {@link MetricFilter#ALL}).
    * @return map of matching names and metrics
    */
-  // TODO Otel API only allows creation to work with the SDK. You cannot read without a InMemoryMetricReader. Remove this most likely
+  // TODO Otel API only allows creation to work with the SDK. You cannot read without a
+  // InMemoryMetricReader. Remove this most likely
   public Map<String, Metric> getMetrics(String registry, MetricFilter metricFilter) {
     if (metricFilter == null || metricFilter == MetricFilter.ALL) {
       return registry(registry).getMetrics();

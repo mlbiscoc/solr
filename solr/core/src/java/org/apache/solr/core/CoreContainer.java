@@ -37,7 +37,6 @@ import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.metrics.LongCounter;
 import io.opentelemetry.api.metrics.MeterProvider;
 import io.opentelemetry.api.trace.Tracer;
-import io.opentelemetry.instrumentation.runtimemetrics.java17.RuntimeMetrics;
 import jakarta.inject.Singleton;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -848,8 +847,8 @@ public class CoreContainer {
     OpenTelemetry openTelemetry = GlobalOpenTelemetry.get();
 
     // Lets turn this off temporarily
-//    RuntimeMetrics runtimeMetrics =
-//        RuntimeMetrics.builder(openTelemetry).enableAllFeatures().build();
+    //    RuntimeMetrics runtimeMetrics =
+    //        RuntimeMetrics.builder(openTelemetry).enableAllFeatures().build();
 
     coreContainerWorkExecutor =
         MetricUtils.instrumentedExecutorService(
