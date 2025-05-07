@@ -40,6 +40,7 @@ import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.ValidatingJsonMap;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.handler.admin.api.ModifyMultiPluginAuthConfigAPI;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.eclipse.jetty.client.api.Request;
@@ -196,9 +197,10 @@ public class MultiAuthPlugin extends AuthenticationPlugin
   }
 
   @Override
-  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+  public void initializeMetrics(
+      SolrMetricsContext parentContext, String scope, CoreDescriptor coreDescriptor) {
     for (AuthenticationPlugin plugin : pluginMap.values()) {
-      plugin.initializeMetrics(parentContext, scope);
+      plugin.initializeMetrics(parentContext, scope, coreDescriptor);
     }
   }
 

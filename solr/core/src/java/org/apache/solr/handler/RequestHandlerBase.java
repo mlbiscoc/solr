@@ -38,6 +38,7 @@ import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SuppressForbidden;
+import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.MetricsConfig;
 import org.apache.solr.core.PluginBag;
 import org.apache.solr.core.PluginInfo;
@@ -163,7 +164,8 @@ public abstract class RequestHandlerBase
   }
 
   @Override
-  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+  public void initializeMetrics(
+      SolrMetricsContext parentContext, String scope, CoreDescriptor coreDescriptor) {
     if (aggregateNodeLevelMetricsEnabled) {
       this.solrMetricsContext =
           new SolrDelegateRegistryMetricsContext(
@@ -174,7 +176,10 @@ public abstract class RequestHandlerBase
     } else {
       this.solrMetricsContext = parentContext.getChildContext(this);
     }
-    metrics = new HandlerMetrics(solrMetricsContext, getCategory().toString(), scope);
+    metrics =
+        new HandlerMetrics(
+            solrMetricsContext,
+            Attributes.of(AttributeKey.stringKey(getCategory().toString()), scope));
     solrMetricsContext.gauge(
         () -> handlerStart, true, "handlerStart", getCategory().toString(), scope);
   }
@@ -189,7 +194,8 @@ public abstract class RequestHandlerBase
                     new MetricsConfig.MetricsConfigBuilder().setEnabled(false).build(),
                     GlobalOpenTelemetry.getMeterProvider()),
                 "NO_OP",
-                "NO_OP"));
+                "NO_OP"),
+            Attributes.of(AttributeKey.stringKey("NO_OP"), "NO_OP"));
 
     public final Meter numErrors;
     public final Meter numServerErrors;
@@ -210,7 +216,9 @@ public abstract class RequestHandlerBase
     //    public final Timer requestTimes;
     //    public final Counter totalTime;
 
-    public HandlerMetrics(SolrMetricsContext solrMetricsContext, String... metricPath) {
+    public HandlerMetrics(SolrMetricsContext solrMetricsContext, Attributes attributes) {
+      String[] metricPath =
+          attributes.asMap().values().stream().map(Object::toString).toArray(String[]::new);
       numErrors = solrMetricsContext.meter("errors", metricPath);
       numServerErrors = solrMetricsContext.meter("serverErrors", metricPath);
       numClientErrors = solrMetricsContext.meter("clientErrors", metricPath);
@@ -219,12 +227,9 @@ public abstract class RequestHandlerBase
       requestTimes = solrMetricsContext.timer("requestTimes", metricPath);
       totalTime = solrMetricsContext.counter("totalTime", metricPath);
 
-      String category = (metricPath.length != 0) ? metricPath[0] : "noop";
-      String path = (metricPath.length != 0) ? metricPath[1] : "noop";
       this.requestsAttributes =
           Attributes.builder()
-              .put(AttributeKey.stringKey("category"), category)
-              .put(AttributeKey.stringKey("path"), path)
+              .putAll(attributes)
               .put(AttributeKey.stringKey("type"), "requests")
               .build();
       oNumRequsests =
@@ -233,22 +238,19 @@ public abstract class RequestHandlerBase
       oNumRequsests.add(0, requestsAttributes);
       this.errorAttributes =
           Attributes.builder()
-              .put(AttributeKey.stringKey("category"), category)
-              .put(AttributeKey.stringKey("path"), path)
+              .putAll(attributes)
               .put(AttributeKey.stringKey("type"), "errors")
               .build();
       oNumRequsests.add(0, errorAttributes);
       this.serverErrorAttributes =
           Attributes.builder()
-              .put(AttributeKey.stringKey("category"), category)
-              .put(AttributeKey.stringKey("path"), path)
+              .putAll(attributes)
               .put(AttributeKey.stringKey("type"), "serverErrors")
               .build();
       oNumRequsests.add(0, serverErrorAttributes);
       this.clientErrorAttributes =
           Attributes.builder()
-              .put(AttributeKey.stringKey("category"), category)
-              .put(AttributeKey.stringKey("path"), path)
+              .putAll(attributes)
               .put(AttributeKey.stringKey("type"), "clientErrors")
               .build();
       oNumRequsests.add(0, clientErrorAttributes);

@@ -34,6 +34,7 @@ import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.protocol.HttpContext;
 import org.apache.http.protocol.HttpRequestExecutor;
 import org.apache.solr.common.util.CollectionUtil;
+import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.util.tracing.TraceUtils;
@@ -152,7 +153,8 @@ public class InstrumentedHttpRequestExecutor extends HttpRequestExecutor
   }
 
   @Override
-  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+  public void initializeMetrics(
+      SolrMetricsContext parentContext, String scope, CoreDescriptor coreDescriptor) {
     this.solrMetricsContext = parentContext.getChildContext(this);
     this.scope = scope;
   }

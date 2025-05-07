@@ -19,6 +19,7 @@ package org.apache.solr.blockcache;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
+import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricsContext;
@@ -55,7 +56,8 @@ public class Metrics extends SolrCacheBase implements SolrInfoBean {
   private long previous = System.nanoTime();
 
   @Override
-  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+  public void initializeMetrics(
+      SolrMetricsContext parentContext, String scope, CoreDescriptor coreDescriptor) {
     solrMetricsContext = parentContext.getChildContext(this);
     metricsMap =
         new MetricsMap(

@@ -33,6 +33,7 @@ import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.PluginBag;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
@@ -1210,7 +1211,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
 
     void reset(DumpRequestHandler rh) {
       this.rh = rh;
-      if (metricsInfo != null) this.rh.initializeMetrics(metricsInfo, "/dumphandler");
+      if (metricsInfo != null) this.rh.initializeMetrics(metricsInfo, "/dumphandler", null);
     }
 
     @Override
@@ -1235,8 +1236,9 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     }
 
     @Override
-    public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
-      super.initializeMetrics(parentContext, scope);
+    public void initializeMetrics(
+        SolrMetricsContext parentContext, String scope, CoreDescriptor coreDescriptor) {
+      super.initializeMetrics(parentContext, scope, coreDescriptor);
       MetricsMap metrics = new MetricsMap(map -> gaugevals.forEach((k, v) -> map.putNoEx(k, v)));
       solrMetricsContext.gauge(metrics, true, "dumphandlergauge", getCategory().toString(), scope);
     }

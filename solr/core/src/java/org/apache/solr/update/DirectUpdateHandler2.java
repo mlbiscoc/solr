@@ -48,6 +48,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrConfig.UpdateHandlerInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean;
@@ -206,7 +207,8 @@ public class DirectUpdateHandler2 extends UpdateHandler
   }
 
   @Override
-  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+  public void initializeMetrics(
+      SolrMetricsContext parentContext, String scope, CoreDescriptor coreDescriptor) {
     if (core.getSolrConfig().getUpdateHandlerInfo().aggregateNodeLevelMetricsEnabled) {
       this.solrMetricsContext =
           new SolrDelegateRegistryMetricsContext(

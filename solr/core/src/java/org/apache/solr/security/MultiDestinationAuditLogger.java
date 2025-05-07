@@ -27,6 +27,7 @@ import java.util.stream.Collectors;
 import org.apache.lucene.util.ResourceLoader;
 import org.apache.lucene.util.ResourceLoaderAware;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -129,9 +130,10 @@ public class MultiDestinationAuditLogger extends AuditLoggerPlugin implements Re
   }
 
   @Override
-  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
-    super.initializeMetrics(parentContext, scope);
-    plugins.forEach(p -> p.initializeMetrics(solrMetricsContext, scope));
+  public void initializeMetrics(
+      SolrMetricsContext parentContext, String scope, CoreDescriptor coreDescriptor) {
+    super.initializeMetrics(parentContext, scope, coreDescriptor);
+    plugins.forEach(p -> p.initializeMetrics(solrMetricsContext, scope, coreDescriptor));
   }
 
   @Override

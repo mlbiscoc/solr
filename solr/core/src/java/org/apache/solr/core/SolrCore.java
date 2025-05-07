@@ -1104,7 +1104,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
       setLatestSchema(schema);
 
       // initialize core metrics
-      initializeMetrics(solrMetricsContext, null);
+      initializeMetrics(solrMetricsContext, null, coreDescriptor);
 
       // init pluggable circuit breakers, after metrics because some circuit breakers use metrics
       initPlugins(null, CircuitBreaker.class);
@@ -1112,7 +1112,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
       SolrFieldCacheBean solrFieldCacheBean = new SolrFieldCacheBean();
       // this is registered at the CONTAINER level because it's not core-specific - for now we
       // also register it here for back-compat
-      solrFieldCacheBean.initializeMetrics(solrMetricsContext, "core");
+      solrFieldCacheBean.initializeMetrics(solrMetricsContext, "core", getCoreDescriptor());
       infoRegistry.put("fieldCache", solrFieldCacheBean);
 
       this.maxWarmingSearchers = solrConfig.maxWarmingSearchers;
@@ -1189,7 +1189,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
       // Allow the directory factory to report metrics
       if (directoryFactory instanceof SolrMetricProducer) {
         ((SolrMetricProducer) directoryFactory)
-            .initializeMetrics(solrMetricsContext, "directoryFactory");
+            .initializeMetrics(solrMetricsContext, "directoryFactory", getCoreDescriptor());
       }
 
       bufferUpdatesIfConstructing(coreDescriptor);
@@ -1302,7 +1302,8 @@ public class SolrCore implements SolrInfoBean, Closeable {
   }
 
   @Override
-  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+  public void initializeMetrics(
+      SolrMetricsContext parentContext, String scope, CoreDescriptor coreDescriptor) {
     newSearcherCounter = parentContext.counter("new", Category.SEARCHER.toString());
     newSearcherTimer = parentContext.timer("time", Category.SEARCHER.toString(), "new");
     newSearcherWarmupTimer = parentContext.timer("warmup", Category.SEARCHER.toString(), "new");

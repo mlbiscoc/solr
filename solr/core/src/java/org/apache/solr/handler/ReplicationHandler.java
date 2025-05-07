@@ -85,6 +85,7 @@ import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.core.CloseHook;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.core.IndexDeletionPolicyWrapper;
 import org.apache.solr.core.SolrCore;
@@ -838,8 +839,9 @@ public class ReplicationHandler extends RequestHandlerBase
 
   // TODO: Handle compatibility in 8.x
   @Override
-  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
-    super.initializeMetrics(parentContext, scope);
+  public void initializeMetrics(
+      SolrMetricsContext parentContext, String scope, CoreDescriptor coreDescriptor) {
+    super.initializeMetrics(parentContext, scope, coreDescriptor);
     solrMetricsContext.gauge(
         () ->
             (core != null && !core.isClosed()

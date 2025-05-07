@@ -146,7 +146,8 @@ public class ZkContainer {
               SolrMetricsContext ctx;
 
               @Override
-              public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+              public void initializeMetrics(
+                  SolrMetricsContext parentContext, String scope, CoreDescriptor coreDescriptor) {
                 ctx = parentContext.getChildContext(this);
                 ctx.gauge(
                     metricsMap, true, scope, null, SolrInfoBean.Category.CONTAINER.toString());

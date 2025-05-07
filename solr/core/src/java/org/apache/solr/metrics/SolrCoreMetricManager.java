@@ -136,7 +136,7 @@ public class SolrCoreMetricManager implements Closeable {
               + producer);
     }
     // use deprecated method for back-compat, remove in 9.0
-    producer.initializeMetrics(solrMetricsContext, scope);
+    producer.initializeMetrics(solrMetricsContext, scope, core.getCoreDescriptor());
   }
 
   /** Return the registry used by this SolrCore. */

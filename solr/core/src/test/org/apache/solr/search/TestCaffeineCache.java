@@ -47,10 +47,10 @@ public class TestCaffeineCache extends SolrTestCase {
   public void testSimple() {
     CaffeineCache<Integer, String> lfuCache = new CaffeineCache<>();
     SolrMetricsContext solrMetricsContext = new SolrMetricsContext(metricManager, registry, "foo");
-    lfuCache.initializeMetrics(solrMetricsContext, scope + "-1");
+    lfuCache.initializeMetrics(solrMetricsContext, scope + "-1", null);
 
     CaffeineCache<Integer, String> newLFUCache = new CaffeineCache<>();
-    newLFUCache.initializeMetrics(solrMetricsContext, scope + "-2");
+    newLFUCache.initializeMetrics(solrMetricsContext, scope + "-2", null);
 
     Map<String, String> params = new HashMap<>();
     params.put("size", "100");

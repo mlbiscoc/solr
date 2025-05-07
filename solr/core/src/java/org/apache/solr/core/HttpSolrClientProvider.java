@@ -68,7 +68,7 @@ final class HttpSolrClientProvider implements AutoCloseable {
     var solrMetricsContext = parentContext.getChildContext(this);
     String expandedScope =
         SolrMetricManager.mkName(METRIC_SCOPE_NAME, SolrInfoBean.Category.HTTP.name());
-    trackHttpSolrMetrics.initializeMetrics(solrMetricsContext, expandedScope);
+    trackHttpSolrMetrics.initializeMetrics(solrMetricsContext, expandedScope, null);
   }
 
   Http2SolrClient getSolrClient() {

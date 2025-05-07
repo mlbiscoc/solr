@@ -35,6 +35,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricsContext;
@@ -202,11 +203,12 @@ public class UpdateShardHandler implements SolrInfoBean {
   }
 
   @Override
-  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+  public void initializeMetrics(
+      SolrMetricsContext parentContext, String scope, CoreDescriptor coreDescriptor) {
     solrMetricsContext = parentContext.getChildContext(this);
     String expandedScope = SolrMetricManager.mkName(scope, getCategory().name());
-    trackHttpSolrMetrics.initializeMetrics(solrMetricsContext, expandedScope);
-    defaultConnectionManager.initializeMetrics(solrMetricsContext, expandedScope);
+    trackHttpSolrMetrics.initializeMetrics(solrMetricsContext, expandedScope, coreDescriptor);
+    defaultConnectionManager.initializeMetrics(solrMetricsContext, expandedScope, coreDescriptor);
     updateExecutor =
         MetricUtils.instrumentedExecutorService(
             updateExecutor,

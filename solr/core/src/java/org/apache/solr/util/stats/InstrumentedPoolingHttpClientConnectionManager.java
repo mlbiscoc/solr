@@ -20,6 +20,7 @@ package org.apache.solr.util.stats;
 import org.apache.http.config.Registry;
 import org.apache.http.conn.socket.ConnectionSocketFactory;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
+import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
@@ -44,7 +45,8 @@ public class InstrumentedPoolingHttpClientConnectionManager
   }
 
   @Override
-  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+  public void initializeMetrics(
+      SolrMetricsContext parentContext, String scope, CoreDescriptor coreDescriptor) {
     this.solrMetricsContext = parentContext.getChildContext(this);
     solrMetricsContext.gauge(
         () -> getTotalStats().getAvailable(),

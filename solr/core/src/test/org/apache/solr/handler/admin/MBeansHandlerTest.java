@@ -29,6 +29,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.request.LocalSolrQueryRequest;
@@ -171,7 +172,8 @@ public class MBeansHandlerTest extends SolrTestCaseJ4 {
           }
 
           @Override
-          public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+          public void initializeMetrics(
+              SolrMetricsContext parentContext, String scope, CoreDescriptor coreDescriptor) {
             this.solrMetricsContext = parentContext.getChildContext(this);
           }
 
@@ -183,7 +185,8 @@ public class MBeansHandlerTest extends SolrTestCaseJ4 {
     bean.initializeMetrics(
         new SolrMetricsContext(
             h.getCoreContainer().getMetricManager(), "testMetricsSnapshot", "foobar"),
-        "foo");
+        "foo",
+        null);
     runSnapshots = true;
     Thread modifier =
         new Thread(

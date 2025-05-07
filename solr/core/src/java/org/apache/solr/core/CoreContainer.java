@@ -527,7 +527,7 @@ public class CoreContainer {
               newVersion, getResourceLoader().newInstance(klas, AuditLoggerPlugin.class));
 
       newAuditloggerPlugin.plugin.init(auditConf);
-      newAuditloggerPlugin.plugin.initializeMetrics(solrMetricsContext, "/auditlogging");
+      newAuditloggerPlugin.plugin.initializeMetrics(solrMetricsContext, "/auditlogging", null);
     } else {
       log.debug("Security conf doesn't exist. Skipping setup for audit logging module.");
     }
@@ -592,7 +592,7 @@ public class CoreContainer {
     if (authenticationPlugin != null) {
       authenticationPlugin.plugin.init(authenticationConfig);
       setupHttpClientForAuthPlugin(authenticationPlugin.plugin);
-      authenticationPlugin.plugin.initializeMetrics(solrMetricsContext, "/authentication");
+      authenticationPlugin.plugin.initializeMetrics(solrMetricsContext, "/authentication", null);
     }
     this.authenticationPlugin = authenticationPlugin;
     try {
@@ -863,14 +863,14 @@ public class CoreContainer {
     shardHandlerFactory =
         ShardHandlerFactory.newInstance(cfg.getShardHandlerFactoryPluginInfo(), loader);
     if (shardHandlerFactory instanceof SolrMetricProducer metricProducer) {
-      metricProducer.initializeMetrics(solrMetricsContext, "httpShardHandler");
+      metricProducer.initializeMetrics(solrMetricsContext, "httpShardHandler", null);
     }
 
     updateShardHandler = new UpdateShardHandler(cfg.getUpdateShardHandlerConfig());
     solrClientProvider =
         new HttpSolrClientProvider(cfg.getUpdateShardHandlerConfig(), solrMetricsContext);
-    updateShardHandler.initializeMetrics(solrMetricsContext, "updateShardHandler");
-    solrClientCache = new SolrClientCache(solrClientProvider.getSolrClient());
+    updateShardHandler.initializeMetrics(solrMetricsContext, "updateShardHandler", null);
+    solrClientCache = new SolrClientCache(updateShardHandler.getDefaultHttpClient());
 
     Map<String, CacheConfig> cachesConfig = cfg.getCachesConfig();
     if (cachesConfig.isEmpty()) {
@@ -880,7 +880,7 @@ public class CoreContainer {
       for (Map.Entry<String, CacheConfig> e : cachesConfig.entrySet()) {
         SolrCache<?, ?> c = e.getValue().newInstance();
         String cacheName = e.getKey();
-        c.initializeMetrics(solrMetricsContext, "nodeLevelCache/" + cacheName);
+        c.initializeMetrics(solrMetricsContext, "nodeLevelCache/" + cacheName, null);
         m.put(cacheName, c);
       }
       this.caches = Collections.unmodifiableMap(m);
@@ -894,13 +894,14 @@ public class CoreContainer {
     if (isZooKeeperAware()) {
       solrClientCache.setDefaultZKHost(getZkController().getZkServerAddress());
       // initialize ZkClient metrics
-      zkSys.getZkMetricsProducer().initializeMetrics(solrMetricsContext, "zkClient");
+      zkSys.getZkMetricsProducer().initializeMetrics(solrMetricsContext, "zkClient", null);
       pkiAuthenticationSecurityBuilder =
           new PKIAuthenticationPlugin(
               this,
               zkSys.getZkController().getNodeName(),
               (PublicKeyHandler) containerHandlers.get(PublicKeyHandler.PATH));
-      pkiAuthenticationSecurityBuilder.initializeMetrics(solrMetricsContext, "/authentication/pki");
+      pkiAuthenticationSecurityBuilder.initializeMetrics(
+          solrMetricsContext, "/authentication/pki", null);
 
       fileStore = new DistribFileStore(this);
       registerV2ApiIfEnabled(ClusterFileStore.class);
@@ -977,10 +978,10 @@ public class CoreContainer {
 
     metricsHandler = new MetricsHandler(this);
     containerHandlers.put(METRICS_PATH, metricsHandler);
-    metricsHandler.initializeMetrics(solrMetricsContext, METRICS_PATH);
+    metricsHandler.initializeMetrics(solrMetricsContext, METRICS_PATH, null);
 
     containerHandlers.put(AUTHZ_PATH, securityConfHandler);
-    securityConfHandler.initializeMetrics(solrMetricsContext, AUTHZ_PATH);
+    securityConfHandler.initializeMetrics(solrMetricsContext, AUTHZ_PATH, null);
     containerHandlers.put(AUTHC_PATH, securityConfHandler);
 
     PluginInfo[] metricReporters = cfg.getMetricsConfig().getMetricReporters();
@@ -1063,7 +1064,7 @@ public class CoreContainer {
         "version");
 
     SolrFieldCacheBean fieldCacheBean = new SolrFieldCacheBean();
-    fieldCacheBean.initializeMetrics(solrMetricsContext, null);
+    fieldCacheBean.initializeMetrics(solrMetricsContext, null, null);
 
     if (isZooKeeperAware()) {
       metricManager.loadClusterReporters(metricReporters, this);
@@ -2398,7 +2399,7 @@ public class CoreContainer {
       containerHandlers.put(path, (SolrRequestHandler) handler);
     }
     if (handler instanceof SolrMetricProducer) {
-      ((SolrMetricProducer) handler).initializeMetrics(solrMetricsContext, path);
+      ((SolrMetricProducer) handler).initializeMetrics(solrMetricsContext, path, null);
     }
     return handler;
   }

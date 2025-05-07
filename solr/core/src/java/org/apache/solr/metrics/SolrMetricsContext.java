@@ -126,7 +126,8 @@ public class SolrMetricsContext {
    * Register a metric name that this component reports. This method is called by various metric
    * registration methods in {@link org.apache.solr.metrics.SolrMetricManager} in order to capture
    * what metric names are reported from this component (which in turn is called from {@link
-   * org.apache.solr.metrics.SolrMetricProducer#initializeMetrics(SolrMetricsContext, String)}).
+   * SolrMetricProducer#initializeMetrics(SolrMetricsContext, String,
+   * org.apache.solr.core.CoreDescriptor)}).
    */
   // TODO idk do we need this as well?
   public void registerMetricName(String name) {

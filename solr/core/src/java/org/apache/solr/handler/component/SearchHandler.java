@@ -30,8 +30,6 @@ import static org.apache.solr.response.SolrQueryResponse.RESPONSE_HEADER_PARTIAL
 import com.codahale.metrics.Counter;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
-import io.opentelemetry.api.metrics.LongCounter;
-import io.opentelemetry.api.metrics.MeterProvider;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -62,6 +60,7 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.CloseHook;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.RequestHandlerBase;
@@ -157,28 +156,29 @@ public class SearchHandler extends RequestHandlerBase
   }
 
   @Override
-  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
-    super.initializeMetrics(parentContext, scope);
+  public void initializeMetrics(
+      SolrMetricsContext parentContext, String scope, CoreDescriptor coreDescriptor) {
+    super.initializeMetrics(parentContext, scope, coreDescriptor);
     metricsShard =
         new HandlerMetrics( // will register various metrics in the context
-            solrMetricsContext, getCategory().toString(), scope + SHARD_HANDLER_SUFFIX);
+            solrMetricsContext,
+            Attributes.of(
+                AttributeKey.stringKey("category"),
+                getCategory().toString(),
+                AttributeKey.stringKey("handlerPath"),
+                scope + SHARD_HANDLER_SUFFIX,
+                AttributeKey.stringKey("core"),
+                (coreDescriptor != null) ? coreDescriptor.getName() : "",
+                AttributeKey.stringKey("collection"),
+                (coreDescriptor != null) ? coreDescriptor.getCollectionName() : "",
+                AttributeKey.stringKey("shard"),
+                (coreDescriptor != null) ? coreDescriptor.getCloudDescriptor().getShardId() : ""));
     solrMetricsContext.gauge(
         new MetricsMap(map -> shardPurposes.forEach((k, v) -> map.putNoEx(k, v.getCount()))),
         true,
         "purposes",
         getCategory().toString(),
         scope + SHARD_HANDLER_SUFFIX);
-    MeterProvider mp = core.getCoreContainer().getMeterProvider();
-    io.opentelemetry.api.metrics.Meter requests = mp.get("org.apache.solr.handler");
-    LongCounter lc =
-        requests.counterBuilder("requests").setDescription("# of requests to Solr").build();
-    lc.add(
-        1,
-        Attributes.of(
-            AttributeKey.stringKey("type"),
-            getCategory().toString(),
-            AttributeKey.stringKey("path"),
-            scope + SHARD_HANDLER_SUFFIX));
   }
 
   @Override

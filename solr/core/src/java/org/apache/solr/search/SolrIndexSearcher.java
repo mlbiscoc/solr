@@ -99,6 +99,7 @@ import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.ExecutorUtil.MDCAwareThreadPoolExecutor;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.core.NodeConfig;
@@ -590,9 +591,11 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     this.solrMetricsContext = core.getSolrMetricsContext().getChildContext(this);
     for (SolrCache<?, ?> cache : cacheList) {
       cache.initializeMetrics(
-          solrMetricsContext, SolrMetricManager.mkName(cache.name(), STATISTICS_KEY));
+          solrMetricsContext,
+          SolrMetricManager.mkName(cache.name(), STATISTICS_KEY),
+          core.getCoreDescriptor());
     }
-    initializeMetrics(solrMetricsContext, STATISTICS_KEY);
+    initializeMetrics(solrMetricsContext, STATISTICS_KEY, core.getCoreDescriptor());
     registerTime = new Date();
   }
 
@@ -2591,7 +2594,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   }
 
   @Override
-  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+  public void initializeMetrics(
+      SolrMetricsContext parentContext, String scope, CoreDescriptor coreDescriptor) {
     parentContext.gauge(() -> name, true, "searcherName", Category.SEARCHER.toString(), scope);
     parentContext.gauge(() -> cachingEnabled, true, "caching", Category.SEARCHER.toString(), scope);
     parentContext.gauge(() -> openTime, true, "openedAt", Category.SEARCHER.toString(), scope);

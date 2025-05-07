@@ -44,6 +44,7 @@ import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrEventListener;
 import org.apache.solr.metrics.MetricsMap;
@@ -381,8 +382,9 @@ public class SuggestComponent extends SearchComponent
   }
 
   @Override
-  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
-    super.initializeMetrics(parentContext, scope);
+  public void initializeMetrics(
+      SolrMetricsContext parentContext, String scope, CoreDescriptor coreDescriptor) {
+    super.initializeMetrics(parentContext, scope, coreDescriptor);
 
     this.solrMetricsContext.gauge(
         () -> ramBytesUsed(), true, "totalSizeInBytes", getCategory().toString());

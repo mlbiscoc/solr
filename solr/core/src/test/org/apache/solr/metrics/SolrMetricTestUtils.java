@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 import org.apache.lucene.tests.util.TestUtil;
+import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrInfoBean;
 
 public final class SolrMetricTestUtils {
@@ -88,7 +89,8 @@ public final class SolrMetricTestUtils {
       SolrMetricsContext solrMetricsContext;
 
       @Override
-      public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+      public void initializeMetrics(
+          SolrMetricsContext parentContext, String scope, CoreDescriptor coreDescriptor) {
         this.solrMetricsContext = parentContext.getChildContext(this);
         if (category == null) {
           throw new IllegalArgumentException("null category");

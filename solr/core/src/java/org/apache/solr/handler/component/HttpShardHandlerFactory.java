@@ -51,6 +51,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.URLUtil;
+import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean;
@@ -437,10 +438,11 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory
   }
 
   @Override
-  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+  public void initializeMetrics(
+      SolrMetricsContext parentContext, String scope, CoreDescriptor coreDescriptor) {
     solrMetricsContext = parentContext.getChildContext(this);
     String expandedScope = SolrMetricManager.mkName(scope, SolrInfoBean.Category.QUERY.name());
-    httpListenerFactory.initializeMetrics(solrMetricsContext, expandedScope);
+    httpListenerFactory.initializeMetrics(solrMetricsContext, expandedScope, coreDescriptor);
     commExecutor =
         MetricUtils.instrumentedExecutorService(
             commExecutor,

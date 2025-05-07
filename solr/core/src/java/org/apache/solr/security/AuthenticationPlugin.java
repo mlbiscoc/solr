@@ -29,6 +29,7 @@ import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpServletResponse;
 import org.apache.http.HttpRequest;
 import org.apache.http.protocol.HttpContext;
+import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.eclipse.jetty.client.api.Request;
@@ -163,7 +164,8 @@ public abstract class AuthenticationPlugin implements SolrInfoBean {
   }
 
   @Override
-  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+  public void initializeMetrics(
+      SolrMetricsContext parentContext, String scope, CoreDescriptor coreDescriptor) {
     this.solrMetricsContext = parentContext.getChildContext(this);
     // Metrics
     numErrors = this.solrMetricsContext.meter("errors", getCategory().toString(), scope);

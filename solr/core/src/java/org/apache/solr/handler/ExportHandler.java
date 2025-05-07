@@ -30,6 +30,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.admin.api.ReplicationAPIBase;
 import org.apache.solr.handler.component.SearchHandler;
@@ -85,8 +86,9 @@ public class ExportHandler extends SearchHandler {
   }
 
   @Override
-  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
-    super.initializeMetrics(parentContext, scope);
+  public void initializeMetrics(
+      SolrMetricsContext parentContext, String scope, CoreDescriptor coreDescriptor) {
+    super.initializeMetrics(parentContext, scope, coreDescriptor);
     this.writerMetricsPath = SolrMetricManager.mkName("writer", getCategory().toString(), scope);
   }
 
