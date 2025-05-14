@@ -22,6 +22,7 @@ import com.codahale.metrics.Timer;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import io.opentelemetry.api.common.Attributes;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.StringWriter;
@@ -43,7 +44,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.TimeSource;
-import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.security.AuditEvent.EventType;
@@ -263,7 +263,7 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
 
   @Override
   public void initializeMetrics(
-      SolrMetricsContext parentContext, final String scope, CoreDescriptor coreDescriptor) {
+      SolrMetricsContext parentContext, final String scope, Attributes attributes) {
     solrMetricsContext = parentContext.getChildContext(this);
     String className = this.getClass().getSimpleName();
     log.debug("Initializing metrics for {}", className);

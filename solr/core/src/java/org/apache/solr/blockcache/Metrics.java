@@ -16,10 +16,10 @@
  */
 package org.apache.solr.blockcache;
 
+import io.opentelemetry.api.common.Attributes;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
-import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricsContext;
@@ -57,7 +57,7 @@ public class Metrics extends SolrCacheBase implements SolrInfoBean {
 
   @Override
   public void initializeMetrics(
-      SolrMetricsContext parentContext, String scope, CoreDescriptor coreDescriptor) {
+      SolrMetricsContext parentContext, String scope, Attributes attributes) {
     solrMetricsContext = parentContext.getChildContext(this);
     metricsMap =
         new MetricsMap(

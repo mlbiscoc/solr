@@ -19,6 +19,7 @@ package org.apache.solr.update;
 import static org.apache.solr.util.stats.InstrumentedHttpRequestExecutor.KNOWN_METRIC_NAME_STRATEGIES;
 
 import com.google.common.annotations.VisibleForTesting;
+import io.opentelemetry.api.common.Attributes;
 import java.lang.invoke.MethodHandles;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
@@ -35,7 +36,6 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
-import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricsContext;
@@ -204,11 +204,17 @@ public class UpdateShardHandler implements SolrInfoBean {
 
   @Override
   public void initializeMetrics(
-      SolrMetricsContext parentContext, String scope, CoreDescriptor coreDescriptor) {
+      SolrMetricsContext parentContext, String scope, Attributes attributes) {
     solrMetricsContext = parentContext.getChildContext(this);
     String expandedScope = SolrMetricManager.mkName(scope, getCategory().name());
-    trackHttpSolrMetrics.initializeMetrics(solrMetricsContext, expandedScope, coreDescriptor);
-    defaultConnectionManager.initializeMetrics(solrMetricsContext, expandedScope, coreDescriptor);
+    trackHttpSolrMetrics.initializeMetrics(
+        solrMetricsContext,
+        expandedScope,
+        MetricUtils.createAttributes("expandedScope", "trackHttp"));
+    defaultConnectionManager.initializeMetrics(
+        solrMetricsContext,
+        expandedScope,
+        MetricUtils.createAttributes("expandedScope", "defaultHttp"));
     updateExecutor =
         MetricUtils.instrumentedExecutorService(
             updateExecutor,

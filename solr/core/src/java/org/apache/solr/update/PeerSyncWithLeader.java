@@ -24,6 +24,7 @@ import static org.apache.solr.update.PeerSync.percentile;
 
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Timer;
+import io.opentelemetry.api.common.Attributes;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.List;
@@ -38,7 +39,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.URLUtil;
-import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.SolrMetricProducer;
@@ -100,7 +100,7 @@ public class PeerSyncWithLeader implements SolrMetricProducer {
 
   @Override
   public void initializeMetrics(
-      SolrMetricsContext parentContext, String scope, CoreDescriptor coreDescriptor) {
+      SolrMetricsContext parentContext, String scope, Attributes attributes) {
     this.solrMetricsContext = parentContext.getChildContext(this);
     syncTime = solrMetricsContext.timer("time", scope, METRIC_SCOPE);
     syncErrors = solrMetricsContext.counter("errors", scope, METRIC_SCOPE);

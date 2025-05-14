@@ -26,6 +26,8 @@ import com.codahale.metrics.MetricFilter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Snapshot;
 import com.codahale.metrics.Timer;
+import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.api.common.AttributesBuilder;
 import java.beans.BeanInfo;
 import java.beans.IntrospectionException;
 import java.beans.Introspector;
@@ -51,6 +53,7 @@ import java.util.function.Predicate;
 import org.apache.solr.common.ConditionalKeyMapWriter;
 import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.MapWriter;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrInfoBean;
@@ -851,5 +854,21 @@ public class MetricUtils {
         // ignore
       }
     }
+  }
+
+  public static Attributes createAttributes(String... attributes) {
+    if (attributes.length % 2 == 1) {
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR, "Odd number of field/value strings passed");
+    }
+
+    AttributesBuilder builder = Attributes.builder();
+    for (int i = 0; i < attributes.length; i += 2) {
+      String key = attributes[i];
+      String value = attributes[i + 1];
+      builder.put(key, value);
+    }
+
+    return builder.build();
   }
 }

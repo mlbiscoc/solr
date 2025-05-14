@@ -38,7 +38,6 @@ import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SuppressForbidden;
-import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.MetricsConfig;
 import org.apache.solr.core.PluginBag;
 import org.apache.solr.core.PluginInfo;
@@ -165,7 +164,7 @@ public abstract class RequestHandlerBase
 
   @Override
   public void initializeMetrics(
-      SolrMetricsContext parentContext, String scope, CoreDescriptor coreDescriptor) {
+      SolrMetricsContext parentContext, String scope, Attributes attributes) {
     if (aggregateNodeLevelMetricsEnabled) {
       this.solrMetricsContext =
           new SolrDelegateRegistryMetricsContext(
@@ -176,10 +175,7 @@ public abstract class RequestHandlerBase
     } else {
       this.solrMetricsContext = parentContext.getChildContext(this);
     }
-    metrics =
-        new HandlerMetrics(
-            solrMetricsContext,
-            Attributes.of(AttributeKey.stringKey(getCategory().toString()), scope));
+    metrics = new HandlerMetrics(solrMetricsContext, attributes);
     solrMetricsContext.gauge(
         () -> handlerStart, true, "handlerStart", getCategory().toString(), scope);
   }

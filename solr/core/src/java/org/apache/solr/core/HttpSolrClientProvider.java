@@ -16,6 +16,7 @@
  */
 package org.apache.solr.core;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
@@ -25,6 +26,7 @@ import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.security.HttpClientBuilderPlugin;
 import org.apache.solr.update.UpdateShardHandlerConfig;
 import org.apache.solr.util.stats.InstrumentedHttpListenerFactory;
+import org.apache.solr.util.stats.MetricUtils;
 
 /**
  * Provider of the default SolrClient implementation.
@@ -39,7 +41,8 @@ final class HttpSolrClientProvider implements AutoCloseable {
 
   private final InstrumentedHttpListenerFactory trackHttpSolrMetrics;
 
-  HttpSolrClientProvider(UpdateShardHandlerConfig cfg, SolrMetricsContext parentContext) {
+  HttpSolrClientProvider(UpdateShardHandlerConfig cfg, SolrMetricsContext parentContext)
+      throws IOException {
     trackHttpSolrMetrics = new InstrumentedHttpListenerFactory(getNameStrategy(cfg));
     initializeMetrics(parentContext);
 
@@ -64,11 +67,14 @@ final class HttpSolrClientProvider implements AutoCloseable {
     return InstrumentedHttpListenerFactory.getNameStrategy(metricNameStrategy);
   }
 
-  private void initializeMetrics(SolrMetricsContext parentContext) {
+  private void initializeMetrics(SolrMetricsContext parentContext) throws IOException {
     var solrMetricsContext = parentContext.getChildContext(this);
     String expandedScope =
         SolrMetricManager.mkName(METRIC_SCOPE_NAME, SolrInfoBean.Category.HTTP.name());
-    trackHttpSolrMetrics.initializeMetrics(solrMetricsContext, expandedScope, null);
+    trackHttpSolrMetrics.initializeMetrics(
+        solrMetricsContext,
+        expandedScope,
+        MetricUtils.createAttributes("trackHttpSolrStuff", "stuff"));
   }
 
   Http2SolrClient getSolrClient() {

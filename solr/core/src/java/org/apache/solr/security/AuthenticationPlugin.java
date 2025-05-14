@@ -19,6 +19,7 @@ package org.apache.solr.security;
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.Timer;
+import io.opentelemetry.api.common.Attributes;
 import java.security.Principal;
 import java.util.Map;
 import java.util.Set;
@@ -29,7 +30,6 @@ import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpServletResponse;
 import org.apache.http.HttpRequest;
 import org.apache.http.protocol.HttpContext;
-import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.eclipse.jetty.client.api.Request;
@@ -165,7 +165,7 @@ public abstract class AuthenticationPlugin implements SolrInfoBean {
 
   @Override
   public void initializeMetrics(
-      SolrMetricsContext parentContext, String scope, CoreDescriptor coreDescriptor) {
+      SolrMetricsContext parentContext, String scope, Attributes attributes) {
     this.solrMetricsContext = parentContext.getChildContext(this);
     // Metrics
     numErrors = this.solrMetricsContext.meter("errors", getCategory().toString(), scope);

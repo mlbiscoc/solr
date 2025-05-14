@@ -18,6 +18,7 @@ package org.apache.solr.security;
 
 import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
 
+import io.opentelemetry.api.common.Attributes;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -27,7 +28,6 @@ import java.util.stream.Collectors;
 import org.apache.lucene.util.ResourceLoader;
 import org.apache.lucene.util.ResourceLoaderAware;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -131,9 +131,9 @@ public class MultiDestinationAuditLogger extends AuditLoggerPlugin implements Re
 
   @Override
   public void initializeMetrics(
-      SolrMetricsContext parentContext, String scope, CoreDescriptor coreDescriptor) {
-    super.initializeMetrics(parentContext, scope, coreDescriptor);
-    plugins.forEach(p -> p.initializeMetrics(solrMetricsContext, scope, coreDescriptor));
+      SolrMetricsContext parentContext, String scope, Attributes attributes) {
+    super.initializeMetrics(parentContext, scope, attributes);
+    plugins.forEach(p -> p.initializeMetrics(solrMetricsContext, scope, attributes));
   }
 
   @Override

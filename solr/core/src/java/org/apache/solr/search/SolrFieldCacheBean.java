@@ -16,7 +16,7 @@
  */
 package org.apache.solr.search;
 
-import org.apache.solr.core.CoreDescriptor;
+import io.opentelemetry.api.common.Attributes;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricsContext;
@@ -53,7 +53,7 @@ public class SolrFieldCacheBean implements SolrInfoBean {
 
   @Override
   public void initializeMetrics(
-      SolrMetricsContext parentContext, String scope, CoreDescriptor coreDescriptor) {
+      SolrMetricsContext parentContext, String scope, Attributes attributes) {
     this.solrMetricsContext = parentContext;
     MetricsMap metricsMap =
         new MetricsMap(

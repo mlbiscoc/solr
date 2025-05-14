@@ -60,7 +60,6 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.CloseHook;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.RequestHandlerBase;
@@ -157,22 +156,16 @@ public class SearchHandler extends RequestHandlerBase
 
   @Override
   public void initializeMetrics(
-      SolrMetricsContext parentContext, String scope, CoreDescriptor coreDescriptor) {
-    super.initializeMetrics(parentContext, scope, coreDescriptor);
+      SolrMetricsContext parentContext, String scope, Attributes attributes) {
+    super.initializeMetrics(parentContext, scope, attributes);
     metricsShard =
         new HandlerMetrics( // will register various metrics in the context
             solrMetricsContext,
-            Attributes.of(
-                AttributeKey.stringKey("category"),
-                getCategory().toString(),
-                AttributeKey.stringKey("handlerPath"),
-                scope + SHARD_HANDLER_SUFFIX,
-                AttributeKey.stringKey("core"),
-                (coreDescriptor != null) ? coreDescriptor.getName() : "",
-                AttributeKey.stringKey("collection"),
-                (coreDescriptor != null) ? coreDescriptor.getCollectionName() : "",
-                AttributeKey.stringKey("shard"),
-                (coreDescriptor != null) ? coreDescriptor.getCloudDescriptor().getShardId() : ""));
+            Attributes.builder()
+                .putAll(attributes)
+                .put(AttributeKey.stringKey("category"), getCategory().toString())
+                .put(AttributeKey.stringKey("handlerPath"), scope + SHARD_HANDLER_SUFFIX)
+                .build());
     solrMetricsContext.gauge(
         new MetricsMap(map -> shardPurposes.forEach((k, v) -> map.putNoEx(k, v.getCount()))),
         true,

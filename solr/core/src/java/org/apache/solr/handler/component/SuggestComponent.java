@@ -16,6 +16,7 @@
  */
 package org.apache.solr.handler.component;
 
+import io.opentelemetry.api.common.Attributes;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
@@ -44,7 +45,6 @@ import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrEventListener;
 import org.apache.solr.metrics.MetricsMap;
@@ -383,8 +383,8 @@ public class SuggestComponent extends SearchComponent
 
   @Override
   public void initializeMetrics(
-      SolrMetricsContext parentContext, String scope, CoreDescriptor coreDescriptor) {
-    super.initializeMetrics(parentContext, scope, coreDescriptor);
+      SolrMetricsContext parentContext, String scope, Attributes attributes) {
+    super.initializeMetrics(parentContext, scope, attributes);
 
     this.solrMetricsContext.gauge(
         () -> ramBytesUsed(), true, "totalSizeInBytes", getCategory().toString());

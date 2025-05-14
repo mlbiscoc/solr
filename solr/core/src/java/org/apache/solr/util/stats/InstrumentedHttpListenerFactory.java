@@ -20,13 +20,13 @@ package org.apache.solr.util.stats;
 import static org.apache.solr.metrics.SolrMetricManager.mkName;
 
 import com.codahale.metrics.Timer;
+import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.trace.Span;
 import java.util.Locale;
 import java.util.Map;
 import org.apache.solr.client.solrj.impl.HttpListenerFactory;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.CollectionUtil;
-import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.util.tracing.TraceUtils;
@@ -127,7 +127,7 @@ public class InstrumentedHttpListenerFactory implements SolrMetricProducer, Http
 
   @Override
   public void initializeMetrics(
-      SolrMetricsContext parentContext, String scope, CoreDescriptor coreDescriptor) {
+      SolrMetricsContext parentContext, String scope, Attributes attributes) {
     this.solrMetricsContext = parentContext;
     this.scope = scope;
   }

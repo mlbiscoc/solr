@@ -16,8 +16,8 @@
  */
 package org.apache.solr.metrics;
 
+import io.opentelemetry.api.common.Attributes;
 import java.io.IOException;
-import org.apache.solr.core.CoreDescriptor;
 
 /** Used by objects that expose metrics through {@link SolrMetricManager}. */
 public interface SolrMetricProducer extends AutoCloseable {
@@ -48,16 +48,15 @@ public interface SolrMetricProducer extends AutoCloseable {
    *     using {@link SolrMetricsContext#getChildContext(Object)} passing <code>this</code> as the
    *     child object.
    * @param scope component scope
-   * @param coreDescriptor
+   * @param attributes
    */
-  void initializeMetrics(
-      SolrMetricsContext parentContext, String scope, CoreDescriptor coreDescriptor);
+  void initializeMetrics(SolrMetricsContext parentContext, String scope, Attributes attributes);
 
   /**
    * Implementations should return the context used in {@link #initializeMetrics(SolrMetricsContext,
-   * String, CoreDescriptor)} to ensure proper cleanup of metrics at the end of the life-cycle of
-   * this component. This should be the child context if one was created, or null if the parent
-   * context was used.
+   * String, Attributes)} to ensure proper cleanup of metrics at the end of the life-cycle of this
+   * component. This should be the child context if one was created, or null if the parent context
+   * was used.
    */
   SolrMetricsContext getSolrMetricsContext();
 

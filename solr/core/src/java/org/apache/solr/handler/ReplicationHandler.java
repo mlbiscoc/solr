@@ -30,6 +30,7 @@ import static org.apache.solr.handler.admin.api.ReplicationAPIBase.OFFSET;
 import static org.apache.solr.handler.admin.api.ReplicationAPIBase.STATUS;
 import static org.apache.solr.handler.admin.api.ReplicationAPIBase.TLOG_FILE;
 
+import io.opentelemetry.api.common.Attributes;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -85,7 +86,6 @@ import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.core.CloseHook;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.core.IndexDeletionPolicyWrapper;
 import org.apache.solr.core.SolrCore;
@@ -840,8 +840,8 @@ public class ReplicationHandler extends RequestHandlerBase
   // TODO: Handle compatibility in 8.x
   @Override
   public void initializeMetrics(
-      SolrMetricsContext parentContext, String scope, CoreDescriptor coreDescriptor) {
-    super.initializeMetrics(parentContext, scope, coreDescriptor);
+      SolrMetricsContext parentContext, String scope, Attributes attributes) {
+    super.initializeMetrics(parentContext, scope, attributes);
     solrMetricsContext.gauge(
         () ->
             (core != null && !core.isClosed()

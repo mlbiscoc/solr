@@ -527,7 +527,8 @@ public class CoreContainer {
               newVersion, getResourceLoader().newInstance(klas, AuditLoggerPlugin.class));
 
       newAuditloggerPlugin.plugin.init(auditConf);
-      newAuditloggerPlugin.plugin.initializeMetrics(solrMetricsContext, "/auditlogging", null);
+      newAuditloggerPlugin.plugin.initializeMetrics(
+          solrMetricsContext, "/auditlogging", MetricUtils.createAttributes("audit", "auditing"));
     } else {
       log.debug("Security conf doesn't exist. Skipping setup for audit logging module.");
     }
@@ -592,7 +593,10 @@ public class CoreContainer {
     if (authenticationPlugin != null) {
       authenticationPlugin.plugin.init(authenticationConfig);
       setupHttpClientForAuthPlugin(authenticationPlugin.plugin);
-      authenticationPlugin.plugin.initializeMetrics(solrMetricsContext, "/authentication", null);
+      authenticationPlugin.plugin.initializeMetrics(
+          solrMetricsContext,
+          "/authentication",
+          MetricUtils.createAttributes("authentication", "authentication"));
     }
     this.authenticationPlugin = authenticationPlugin;
     try {
@@ -804,13 +808,16 @@ public class CoreContainer {
       // and have dependencies that use the thread's contextClassLoader
       Thread.currentThread().setContextClassLoader(loader.getClassLoader());
       loadInternal();
+    } catch (IOException e) {
+      // TODO This should not be here. Come back and fix this exception being thrown
+      throw new RuntimeException(e);
     } finally {
       Thread.currentThread().setContextClassLoader(originalContextClassLoader);
     }
   }
 
   /** Load the cores defined for this CoreContainer */
-  private void loadInternal() {
+  private void loadInternal() throws IOException {
     if (log.isDebugEnabled()) {
       log.debug("Loading cores into CoreContainer [instanceDir={}]", getSolrHome());
     }
@@ -863,13 +870,19 @@ public class CoreContainer {
     shardHandlerFactory =
         ShardHandlerFactory.newInstance(cfg.getShardHandlerFactoryPluginInfo(), loader);
     if (shardHandlerFactory instanceof SolrMetricProducer metricProducer) {
-      metricProducer.initializeMetrics(solrMetricsContext, "httpShardHandler", null);
+      metricProducer.initializeMetrics(
+          solrMetricsContext,
+          "httpShardHandler",
+          MetricUtils.createAttributes("shardHandler", "httpShardHandler"));
     }
 
     updateShardHandler = new UpdateShardHandler(cfg.getUpdateShardHandlerConfig());
     solrClientProvider =
         new HttpSolrClientProvider(cfg.getUpdateShardHandlerConfig(), solrMetricsContext);
-    updateShardHandler.initializeMetrics(solrMetricsContext, "updateShardHandler", null);
+    updateShardHandler.initializeMetrics(
+        solrMetricsContext,
+        "updateShardHandler",
+        MetricUtils.createAttributes("shardHandler", "updateShardHandler"));
     solrClientCache = new SolrClientCache(updateShardHandler.getDefaultHttpClient());
 
     Map<String, CacheConfig> cachesConfig = cfg.getCachesConfig();
@@ -880,7 +893,10 @@ public class CoreContainer {
       for (Map.Entry<String, CacheConfig> e : cachesConfig.entrySet()) {
         SolrCache<?, ?> c = e.getValue().newInstance();
         String cacheName = e.getKey();
-        c.initializeMetrics(solrMetricsContext, "nodeLevelCache/" + cacheName, null);
+        c.initializeMetrics(
+            solrMetricsContext,
+            "nodeLevelCache/" + cacheName,
+            MetricUtils.createAttributes("cache", "NodeCacheStuff"));
         m.put(cacheName, c);
       }
       this.caches = Collections.unmodifiableMap(m);
@@ -894,14 +910,19 @@ public class CoreContainer {
     if (isZooKeeperAware()) {
       solrClientCache.setDefaultZKHost(getZkController().getZkServerAddress());
       // initialize ZkClient metrics
-      zkSys.getZkMetricsProducer().initializeMetrics(solrMetricsContext, "zkClient", null);
+      zkSys
+          .getZkMetricsProducer()
+          .initializeMetrics(
+              solrMetricsContext, "zkClient", MetricUtils.createAttributes("zk", "zkClienttag"));
       pkiAuthenticationSecurityBuilder =
           new PKIAuthenticationPlugin(
               this,
               zkSys.getZkController().getNodeName(),
               (PublicKeyHandler) containerHandlers.get(PublicKeyHandler.PATH));
       pkiAuthenticationSecurityBuilder.initializeMetrics(
-          solrMetricsContext, "/authentication/pki", null);
+          solrMetricsContext,
+          "/authentication/pki",
+          MetricUtils.createAttributes("pki", "pkiAuthentication"));
 
       fileStore = new DistribFileStore(this);
       registerV2ApiIfEnabled(ClusterFileStore.class);
@@ -978,10 +999,16 @@ public class CoreContainer {
 
     metricsHandler = new MetricsHandler(this);
     containerHandlers.put(METRICS_PATH, metricsHandler);
-    metricsHandler.initializeMetrics(solrMetricsContext, METRICS_PATH, null);
+    metricsHandler.initializeMetrics(
+        solrMetricsContext,
+        METRICS_PATH,
+        MetricUtils.createAttributes("metrics", "metricsHandler"));
 
     containerHandlers.put(AUTHZ_PATH, securityConfHandler);
-    securityConfHandler.initializeMetrics(solrMetricsContext, AUTHZ_PATH, null);
+    securityConfHandler.initializeMetrics(
+        solrMetricsContext,
+        AUTHZ_PATH,
+        MetricUtils.createAttributes("security", "securityHandler"));
     containerHandlers.put(AUTHC_PATH, securityConfHandler);
 
     PluginInfo[] metricReporters = cfg.getMetricsConfig().getMetricReporters();
@@ -1064,7 +1091,10 @@ public class CoreContainer {
         "version");
 
     SolrFieldCacheBean fieldCacheBean = new SolrFieldCacheBean();
-    fieldCacheBean.initializeMetrics(solrMetricsContext, null, null);
+    fieldCacheBean.initializeMetrics(
+        solrMetricsContext,
+        "fieldCacheBean",
+        MetricUtils.createAttributes("fieldCache", "fieldCacheBean"));
 
     if (isZooKeeperAware()) {
       metricManager.loadClusterReporters(metricReporters, this);
@@ -2391,7 +2421,8 @@ public class CoreContainer {
 
   // ---------------- CoreContainer request handlers --------------
 
-  protected <T> T createHandler(String path, String handlerClass, Class<T> clazz) {
+  protected <T> T createHandler(String path, String handlerClass, Class<T> clazz)
+      throws IOException {
     T handler =
         loader.newInstance(
             handlerClass, clazz, null, new Class<?>[] {CoreContainer.class}, new Object[] {this});
@@ -2399,7 +2430,9 @@ public class CoreContainer {
       containerHandlers.put(path, (SolrRequestHandler) handler);
     }
     if (handler instanceof SolrMetricProducer) {
-      ((SolrMetricProducer) handler).initializeMetrics(solrMetricsContext, path, null);
+      ((SolrMetricProducer) handler)
+          .initializeMetrics(
+              solrMetricsContext, path, MetricUtils.createAttributes("handlerDescriptor", path));
     }
     return handler;
   }

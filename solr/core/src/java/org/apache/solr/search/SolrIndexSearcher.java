@@ -19,6 +19,7 @@ package org.apache.solr.search;
 import static org.apache.solr.search.CpuAllowedLimit.TIMING_CONTEXT;
 
 import com.codahale.metrics.Gauge;
+import io.opentelemetry.api.common.Attributes;
 import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -99,7 +100,6 @@ import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.ExecutorUtil.MDCAwareThreadPoolExecutor;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
-import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.core.NodeConfig;
@@ -123,6 +123,7 @@ import org.apache.solr.update.IndexFingerprint;
 import org.apache.solr.update.SolrIndexConfig;
 import org.apache.solr.util.IOFunction;
 import org.apache.solr.util.ThreadCpuTimer;
+import org.apache.solr.util.stats.MetricUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -579,7 +580,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   }
 
   /** Register sub-objects such as caches and our own metrics */
-  public void register() {
+  public void register() throws IOException {
     final Map<String, SolrInfoBean> infoRegistry = core.getInfoRegistry();
     // register self
     infoRegistry.put(STATISTICS_KEY, this);
@@ -593,9 +594,10 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       cache.initializeMetrics(
           solrMetricsContext,
           SolrMetricManager.mkName(cache.name(), STATISTICS_KEY),
-          core.getCoreDescriptor());
+          MetricUtils.createAttributes("statistics", "key"));
     }
-    initializeMetrics(solrMetricsContext, STATISTICS_KEY, core.getCoreDescriptor());
+    initializeMetrics(
+        solrMetricsContext, STATISTICS_KEY, MetricUtils.createAttributes("statistics", "otherkey"));
     registerTime = new Date();
   }
 
@@ -2595,7 +2597,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
   @Override
   public void initializeMetrics(
-      SolrMetricsContext parentContext, String scope, CoreDescriptor coreDescriptor) {
+      SolrMetricsContext parentContext, String scope, Attributes attributes) {
     parentContext.gauge(() -> name, true, "searcherName", Category.SEARCHER.toString(), scope);
     parentContext.gauge(() -> cachingEnabled, true, "caching", Category.SEARCHER.toString(), scope);
     parentContext.gauge(() -> openTime, true, "openedAt", Category.SEARCHER.toString(), scope);

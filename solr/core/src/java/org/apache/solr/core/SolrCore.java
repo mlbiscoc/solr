@@ -21,6 +21,7 @@ import static org.apache.solr.handler.admin.MetricsHandler.PROMETHEUS_METRICS_WT
 
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Timer;
+import io.opentelemetry.api.common.Attributes;
 import java.io.Closeable;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -175,6 +176,7 @@ import org.apache.solr.util.circuitbreaker.CircuitBreakerRegistry;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.apache.solr.util.plugin.SolrCoreAware;
+import org.apache.solr.util.stats.MetricUtils;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
 import org.eclipse.jetty.io.RuntimeIOException;
@@ -1104,7 +1106,8 @@ public class SolrCore implements SolrInfoBean, Closeable {
       setLatestSchema(schema);
 
       // initialize core metrics
-      initializeMetrics(solrMetricsContext, null, coreDescriptor);
+      initializeMetrics(
+          solrMetricsContext, null, MetricUtils.createAttributes("initCore", "myCore"));
 
       // init pluggable circuit breakers, after metrics because some circuit breakers use metrics
       initPlugins(null, CircuitBreaker.class);
@@ -1112,7 +1115,8 @@ public class SolrCore implements SolrInfoBean, Closeable {
       SolrFieldCacheBean solrFieldCacheBean = new SolrFieldCacheBean();
       // this is registered at the CONTAINER level because it's not core-specific - for now we
       // also register it here for back-compat
-      solrFieldCacheBean.initializeMetrics(solrMetricsContext, "core", getCoreDescriptor());
+      solrFieldCacheBean.initializeMetrics(
+          solrMetricsContext, "core", MetricUtils.createAttributes("fieldCache", "beanCache"));
       infoRegistry.put("fieldCache", solrFieldCacheBean);
 
       this.maxWarmingSearchers = solrConfig.maxWarmingSearchers;
@@ -1189,7 +1193,10 @@ public class SolrCore implements SolrInfoBean, Closeable {
       // Allow the directory factory to report metrics
       if (directoryFactory instanceof SolrMetricProducer) {
         ((SolrMetricProducer) directoryFactory)
-            .initializeMetrics(solrMetricsContext, "directoryFactory", getCoreDescriptor());
+            .initializeMetrics(
+                solrMetricsContext,
+                "directoryFactory",
+                MetricUtils.createAttributes("dirFactory", "factory"));
       }
 
       bufferUpdatesIfConstructing(coreDescriptor);
@@ -1270,7 +1277,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
     }
   }
 
-  private UpdateHandler initUpdateHandler(UpdateHandler updateHandler) {
+  private UpdateHandler initUpdateHandler(UpdateHandler updateHandler) throws IOException {
     String updateHandlerClass = solrConfig.getUpdateHandlerInfo().className;
     if (updateHandlerClass == null) {
       updateHandlerClass = DirectUpdateHandler2.class.getName();
@@ -1303,7 +1310,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
 
   @Override
   public void initializeMetrics(
-      SolrMetricsContext parentContext, String scope, CoreDescriptor coreDescriptor) {
+      SolrMetricsContext parentContext, String scope, Attributes attributes) {
     newSearcherCounter = parentContext.counter("new", Category.SEARCHER.toString());
     newSearcherTimer = parentContext.timer("time", Category.SEARCHER.toString(), "new");
     newSearcherWarmupTimer = parentContext.timer("warmup", Category.SEARCHER.toString(), "new");
@@ -1627,7 +1634,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
   }
 
   /** Load the request processors */
-  private Map<String, UpdateRequestProcessorChain> loadUpdateProcessorChains() {
+  private Map<String, UpdateRequestProcessorChain> loadUpdateProcessorChains() throws IOException {
     Map<String, UpdateRequestProcessorChain> map = new HashMap<>();
     UpdateRequestProcessorChain def =
         initPlugins(
