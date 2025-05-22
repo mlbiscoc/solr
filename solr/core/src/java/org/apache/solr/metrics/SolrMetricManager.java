@@ -28,13 +28,29 @@ import com.codahale.metrics.SharedMetricRegistries;
 import com.codahale.metrics.Timer;
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.metrics.DoubleCounter;
+import io.opentelemetry.api.metrics.DoubleCounterBuilder;
 import io.opentelemetry.api.metrics.DoubleGauge;
+import io.opentelemetry.api.metrics.DoubleGaugeBuilder;
 import io.opentelemetry.api.metrics.DoubleHistogram;
+import io.opentelemetry.api.metrics.DoubleHistogramBuilder;
+import io.opentelemetry.api.metrics.DoubleUpDownCounter;
+import io.opentelemetry.api.metrics.DoubleUpDownCounterBuilder;
 import io.opentelemetry.api.metrics.LongCounter;
 import io.opentelemetry.api.metrics.LongCounterBuilder;
 import io.opentelemetry.api.metrics.LongGauge;
+import io.opentelemetry.api.metrics.LongGaugeBuilder;
 import io.opentelemetry.api.metrics.LongHistogram;
+import io.opentelemetry.api.metrics.LongHistogramBuilder;
+import io.opentelemetry.api.metrics.LongUpDownCounter;
+import io.opentelemetry.api.metrics.LongUpDownCounterBuilder;
 import io.opentelemetry.api.metrics.MeterProvider;
+import io.opentelemetry.api.metrics.ObservableDoubleCounter;
+import io.opentelemetry.api.metrics.ObservableDoubleMeasurement;
+import io.opentelemetry.api.metrics.ObservableDoubleUpDownCounter;
+import io.opentelemetry.api.metrics.ObservableLongCounter;
+import io.opentelemetry.api.metrics.ObservableLongGauge;
+import io.opentelemetry.api.metrics.ObservableLongMeasurement;
+import io.opentelemetry.api.metrics.ObservableLongUpDownCounter;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -53,6 +69,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Consumer;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import java.util.stream.Collectors;
@@ -160,17 +177,12 @@ public class SolrMetricManager {
     meters.remove(registry);
   }
 
-  public LongCounter longCounter(
-      SolrMetricsContext context, String registry, String counterName, String description) {
-    return longCounter(context, registry, counterName, description, null);
-  }
+  //  public LongCounter longCounter(String registry, String counterName, String description) {
+  //    return longCounter(registry, counterName, description, null);
+  //  }
 
   public LongCounter longCounter(
-      SolrMetricsContext context,
-      String registry,
-      String counterName,
-      String description,
-      String unit) {
+      String registry, String counterName, String description, String unit) {
     LongCounterBuilder builder =
         meterProvider.get(registry).counterBuilder(counterName).setDescription(description);
     if (unit != null) {
@@ -179,20 +191,69 @@ public class SolrMetricManager {
     return builder.build();
   }
 
-  public DoubleCounter doubleCounter(
-      SolrMetricsContext context,
-      String registry,
-      String counterName,
-      String description,
-      String unit) {
-    return meterProvider
-        .get(registry)
-        .counterBuilder(counterName)
-        .setDescription(description)
-        .setUnit(unit)
-        .ofDoubles()
-        .build();
+  //  public LongUpDownCounter longUpDownCounter(String registry,
+  //                                             String counterName,
+  //                                             String description) {
+  //    return longUpDownCounter(registry, counterName, description, null);
+  //  }
+
+  public LongUpDownCounter longUpDownCounter(
+      String registry, String counterName, String description, String unit) {
+    LongUpDownCounterBuilder builder =
+        meterProvider.get(registry).upDownCounterBuilder(counterName).setDescription(description);
+    if (unit != null) {
+      builder.setUnit(unit);
+    }
+    return builder.build();
   }
+
+  //  public DoubleUpDownCounter doubleUpDownCounter(String registry,
+  //                                                 String counterName,
+  //                                                 String description) {
+  //    return doubleUpDownCounter(registry, counterName, description, null);
+  //  }
+
+  public DoubleUpDownCounter doubleUpDownCounter(
+      String registry, String counterName, String description, String unit) {
+    DoubleUpDownCounterBuilder builder =
+        meterProvider
+            .get(registry)
+            .upDownCounterBuilder(counterName)
+            .setDescription(description)
+            .ofDoubles();
+    if (unit != null) {
+      builder.setUnit(unit);
+    }
+    return builder.build();
+  }
+
+  //  public DoubleCounter doubleCounter(
+  //          String registry,
+  //          String counterName,
+  //          String description) {
+  //    return doubleCounter(registry, counterName, description, null);
+  //  }
+
+  public DoubleCounter doubleCounter(
+      String registry, String counterName, String description, String unit) {
+    DoubleCounterBuilder builder =
+        meterProvider
+            .get(registry)
+            .counterBuilder(counterName)
+            .setDescription(description)
+            .ofDoubles();
+    if (unit != null) {
+      builder.setUnit(unit);
+    }
+    return builder.build();
+  }
+
+  //  public DoubleHistogram doubleHistogram(SolrMetricsContext context,
+  //                                         String registry,
+  //                                         String histogramName,
+  //                                         String description) {
+  //    return doubleHistogram(context, registry, histogramName, description, null);
+  //  }
 
   public DoubleHistogram doubleHistogram(
       SolrMetricsContext context,
@@ -200,13 +261,20 @@ public class SolrMetricManager {
       String histogramName,
       String description,
       String unit) {
-    return meterProvider
-        .get(registry)
-        .histogramBuilder(histogramName)
-        .setDescription(description)
-        .setUnit(unit)
-        .build();
+    DoubleHistogramBuilder builder =
+        meterProvider.get(registry).histogramBuilder(histogramName).setDescription(description);
+    if (unit != null) {
+      builder.setUnit(unit);
+    }
+    return builder.build();
   }
+
+  //  public LongHistogram longHistogram(SolrMetricsContext context,
+  //                                     String registry,
+  //                                     String histogramName,
+  //                                     String description) {
+  //    return longHistogram(context, registry, histogramName, description, null);
+  //  }
 
   public LongHistogram longHistogram(
       SolrMetricsContext context,
@@ -214,13 +282,26 @@ public class SolrMetricManager {
       String histogramName,
       String description,
       String unit) {
-    return meterProvider
-        .get(registry)
-        .histogramBuilder(histogramName)
-        .setDescription(description)
-        .ofLongs()
-        .build();
+    LongHistogramBuilder builder =
+        meterProvider
+            .get(registry)
+            .histogramBuilder(histogramName)
+            .setDescription(description)
+            .ofLongs();
+
+    if (unit != null) {
+      builder.setUnit(unit);
+    }
+
+    return builder.build();
   }
+
+  //  public DoubleGauge doubleGauge(SolrMetricsContext context,
+  //                     String registry,
+  //                     String gaugeName,
+  //                     String description) {
+  //    return doubleGauge(context,registry,gaugeName,description, null);
+  //  }
 
   public DoubleGauge doubleGauge(
       SolrMetricsContext context,
@@ -228,8 +309,21 @@ public class SolrMetricManager {
       String gaugeName,
       String description,
       String unit) {
-    return meterProvider.get(registry).gaugeBuilder(registry).setDescription(description).build();
+    DoubleGaugeBuilder builder =
+        meterProvider.get(registry).gaugeBuilder(gaugeName).setDescription(description);
+    if (unit != null) {
+      builder.setUnit(unit);
+    }
+
+    return builder.build();
   }
+
+  //  public LongGauge longGauge(SolrMetricsContext context,
+  //                             String registry,
+  //                             String gaugeName,
+  //                             String description) {
+  //    return longGauge(context, registry, gaugeName, description, null);
+  //  }
 
   public LongGauge longGauge(
       SolrMetricsContext context,
@@ -237,12 +331,116 @@ public class SolrMetricManager {
       String gaugeName,
       String description,
       String unit) {
-    return meterProvider
-        .get(registry)
-        .gaugeBuilder(registry)
-        .setDescription(description)
-        .ofLongs()
-        .build();
+    LongGaugeBuilder builder =
+        meterProvider.get(registry).gaugeBuilder(gaugeName).setDescription(description).ofLongs();
+    if (unit != null) {
+      builder.setUnit(unit);
+    }
+
+    return builder.build();
+  }
+
+  //  public ObservableLongCounter observableLongCounter(String registry, String counterName, String
+  // description, Consumer<ObservableLongMeasurement> callback) {
+  //    return observableLongCounter(registry, counterName, description, callback, null);
+  //  }
+
+  public ObservableLongCounter observableLongCounter(
+      String registry,
+      String counterName,
+      String description,
+      Consumer<ObservableLongMeasurement> callback,
+      String unit) {
+    LongCounterBuilder builder =
+        meterProvider.get(registry).counterBuilder(counterName).setDescription(description);
+    if (unit != null) {
+      builder.setUnit(unit);
+    }
+    return builder.buildWithCallback(callback);
+  }
+
+  //  public ObservableDoubleCounter observableDoubleCounter(String registry, String gaugeName,
+  // String description, Consumer<ObservableDoubleMeasurement> callback) {
+  //    return observableDoubleCounter(registry, gaugeName, description, callback, null);
+  //  }
+
+  public ObservableDoubleCounter observableDoubleCounter(
+      String registry,
+      String counterName,
+      String description,
+      Consumer<ObservableDoubleMeasurement> callback,
+      String unit) {
+    DoubleCounterBuilder builder =
+        meterProvider
+            .get(registry)
+            .counterBuilder(counterName)
+            .setDescription(description)
+            .ofDoubles();
+    if (unit != null) {
+      builder.setUnit(unit);
+    }
+    return builder.buildWithCallback(callback);
+  }
+
+  //  public ObservableLongGauge observableLongGauge(String registry, String gaugeName, String
+  // description, Consumer<ObservableLongMeasurement> callback) {
+  //    return observableLongGauge(registry, gaugeName, description, callback, null);
+  //  }
+
+  public ObservableLongGauge observableLongGauge(
+      String registry,
+      String gaugeName,
+      String description,
+      Consumer<ObservableLongMeasurement> callback,
+      String unit) {
+    LongGaugeBuilder builder =
+        meterProvider.get(registry).gaugeBuilder(gaugeName).setDescription(description).ofLongs();
+    if (unit != null) {
+      builder.setUnit(unit);
+    }
+    return builder.buildWithCallback(callback);
+  }
+
+  //  public ObservableLongUpDownCounter observableLongUpDownCounter(String registry, String
+  // counterName, String description, Consumer<ObservableLongMeasurement> callback) {
+  //    return observableLongUpDownCounter(registry, counterName, description, callback, null);
+  //  }
+
+  public ObservableLongUpDownCounter observableLongUpDownCounter(
+      String registry,
+      String counterName,
+      String description,
+      Consumer<ObservableLongMeasurement> callback,
+      String unit) {
+    LongUpDownCounterBuilder builder =
+        meterProvider.get(registry).upDownCounterBuilder(counterName).setDescription(description);
+    if (unit != null) {
+      builder.setUnit(unit);
+    }
+    return builder.buildWithCallback(callback);
+  }
+
+  //  public ObservableDoubleUpDownCounter observableDoubleUpDownCounter(String registry, String
+  // counterName, String description, Consumer<ObservableDoubleMeasurement> callback) {
+  //    return observableDoubleUpDownCounter(registry, counterName, description, callback, null);
+  //  }
+
+  public ObservableDoubleUpDownCounter observableDoubleUpDownCounter(
+      String registry,
+      String counterName,
+      String description,
+      Consumer<ObservableDoubleMeasurement> callback,
+      String unit) {
+    DoubleUpDownCounterBuilder builder =
+        meterProvider
+            .get(registry)
+            .upDownCounterBuilder(counterName)
+            .setDescription(description)
+            .ofDoubles();
+    if (unit != null) {
+      builder.setUnit(unit);
+    }
+    return builder.buildWithCallback(callback);
   }
 
   public boolean otelHasRegistry(String name) {

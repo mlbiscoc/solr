@@ -21,6 +21,7 @@ import static org.apache.solr.handler.admin.MetricsHandler.PROMETHEUS_METRICS_WT
 
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Timer;
+import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
 import java.io.Closeable;
 import java.io.FileNotFoundException;
@@ -116,6 +117,7 @@ import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.metrics.SolrCoreMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
+import org.apache.solr.metrics.otel.instruments.OtelLongCounter;
 import org.apache.solr.pkg.PackageListeners;
 import org.apache.solr.pkg.PackagePluginHolder;
 import org.apache.solr.pkg.SolrPackageLoader;
@@ -258,6 +260,13 @@ public class SolrCore implements SolrInfoBean, Closeable {
   private Counter newSearcherMaxReachedCounter;
   private Counter newSearcherOtherErrorsCounter;
   private volatile boolean newSearcherReady = false;
+
+  private OtelLongCounter otelNewSearcherCounter;
+  private OtelLongCounter otelSearcherMaxReachedCounter;
+  //  private OtelLongCounter newSearcherOtherErrorsCounter;
+  //  private OtelLongGauge
+
+  private OtelLongCounter oNewSearcherCounter;
 
   private final String metricTag = SolrMetricProducer.getUniqueMetricTag(this, null);
   private final SolrMetricsContext solrMetricsContext;
@@ -1311,13 +1320,18 @@ public class SolrCore implements SolrInfoBean, Closeable {
   @Override
   public void initializeMetrics(
       SolrMetricsContext parentContext, String scope, Attributes attributes) {
+
     newSearcherCounter = parentContext.counter("new", Category.SEARCHER.toString());
-    newSearcherTimer = parentContext.timer("time", Category.SEARCHER.toString(), "new");
-    newSearcherWarmupTimer = parentContext.timer("warmup", Category.SEARCHER.toString(), "new");
+
+    // TODO Does this metric even make sense?
     newSearcherMaxReachedCounter =
         parentContext.counter("maxReached", Category.SEARCHER.toString(), "new");
     newSearcherOtherErrorsCounter =
         parentContext.counter("errors", Category.SEARCHER.toString(), "new");
+
+    // TODO lets do timers later
+    newSearcherTimer = parentContext.timer("time", Category.SEARCHER.toString(), "new");
+    newSearcherWarmupTimer = parentContext.timer("warmup", Category.SEARCHER.toString(), "new");
 
     parentContext.gauge(
         () -> name == null ? parentContext.nullString() : name,
@@ -1393,6 +1407,16 @@ public class SolrCore implements SolrInfoBean, Closeable {
         "path",
         Category.CORE.toString(),
         "fs");
+
+    var baseNewSearcherCounter =
+        parentContext.longCounter("solr_core_searcher_metric", "Solr inital searcher metrics");
+    this.otelNewSearcherCounter =
+        new OtelLongCounter(
+            baseNewSearcherCounter,
+            Attributes.builder()
+                .putAll(attributes)
+                .put(AttributeKey.stringKey("type"), "new")
+                .build());
   }
 
   public String getMetricTag() {

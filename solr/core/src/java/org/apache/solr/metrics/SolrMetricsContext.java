@@ -29,9 +29,12 @@ import io.opentelemetry.api.metrics.DoubleHistogram;
 import io.opentelemetry.api.metrics.LongCounter;
 import io.opentelemetry.api.metrics.LongGauge;
 import io.opentelemetry.api.metrics.LongHistogram;
+import io.opentelemetry.api.metrics.ObservableLongGauge;
+import io.opentelemetry.api.metrics.ObservableLongMeasurement;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 import org.apache.solr.util.stats.MetricUtils;
 
 /**
@@ -140,20 +143,20 @@ public class SolrMetricsContext {
     return MetricUtils.convertMetrics(getMetricRegistry(), metricNames);
   }
 
-  public DoubleCounter doubleCounter(String metricName, String description) {
-    return doubleCounter(metricName, description, null);
-  }
-
-  public DoubleCounter doubleCounter(String metricName, String description, String unit) {
-    return metricManager.doubleCounter(this, registryName, metricName, description, unit);
-  }
-
   public LongCounter longCounter(String metricName, String description) {
     return longCounter(metricName, description, null);
   }
 
   public LongCounter longCounter(String metricName, String description, String unit) {
-    return metricManager.longCounter(this, registryName, metricName, description, unit);
+    return metricManager.longCounter(registryName, metricName, description, unit);
+  }
+
+  public DoubleCounter doubleCounter(String metricName, String description) {
+    return doubleCounter(metricName, description, null);
+  }
+
+  public DoubleCounter doubleCounter(String metricName, String description, String unit) {
+    return metricManager.doubleCounter(registryName, metricName, description, unit);
   }
 
   public DoubleHistogram doubleHistogram(String metricName, String description) {
@@ -186,6 +189,11 @@ public class SolrMetricsContext {
 
   public DoubleGauge doubleGauge(String metricName, String description, String unit) {
     return metricManager.doubleGauge(this, registryName, metricName, description, unit);
+  }
+
+  public ObservableLongGauge observableLongGauge(
+      String metricName, String description, Consumer<ObservableLongMeasurement> callback) {
+    return metricManager.observableLongGauge(registryName, metricName, description, callback, null);
   }
 
   /**
