@@ -14,6 +14,14 @@ public class OtelDoubleUpDownCounter implements OtelDoubleMetric {
     this.attributes = attributes;
   }
 
+  public void inc() {
+    measure(1.0);
+  }
+
+  public void dec() {
+    measure(-1.0);
+  }
+
   @Override
   public void measure(Double value) {
     upDownCounter.add(value, attributes);

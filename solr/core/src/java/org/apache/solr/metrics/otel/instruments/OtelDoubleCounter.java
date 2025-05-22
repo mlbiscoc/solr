@@ -14,6 +14,10 @@ public class OtelDoubleCounter implements OtelDoubleMetric {
     this.attributes = attributes;
   }
 
+  public void inc() {
+    measure(1.0);
+  }
+
   @Override
   public void measure(Double value) {
     counter.add(value, attributes);

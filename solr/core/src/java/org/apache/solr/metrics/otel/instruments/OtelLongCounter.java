@@ -14,6 +14,10 @@ public class OtelLongCounter implements OtelLongMetric {
     this.attributes = attributes;
   }
 
+  public void inc() {
+    measure(1L);
+  }
+
   @Override
   public void measure(Long value) {
     baseCounter.add(value, attributes);

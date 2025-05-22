@@ -14,6 +14,14 @@ public class OtelLongUpDownCounter implements OtelLongMetric {
     this.attributes = attributes;
   }
 
+  public void inc() {
+    measure(1L);
+  }
+
+  public void dec() {
+    measure(-1L);
+  }
+
   @Override
   public void measure(Long value) {
     upDownCounter.add(value, attributes);
