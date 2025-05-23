@@ -43,7 +43,9 @@ import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.metrics.otel.OtelMetricFactory;
+import org.apache.solr.metrics.otel.instruments.OtelDoubleCounter;
 import org.apache.solr.metrics.otel.instruments.OtelLongCounter;
+import org.apache.solr.metrics.otel.instruments.OtelLongTimer;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
@@ -205,9 +207,10 @@ public abstract class RequestHandlerBase
     public OtelLongCounter oNumServerErrorRequests = null;
     public OtelLongCounter oNumClientErrorRequests = null;
     public OtelLongCounter oNumTimeoutRequests = null;
+    public OtelLongTimer oRequestTimes = null;
+    public OtelDoubleCounter oNumTotalTime = null;
 
     // TODO We need the timeouts and more
-    //    public final Meter numTimeouts;
     //    public final Timer requestTimes;
     //    public final Counter totalTime;
 
@@ -224,7 +227,15 @@ public abstract class RequestHandlerBase
 
       var baseRequestMetric =
           solrMetricsContext.longCounter(
-              "solr_handler_requests", "Metric is track requests from handler base");
+              "solr_handler_requests", "Track requests from handler base");
+
+      var baseRequestTimeMetric =
+          solrMetricsContext.longHistogram(
+              "solr_handler_requests_times", "Track requests times from handler base");
+
+      var baseRequestTotalTime =
+          solrMetricsContext.doubleCounter(
+              "solr_handler_requests_total_time", "Track requests total time from handler base");
 
       oNumRequests =
           OtelMetricFactory.createLongCounter(
@@ -258,7 +269,7 @@ public abstract class RequestHandlerBase
                   .put(AttributeKey.stringKey("type"), "clientErrors")
                   .build());
 
-      oNumClientErrorRequests =
+      oNumTimeoutRequests =
           OtelMetricFactory.createLongCounter(
               baseRequestMetric,
               Attributes.builder()
@@ -266,11 +277,17 @@ public abstract class RequestHandlerBase
                   .put(AttributeKey.stringKey("type"), "timeouts")
                   .build());
 
+      oNumTotalTime = OtelMetricFactory.createDoubleCounter(baseRequestTotalTime, attributes);
+
+      oRequestTimes = OtelMetricFactory.createLongTimerHistogram(baseRequestTimeMetric, attributes);
+
       oNumRequests.measure(0L);
       oNumErrorRequests.measure(0L);
       oNumServerErrorRequests.measure(0L);
       oNumClientErrorRequests.measure(0L);
       oNumTimeoutRequests.measure(0L);
+      oRequestTimes.measure(0L);
+      oNumTotalTime.measure(0.0);
     }
   }
 
@@ -296,10 +313,13 @@ public abstract class RequestHandlerBase
     }
     HandlerMetrics metrics = getMetricsForThisRequest(req);
     //    metrics.requests.inc();
-    metrics.oNumRequests.measure(0L);
+    metrics.oNumRequests.inc();
 
     // TODO get request times
-    //    Timer.Context timer = metrics.requestTimes.time();
+    //        Timer.Context timer = metrics.requestTimes.time();
+    //    long startTime = System.nanoTime();
+    //    OtelLongTimer.TimingContext timer = metrics.oRequestTimes.start();
+    metrics.oRequestTimes.start();
     try {
       TestInjection.injectLeaderTragedy(req.getCore());
       if (pluginInfo != null && pluginInfo.attributes.containsKey(USEPARAM))
@@ -326,6 +346,9 @@ public abstract class RequestHandlerBase
         // TODO figure out timers
         //        long elapsed = timer.stop();
         //        metrics.totalTime.inc(elapsed);
+        //        long elapsedMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTime);
+        //        metrics.oRequestTimes.measure(elapsedMs);
+        metrics.oRequestTimes.stop();
 
         if (publishCpuTime) {
           Optional<Long> cpuTime = ThreadCpuTimer.readMSandReset(REQUEST_CPU_TIMER_CONTEXT);

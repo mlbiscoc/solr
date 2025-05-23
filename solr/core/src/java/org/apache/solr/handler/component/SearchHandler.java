@@ -157,7 +157,14 @@ public class SearchHandler extends RequestHandlerBase
   @Override
   public void initializeMetrics(
       SolrMetricsContext parentContext, String scope, Attributes attributes) {
-    super.initializeMetrics(parentContext, scope, attributes);
+    super.initializeMetrics(
+        parentContext,
+        scope,
+        Attributes.builder()
+            .putAll(attributes)
+            .put(AttributeKey.stringKey("category"), getCategory().toString())
+            .put(AttributeKey.stringKey("handlerPath"), scope)
+            .build());
     metricsShard =
         new HandlerMetrics( // will register various metrics in the context
             solrMetricsContext,

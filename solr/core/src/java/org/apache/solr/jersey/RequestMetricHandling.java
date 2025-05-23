@@ -21,7 +21,6 @@ import static org.apache.solr.jersey.RequestContextKeys.HANDLER_METRICS;
 import static org.apache.solr.jersey.RequestContextKeys.SOLR_QUERY_REQUEST;
 import static org.apache.solr.jersey.RequestContextKeys.TIMER;
 
-import com.codahale.metrics.Timer;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.container.ContainerRequestFilter;
 import jakarta.ws.rs.container.ContainerResponseContext;
@@ -33,6 +32,7 @@ import java.lang.invoke.MethodHandles;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.core.PluginBag;
 import org.apache.solr.handler.RequestHandlerBase;
+import org.apache.solr.metrics.otel.instruments.OtelLongTimer;
 import org.apache.solr.request.SolrQueryRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -88,10 +88,13 @@ public class RequestMetricHandling {
           (SolrQueryRequest) requestContext.getProperty(SOLR_QUERY_REQUEST);
       final RequestHandlerBase.HandlerMetrics metrics =
           handlerBase.getMetricsForThisRequest(solrQueryRequest);
-
+      // TODO FIX THIS
       requestContext.setProperty(HANDLER_METRICS, metrics);
-      requestContext.setProperty(TIMER, metrics.requestTimes.time());
-      metrics.requests.inc();
+      //      requestContext.setProperty(TIMER, metrics.requestTimes.time());
+      requestContext.setProperty(TIMER, metrics.oRequestTimes);
+      //      metrics.requests.inc();
+      metrics.oRequestTimes.start();
+      metrics.oNumRequests.inc();
     }
   }
 
@@ -116,14 +119,17 @@ public class RequestMetricHandling {
           && SolrJerseyResponse.class.isInstance(responseContext.getEntity())) {
         final SolrJerseyResponse response = (SolrJerseyResponse) responseContext.getEntity();
         if (Boolean.TRUE.equals(response.responseHeader.partialResults)) {
-          metrics.numTimeouts.mark();
+          //          metrics.numTimeouts.mark();
+          metrics.oNumTimeoutRequests.inc();
         }
       } else {
         log.debug("Skipping partialResults check because entity was not SolrJerseyResponse");
       }
 
-      final Timer.Context timer = (Timer.Context) requestContext.getProperty(TIMER);
-      metrics.totalTime.inc(timer.stop());
+      //      final Timer.Context timer = (Timer.Context) requestContext.getProperty(TIMER);
+      final OtelLongTimer timer = (OtelLongTimer) requestContext.getProperty(TIMER);
+      timer.stop();
+      //      metrics.totalTime.inc(timer.stop());
     }
   }
 }

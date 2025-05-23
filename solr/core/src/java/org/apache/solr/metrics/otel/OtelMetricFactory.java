@@ -12,6 +12,7 @@ import org.apache.solr.metrics.otel.instruments.OtelDoubleHistogram;
 import org.apache.solr.metrics.otel.instruments.OtelDoubleUpDownCounter;
 import org.apache.solr.metrics.otel.instruments.OtelLongCounter;
 import org.apache.solr.metrics.otel.instruments.OtelLongHistogram;
+import org.apache.solr.metrics.otel.instruments.OtelLongTimer;
 import org.apache.solr.metrics.otel.instruments.OtelLongUpDownCounter;
 
 public class OtelMetricFactory {
@@ -42,5 +43,10 @@ public class OtelMetricFactory {
   public static OtelLongHistogram createLongHistogram(
       LongHistogram histogram, Attributes attributes) {
     return new OtelLongHistogram(histogram, attributes);
+  }
+
+  public static OtelLongTimer createLongTimerHistogram(
+      LongHistogram histogram, Attributes attributes) {
+    return new OtelLongTimer(histogram, attributes);
   }
 }

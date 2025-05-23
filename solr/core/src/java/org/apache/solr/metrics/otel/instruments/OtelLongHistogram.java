@@ -6,8 +6,8 @@ import org.apache.solr.metrics.otel.OtelLongMetric;
 
 public class OtelLongHistogram implements OtelLongMetric {
 
-  private final LongHistogram histogram;
-  private final Attributes attributes;
+  protected final LongHistogram histogram;
+  protected final Attributes attributes;
 
   public OtelLongHistogram(
       LongHistogram histogram, io.opentelemetry.api.common.Attributes attributes) {
@@ -17,6 +17,6 @@ public class OtelLongHistogram implements OtelLongMetric {
 
   @Override
   public void measure(Long value) {
-    histogram.record(value);
+    histogram.record(value, attributes);
   }
 }
