@@ -57,13 +57,10 @@ public class PrometheusResponseWriter implements QueryResponseWriter {
   public void write(
       OutputStream out, SolrQueryRequest request, SolrQueryResponse response, String contentType)
       throws IOException {
-    NamedList<Object> prometheusRegistries =
-        (NamedList<Object>) response.getValues().get("metrics");
+    // TODO Move this a default in admin metrics
     var prometheusTextFormatWriter = new PrometheusTextFormatWriter(false);
-    for (Map.Entry<String, Object> prometheusRegistry : prometheusRegistries) {
-      var prometheusFormatter = (SolrPrometheusFormatter) prometheusRegistry.getValue();
-      prometheusTextFormatWriter.write(out, prometheusFormatter.collect());
-    }
+    prometheusTextFormatWriter.write(out, request.getCoreContainer().getPrometheusMetricReader().collect());
+
   }
 
   @Override

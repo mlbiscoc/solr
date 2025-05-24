@@ -37,6 +37,12 @@ import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.metrics.LongCounter;
 import io.opentelemetry.api.metrics.MeterProvider;
 import io.opentelemetry.api.trace.Tracer;
+import io.opentelemetry.context.propagation.ContextPropagators;
+import io.opentelemetry.exporter.prometheus.PrometheusMetricReader;
+import io.opentelemetry.sdk.OpenTelemetrySdk;
+import io.opentelemetry.sdk.metrics.SdkMeterProvider;
+import io.opentelemetry.sdk.trace.SdkTracerProvider;
+import io.prometheus.metrics.model.snapshots.MetricSnapshots;
 import jakarta.inject.Singleton;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -166,6 +172,7 @@ import org.apache.solr.update.UpdateShardHandler;
 import org.apache.solr.util.OrderedExecutor;
 import org.apache.solr.util.StartupLoggingUtils;
 import org.apache.solr.util.stats.MetricUtils;
+import org.apache.solr.util.tracing.SimplePropagator;
 import org.apache.zookeeper.KeeperException;
 import org.glassfish.hk2.utilities.binding.AbstractBinder;
 import org.glassfish.jersey.server.ApplicationHandler;
@@ -287,6 +294,10 @@ public class CoreContainer {
   protected volatile Tracer tracer;
 
   protected volatile MeterProvider meterProvider;
+
+  protected volatile OpenTelemetrySdk openTelemetrySdk;
+
+  protected volatile PrometheusMetricReader prometheusMetricReader;
 
   protected MetricsHandler metricsHandler;
 
@@ -423,8 +434,22 @@ public class CoreContainer {
     this.solrHome = config.getSolrHome();
     this.solrCores = SolrCores.newSolrCores(this);
     this.nodeKeyPair = new SolrNodeKeyPair(cfg.getCloudConfig());
-    this.tracer = TracerConfigurator.loadTracer(loader, cfg.getTracerConfiguratorPluginInfo());
+
+    // TODO Lets turn off tracers for now and manually create these metric readers
+    // this.tracer = TracerConfigurator.loadTracer(loader, cfg.getTracerConfiguratorPluginInfo());
+
+    // TODO We need to create an open telemetry confiugrator that will also initialize and load the tracer and meter provider
+    this.prometheusMetricReader = new PrometheusMetricReader(true, null);
+    SdkMeterProvider sdkMeterProvider = SdkMeterProvider.builder()
+            .registerMetricReader(prometheusMetricReader)
+            .build();
+    this.openTelemetrySdk = OpenTelemetrySdk.builder()
+            .setMeterProvider(sdkMeterProvider)
+            .setPropagators(ContextPropagators.create(SimplePropagator.getInstance()))
+            .buildAndRegisterGlobal();
+    this.tracer = GlobalOpenTelemetry.getTracer("solr");
     this.meterProvider = GlobalOpenTelemetry.getMeterProvider();
+
     containerHandlers.put(PublicKeyHandler.PATH, new PublicKeyHandler(nodeKeyPair));
     if (null != this.cfg.getBooleanQueryMaxClauseCount()) {
       IndexSearcher.setMaxClauseCount(this.cfg.getBooleanQueryMaxClauseCount());
@@ -741,6 +766,10 @@ public class CoreContainer {
   public MeterProvider getMeterProvider() {
     return meterProvider;
   }
+
+  public OpenTelemetrySdk getOpenTelemetrySdk() { return openTelemetrySdk; }
+
+  public PrometheusMetricReader getPrometheusMetricReader() { return prometheusMetricReader; }
 
   public OrderedExecutor<BytesRef> getReplayUpdatesExecutor() {
     return replayUpdatesExecutor;

@@ -316,37 +316,27 @@ public class DirectUpdateHandler2 extends UpdateHandler
             (observableLongMeasurement) -> {
               observableLongMeasurement.record(
                   numDocsPending.longValue(),
-                  Attributes.builder()
-                      .putAll(attributes)
-                      .put(AttributeKey.stringKey("category"), getCategory().toString())
+                      baseAttributes
                       .put(AttributeKey.stringKey("type"), "docsPending")
                       .build());
               observableLongMeasurement.record(
                   numDocsPending.longValue(),
-                  Attributes.builder()
-                      .putAll(attributes)
-                      .put(AttributeKey.stringKey("category"), getCategory().toString())
+                      baseAttributes
                       .put(AttributeKey.stringKey("type"), "adds")
                       .build());
               observableLongMeasurement.record(
                   numDocsPending.longValue(),
-                  Attributes.builder()
-                      .putAll(attributes)
-                      .put(AttributeKey.stringKey("category"), getCategory().toString())
+                      baseAttributes
                       .put(AttributeKey.stringKey("type"), "deletesById")
                       .build());
               observableLongMeasurement.record(
                   numDocsPending.longValue(),
-                  Attributes.builder()
-                      .putAll(attributes)
-                      .put(AttributeKey.stringKey("category"), getCategory().toString())
+                      baseAttributes
                       .put(AttributeKey.stringKey("type"), "deletesByQuery")
                       .build());
               observableLongMeasurement.record(
                   numDocsPending.longValue(),
-                  Attributes.builder()
-                      .putAll(attributes)
-                      .put(AttributeKey.stringKey("category"), getCategory().toString())
+                      baseAttributes
                       .put(AttributeKey.stringKey("type"), "errors")
                       .build());
             });
