@@ -34,9 +34,7 @@ public class OtelLongTimer extends OtelLongHistogram {
     }
   }
 
-  /**
-   * AutoCloseable API: use in try-with-resources.
-   */
+  /** AutoCloseable API: use in try-with-resources. */
   public TimingContext time() {
     return new TimingContext(histogram, attributes);
   }
