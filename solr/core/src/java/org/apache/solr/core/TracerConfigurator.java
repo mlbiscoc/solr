@@ -20,6 +20,9 @@ package org.apache.solr.core;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
+import io.opentelemetry.context.propagation.ContextPropagators;
+import io.opentelemetry.sdk.OpenTelemetrySdk;
+import io.opentelemetry.sdk.metrics.SdkMeterProvider;
 import java.lang.invoke.MethodHandles;
 import java.util.Locale;
 import java.util.Map;
@@ -62,6 +65,13 @@ public abstract class TracerConfigurator implements NamedListInitializedPlugin {
       return SimplePropagator.load();
     }
     return TraceUtils.getGlobalTracer();
+  }
+
+  public static OpenTelemetrySdk loadOpenTelemetrySdk(SdkMeterProvider sdkMeterProvider) {
+    return OpenTelemetrySdk.builder()
+        .setMeterProvider(sdkMeterProvider)
+        .setPropagators(ContextPropagators.create(SimplePropagator.getInstance()))
+        .buildAndRegisterGlobal();
   }
 
   protected abstract Tracer getTracer();

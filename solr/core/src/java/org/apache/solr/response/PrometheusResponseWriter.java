@@ -30,7 +30,6 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.metrics.AggregateMetric;
 import org.apache.solr.metrics.prometheus.SolrPrometheusFormatter;
 import org.apache.solr.metrics.prometheus.core.SolrPrometheusCoreFormatter;
@@ -59,8 +58,8 @@ public class PrometheusResponseWriter implements QueryResponseWriter {
       throws IOException {
     // TODO Move this a default in admin metrics
     var prometheusTextFormatWriter = new PrometheusTextFormatWriter(false);
-    prometheusTextFormatWriter.write(out, request.getCoreContainer().getPrometheusMetricReader().collect());
-
+    prometheusTextFormatWriter.write(
+        out, request.getCoreContainer().getPrometheusMetricReader().collect());
   }
 
   @Override

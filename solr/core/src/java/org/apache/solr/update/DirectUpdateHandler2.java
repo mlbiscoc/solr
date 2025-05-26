@@ -316,29 +316,19 @@ public class DirectUpdateHandler2 extends UpdateHandler
             (observableLongMeasurement) -> {
               observableLongMeasurement.record(
                   numDocsPending.longValue(),
-                      baseAttributes
-                      .put(AttributeKey.stringKey("type"), "docsPending")
-                      .build());
+                  baseAttributes.put(AttributeKey.stringKey("type"), "docsPending").build());
               observableLongMeasurement.record(
                   numDocsPending.longValue(),
-                      baseAttributes
-                      .put(AttributeKey.stringKey("type"), "adds")
-                      .build());
+                  baseAttributes.put(AttributeKey.stringKey("type"), "adds").build());
               observableLongMeasurement.record(
                   numDocsPending.longValue(),
-                      baseAttributes
-                      .put(AttributeKey.stringKey("type"), "deletesById")
-                      .build());
+                  baseAttributes.put(AttributeKey.stringKey("type"), "deletesById").build());
               observableLongMeasurement.record(
                   numDocsPending.longValue(),
-                      baseAttributes
-                      .put(AttributeKey.stringKey("type"), "deletesByQuery")
-                      .build());
+                  baseAttributes.put(AttributeKey.stringKey("type"), "deletesByQuery").build());
               observableLongMeasurement.record(
                   numDocsPending.longValue(),
-                      baseAttributes
-                      .put(AttributeKey.stringKey("type"), "errors")
-                      .build());
+                  baseAttributes.put(AttributeKey.stringKey("type"), "errors").build());
             });
     addCommandsCumulative =
         OtelMetricFactory.createLongCounter(

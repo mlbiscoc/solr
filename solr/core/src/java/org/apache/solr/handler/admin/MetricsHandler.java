@@ -25,11 +25,6 @@ import com.codahale.metrics.Metric;
 import com.codahale.metrics.MetricFilter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
-import io.opentelemetry.api.GlobalOpenTelemetry;
-import io.opentelemetry.api.common.AttributeKey;
-import io.opentelemetry.api.common.Attributes;
-import io.opentelemetry.api.metrics.LongCounter;
-import io.opentelemetry.api.metrics.MeterProvider;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -43,11 +38,6 @@ import java.util.function.BiConsumer;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-
-import io.opentelemetry.exporter.prometheus.PrometheusMetricReader;
-import io.opentelemetry.sdk.OpenTelemetrySdk;
-import io.opentelemetry.sdk.metrics.SdkMeterProvider;
-import io.prometheus.metrics.model.snapshots.MetricSnapshots;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
@@ -137,7 +127,7 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
       return;
     }
 
-//    MetricSnapshots metricSnapshots = cc.getPrometheusMetricReader().collect();
+    //    MetricSnapshots metricSnapshots = cc.getPrometheusMetricReader().collect();
 
     if (PROMETHEUS_METRICS_WT.equals(params.get(CommonParams.WT))) {
       response = handlePrometheusExport(params);
