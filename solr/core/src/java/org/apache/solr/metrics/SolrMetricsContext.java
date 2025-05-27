@@ -29,7 +29,6 @@ import io.opentelemetry.api.metrics.DoubleHistogram;
 import io.opentelemetry.api.metrics.LongCounter;
 import io.opentelemetry.api.metrics.LongGauge;
 import io.opentelemetry.api.metrics.LongHistogram;
-import io.opentelemetry.api.metrics.LongUpDownCounter;
 import io.opentelemetry.api.metrics.ObservableLongGauge;
 import io.opentelemetry.api.metrics.ObservableLongMeasurement;
 import java.util.Map;
@@ -150,14 +149,6 @@ public class SolrMetricsContext {
 
   public LongCounter longCounter(String metricName, String description, String unit) {
     return metricManager.longCounter(registryName, metricName, description, unit);
-  }
-
-  public LongUpDownCounter longUpDownCounter(String metricName, String description) {
-    return longUpDownCounter(metricName, description, null);
-  }
-
-  public LongUpDownCounter longUpDownCounter(String metricName, String description, String unit) {
-    return metricManager.longUpDownCounter(registryName, metricName, description, unit);
   }
 
   public DoubleCounter doubleCounter(String metricName, String description) {

@@ -90,9 +90,11 @@ public class RequestMetricHandling {
           handlerBase.getMetricsForThisRequest(solrQueryRequest);
       // TODO FIX THIS
       requestContext.setProperty(HANDLER_METRICS, metrics);
-      requestContext.setProperty(TIMER, metrics.solrRequestTimeMetric);
-      metrics.solrRequestTimeMetric.start();
-      metrics.solrNumRequestsMetric.add(1L, metrics.REQUESTS);
+      //      requestContext.setProperty(TIMER, metrics.requestTimes.time());
+      requestContext.setProperty(TIMER, metrics.oRequestTimes);
+      //      metrics.requests.inc();
+      metrics.oRequestTimes.start();
+      metrics.oNumRequests.inc();
     }
   }
 
@@ -117,14 +119,17 @@ public class RequestMetricHandling {
           && SolrJerseyResponse.class.isInstance(responseContext.getEntity())) {
         final SolrJerseyResponse response = (SolrJerseyResponse) responseContext.getEntity();
         if (Boolean.TRUE.equals(response.responseHeader.partialResults)) {
-          metrics.solrNumRequestsMetric.add(1L, metrics.REQUESTS);
+          //          metrics.numTimeouts.mark();
+          metrics.oNumTimeoutRequests.inc();
         }
       } else {
         log.debug("Skipping partialResults check because entity was not SolrJerseyResponse");
       }
 
+      //      final Timer.Context timer = (Timer.Context) requestContext.getProperty(TIMER);
       final OtelLongTimer timer = (OtelLongTimer) requestContext.getProperty(TIMER);
       timer.stop();
+      //      metrics.totalTime.inc(timer.stop());
     }
   }
 }
