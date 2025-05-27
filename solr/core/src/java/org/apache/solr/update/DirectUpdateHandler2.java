@@ -18,6 +18,7 @@ package org.apache.solr.update;
 
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.api.metrics.LongUpDownCounter;
 import io.opentelemetry.api.metrics.ObservableLongGauge;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -57,8 +58,6 @@ import org.apache.solr.metrics.SolrDelegateRegistryMetricsContext;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
-import org.apache.solr.metrics.otel.OtelMetricFactory;
-import org.apache.solr.metrics.otel.instruments.OtelLongCounter;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
@@ -97,18 +96,30 @@ public class DirectUpdateHandler2 extends UpdateHandler
   LongAdder numDocsPending = new LongAdder();
   LongAdder numErrors = new LongAdder();
 
-  OtelLongCounter numErrorsCumulative;
-  OtelLongCounter deleteByQueryCommandsCumulative;
-  OtelLongCounter deleteByIdCommandsCumulative;
-  OtelLongCounter addCommandsCumulative;
-  OtelLongCounter expungeDeleteCommands;
-  OtelLongCounter mergeIndexesCommands;
-  OtelLongCounter commitCommands;
-  OtelLongCounter splitCommands;
-  OtelLongCounter optimizeCommands;
-  OtelLongCounter rollbackCommands;
+  LongUpDownCounter updateHandlerMetric;
   ObservableLongGauge commitStats;
   ObservableLongGauge updateStats;
+  Attributes COMMITS;
+  Attributes SOFT_AUTO_COMMITS;
+  Attributes AUTO_COMMIT_MAX_DOCS;
+  Attributes AUTO_COMMIT_MAX_TIME;
+  Attributes AUTO_COMMIT_MAX_SIZE;
+  Attributes SOFT_AUTO_COMMIT_MAX_DOCS;
+  Attributes SOFT_AUTO_COMMIT_MAX_TIME;
+  Attributes OPTIMIZES;
+  Attributes ROLLBACKS;
+  Attributes SPLITS;
+  Attributes MERGES;
+  Attributes EXPUNDGE_DELETES;
+  Attributes DOCS_PENDING;
+  Attributes ADDS;
+  Attributes DELETES_BY_ID;
+  Attributes DELETES_BY_QUERY;
+  Attributes ERRORS;
+  Attributes CUMULATIVE_ADDS;
+  Attributes CUMULATIVE_DELETES_BY_ID;
+  Attributes CUMULATIVE_DELETES_BY_QUERY;
+  Attributes CUMULATIVE_ERRORS;
 
   // tracks when auto-commit should occur
   protected final CommitTracker commitTracker;
@@ -230,133 +241,97 @@ public class DirectUpdateHandler2 extends UpdateHandler
         Attributes.builder()
             .putAll(attributes)
             .put(AttributeKey.stringKey("category"), getCategory().toString());
-    var baseUpdateHandlerMetric =
-        solrMetricsContext.longCounter(
+
+    this.updateHandlerMetric =
+        solrMetricsContext.longUpDownCounter(
             "solr_update_handler_metric", "Metrics around update handler");
 
-    commitCommands =
-        OtelMetricFactory.createLongCounter(
-            baseUpdateHandlerMetric,
-            baseAttributes.put(AttributeKey.stringKey("type"), "commits").build());
-    commitStats =
+    this.COMMITS = baseAttributes.put(AttributeKey.stringKey("type"), "commits").build();
+    this.SOFT_AUTO_COMMITS =
+        baseAttributes.put(AttributeKey.stringKey("type"), "softAutoCommits").build();
+    this.AUTO_COMMIT_MAX_DOCS =
+        baseAttributes.put(AttributeKey.stringKey("type"), "autoCommitMaxDocs").build();
+    this.AUTO_COMMIT_MAX_TIME =
+        baseAttributes.put(AttributeKey.stringKey("type"), "autoCommitMaxTime").build();
+    this.AUTO_COMMIT_MAX_SIZE =
+        baseAttributes.put(AttributeKey.stringKey("type"), "autoCommitMaxSize").build();
+    this.SOFT_AUTO_COMMIT_MAX_DOCS =
+        baseAttributes.put(AttributeKey.stringKey("type"), "softAutoCommitMaxDocs").build();
+    this.SOFT_AUTO_COMMIT_MAX_TIME =
+        baseAttributes.put(AttributeKey.stringKey("type"), "softAutoCommitMaxTime").build();
+    this.OPTIMIZES = baseAttributes.put(AttributeKey.stringKey("type"), "optimizes").build();
+    this.ROLLBACKS = baseAttributes.put(AttributeKey.stringKey("type"), "rollbacks").build();
+    this.SPLITS = baseAttributes.put(AttributeKey.stringKey("type"), "splits").build();
+    this.MERGES = baseAttributes.put(AttributeKey.stringKey("type"), "merges").build();
+    this.EXPUNDGE_DELETES =
+        baseAttributes.put(AttributeKey.stringKey("type"), "expungeDeletes").build();
+    this.DOCS_PENDING = baseAttributes.put(AttributeKey.stringKey("type"), "docsPending").build();
+    this.ADDS = baseAttributes.put(AttributeKey.stringKey("type"), "adds").build();
+    this.DELETES_BY_ID = baseAttributes.put(AttributeKey.stringKey("type"), "deletesById").build();
+    this.DELETES_BY_QUERY =
+        baseAttributes.put(AttributeKey.stringKey("type"), "deletesByQuery").build();
+    this.ERRORS = baseAttributes.put(AttributeKey.stringKey("type"), "errors").build();
+    this.CUMULATIVE_ADDS =
+        baseAttributes.put(AttributeKey.stringKey("type"), "cumulativeAdds").build();
+    this.CUMULATIVE_DELETES_BY_ID =
+        baseAttributes.put(AttributeKey.stringKey("type"), "cumulativeDeletesById").build();
+    this.CUMULATIVE_DELETES_BY_QUERY =
+        baseAttributes.put(AttributeKey.stringKey("type"), "cumulativeDeletesByQuery").build();
+    this.CUMULATIVE_ERRORS =
+        baseAttributes.put(AttributeKey.stringKey("type"), "cumulativeErrors").build();
+
+    this.commitStats =
         solrMetricsContext.observableLongGauge(
             "solr_commit_metrics",
             "Metrics around commits",
             (observableLongMeasurement -> {
               observableLongMeasurement.record(
-                  softCommitTracker.getCommitCount(),
-                  baseAttributes.put(AttributeKey.stringKey("type"), "softAutoCommits").build());
+                  softCommitTracker.getCommitCount(), SOFT_AUTO_COMMITS);
 
               if (commitTracker.getDocsUpperBound() > 0) {
                 observableLongMeasurement.record(
-                    commitTracker.getDocsUpperBound(),
-                    baseAttributes
-                        .put(AttributeKey.stringKey("type"), "autoCommitMaxDocs")
-                        .build());
+                    commitTracker.getDocsUpperBound(), AUTO_COMMIT_MAX_DOCS);
               }
               if (commitTracker.getTimeUpperBound() > 0) {
                 observableLongMeasurement.record(
-                    commitTracker.getTimeUpperBound(),
-                    baseAttributes
-                        .put(AttributeKey.stringKey("type"), "autoCommitMaxTime")
-                        .build());
+                    commitTracker.getTimeUpperBound(), AUTO_COMMIT_MAX_TIME);
               }
               if (commitTracker.getTLogFileSizeUpperBound() > 0) {
                 observableLongMeasurement.record(
-                    commitTracker.getTLogFileSizeUpperBound(),
-                    baseAttributes
-                        .put(AttributeKey.stringKey("type"), "autoCommitMaxSize")
-                        .build());
+                    commitTracker.getTLogFileSizeUpperBound(), AUTO_COMMIT_MAX_SIZE);
               }
               if (softCommitTracker.getDocsUpperBound() > 0) {
                 observableLongMeasurement.record(
-                    softCommitTracker.getDocsUpperBound(),
-                    baseAttributes
-                        .put(AttributeKey.stringKey("type"), "softAutoCommitMaxDocs")
-                        .build());
+                    softCommitTracker.getDocsUpperBound(), SOFT_AUTO_COMMIT_MAX_DOCS);
               }
               if (softCommitTracker.getTimeUpperBound() > 0) {
                 observableLongMeasurement.record(
-                    softCommitTracker.getTimeUpperBound(),
-                    baseAttributes
-                        .put(AttributeKey.stringKey("type"), "softAutoCommitMaxTime")
-                        .build());
+                    softCommitTracker.getTimeUpperBound(), SOFT_AUTO_COMMIT_MAX_TIME);
               }
             }));
-
-    optimizeCommands =
-        OtelMetricFactory.createLongCounter(
-            baseUpdateHandlerMetric,
-            baseAttributes.put(AttributeKey.stringKey("type"), "optimizes").build());
-
-    rollbackCommands =
-        OtelMetricFactory.createLongCounter(
-            baseUpdateHandlerMetric,
-            baseAttributes.put(AttributeKey.stringKey("type"), "rollbacks").build());
-
-    splitCommands =
-        OtelMetricFactory.createLongCounter(
-            baseUpdateHandlerMetric,
-            baseAttributes.put(AttributeKey.stringKey("type"), "splits").build());
-
-    mergeIndexesCommands =
-        OtelMetricFactory.createLongCounter(
-            baseUpdateHandlerMetric,
-            baseAttributes.put(AttributeKey.stringKey("type"), "merges").build());
-
-    expungeDeleteCommands =
-        OtelMetricFactory.createLongCounter(
-            baseUpdateHandlerMetric,
-            baseAttributes.put(AttributeKey.stringKey("type"), "expungeDeletes").build());
 
     updateStats =
         solrMetricsContext.observableLongGauge(
             "solr_update_doc_metrics",
             "Metrics around commits",
             (observableLongMeasurement) -> {
-              observableLongMeasurement.record(
-                  numDocsPending.longValue(),
-                  baseAttributes.put(AttributeKey.stringKey("type"), "docsPending").build());
-              observableLongMeasurement.record(
-                  numDocsPending.longValue(),
-                  baseAttributes.put(AttributeKey.stringKey("type"), "adds").build());
-              observableLongMeasurement.record(
-                  numDocsPending.longValue(),
-                  baseAttributes.put(AttributeKey.stringKey("type"), "deletesById").build());
-              observableLongMeasurement.record(
-                  numDocsPending.longValue(),
-                  baseAttributes.put(AttributeKey.stringKey("type"), "deletesByQuery").build());
-              observableLongMeasurement.record(
-                  numDocsPending.longValue(),
-                  baseAttributes.put(AttributeKey.stringKey("type"), "errors").build());
+              observableLongMeasurement.record(numDocsPending.longValue(), DOCS_PENDING);
+              observableLongMeasurement.record(addCommands.longValue(), ADDS);
+              observableLongMeasurement.record(deleteByIdCommands.longValue(), DELETES_BY_ID);
+              observableLongMeasurement.record(deleteByQueryCommands.longValue(), DELETES_BY_QUERY);
+              observableLongMeasurement.record(numErrors.longValue(), ERRORS);
             });
-    addCommandsCumulative =
-        OtelMetricFactory.createLongCounter(
-            baseUpdateHandlerMetric,
-            baseAttributes.put(AttributeKey.stringKey("type"), "cumulativeAdds").build());
-    deleteByIdCommandsCumulative =
-        OtelMetricFactory.createLongCounter(
-            baseUpdateHandlerMetric,
-            baseAttributes.put(AttributeKey.stringKey("type"), "cumulativeDeletesById").build());
-    deleteByQueryCommandsCumulative =
-        OtelMetricFactory.createLongCounter(
-            baseUpdateHandlerMetric,
-            baseAttributes.put(AttributeKey.stringKey("type"), "cumulativeDeletesByQuery").build());
-    numErrorsCumulative =
-        OtelMetricFactory.createLongCounter(
-            baseUpdateHandlerMetric,
-            baseAttributes.put(AttributeKey.stringKey("type"), "cumulativeErrors").build());
 
-    numErrorsCumulative.measure(0L);
-    deleteByQueryCommandsCumulative.measure(0L);
-    deleteByIdCommandsCumulative.measure(0L);
-    addCommandsCumulative.measure(0L);
-    expungeDeleteCommands.measure(0L);
-    mergeIndexesCommands.measure(0L);
-    commitCommands.measure(0L);
-    splitCommands.measure(0L);
-    optimizeCommands.measure(0L);
-    rollbackCommands.measure(0L);
+    updateHandlerMetric.add(0L, CUMULATIVE_ERRORS);
+    updateHandlerMetric.add(0L, CUMULATIVE_DELETES_BY_QUERY);
+    updateHandlerMetric.add(0L, CUMULATIVE_DELETES_BY_ID);
+    updateHandlerMetric.add(0L, CUMULATIVE_ADDS);
+    updateHandlerMetric.add(0L, EXPUNDGE_DELETES);
+    updateHandlerMetric.add(0L, MERGES);
+    updateHandlerMetric.add(0L, COMMITS);
+    updateHandlerMetric.add(0L, SPLITS);
+    updateHandlerMetric.add(0L, OPTIMIZES);
+    updateHandlerMetric.add(0L, ROLLBACKS);
   }
 
   private void deleteAll() throws IOException {
@@ -418,8 +393,7 @@ public class DirectUpdateHandler2 extends UpdateHandler
     int rc = -1;
 
     addCommands.increment();
-    //    addCommandsCumulative.mark();
-    addCommandsCumulative.inc();
+    updateHandlerMetric.add(1L, CUMULATIVE_ADDS);
 
     // if there is no ID field, don't overwrite
     if (idField == null) {
@@ -462,7 +436,7 @@ public class DirectUpdateHandler2 extends UpdateHandler
     } finally {
       if (rc != 1) {
         numErrors.increment();
-        numErrorsCumulative.inc();
+        updateHandlerMetric.add(1L, CUMULATIVE_ERRORS);
       } else {
         numDocsPending.increment();
       }
@@ -567,8 +541,7 @@ public class DirectUpdateHandler2 extends UpdateHandler
   public void delete(DeleteUpdateCommand cmd) throws IOException {
     TestInjection.injectDirectUpdateLatch();
     deleteByIdCommands.increment();
-    deleteByIdCommandsCumulative.inc();
-
+    updateHandlerMetric.add(1L, CUMULATIVE_DELETES_BY_ID);
     if ((cmd.getFlags() & UpdateCommand.IGNORE_INDEXWRITER) != 0) {
       if (ulog != null) ulog.delete(cmd);
       return;
@@ -633,7 +606,7 @@ public class DirectUpdateHandler2 extends UpdateHandler
   public void deleteByQuery(DeleteUpdateCommand cmd) throws IOException {
     TestInjection.injectDirectUpdateLatch();
     deleteByQueryCommands.increment();
-    deleteByQueryCommandsCumulative.inc();
+    updateHandlerMetric.add(1L, CUMULATIVE_DELETES_BY_QUERY);
     boolean madeIt = false;
     try {
       Query q = getQuery(cmd);
@@ -702,7 +675,7 @@ public class DirectUpdateHandler2 extends UpdateHandler
     } finally {
       if (!madeIt) {
         numErrors.increment();
-        numErrorsCumulative.inc();
+        updateHandlerMetric.add(1L, CUMULATIVE_ERRORS);
       }
     }
   }
@@ -710,7 +683,7 @@ public class DirectUpdateHandler2 extends UpdateHandler
   @Override
   public int mergeIndexes(MergeIndexesCommand cmd) throws IOException {
     TestInjection.injectDirectUpdateLatch();
-    mergeIndexesCommands.inc();
+    updateHandlerMetric.add(1L, MERGES);
     int rc;
 
     log.info("start {}", cmd);
@@ -765,7 +738,7 @@ public class DirectUpdateHandler2 extends UpdateHandler
     } finally {
       if (error) {
         numErrors.increment();
-        numErrorsCumulative.inc();
+        updateHandlerMetric.add(1L, CUMULATIVE_ERRORS);
       }
     }
   }
@@ -779,10 +752,10 @@ public class DirectUpdateHandler2 extends UpdateHandler
     }
 
     if (cmd.optimize) {
-      optimizeCommands.inc();
+      updateHandlerMetric.add(1L, OPTIMIZES);
     } else {
-      commitCommands.inc();
-      if (cmd.expungeDeletes) expungeDeleteCommands.inc();
+      updateHandlerMetric.add(1L, COMMITS);
+      if (cmd.expungeDeletes) updateHandlerMetric.add(1L, EXPUNDGE_DELETES);
     }
 
     @SuppressWarnings("unchecked")
@@ -897,7 +870,7 @@ public class DirectUpdateHandler2 extends UpdateHandler
       deleteByQueryCommands.reset();
       if (error) {
         numErrors.increment();
-        numErrorsCumulative.inc();
+        updateHandlerMetric.add(1L, CUMULATIVE_ERRORS);
       }
     }
 
@@ -937,8 +910,7 @@ public class DirectUpdateHandler2 extends UpdateHandler
           "Rollback is currently not supported in SolrCloud mode. (SOLR-4895)");
     }
 
-    rollbackCommands.inc();
-
+    updateHandlerMetric.add(1L, ROLLBACKS);
     boolean error = true;
 
     try {
@@ -956,12 +928,12 @@ public class DirectUpdateHandler2 extends UpdateHandler
 
       error = false;
     } finally {
-      addCommandsCumulative.measure(-addCommands.sumThenReset());
-      deleteByIdCommandsCumulative.measure(-deleteByIdCommands.sumThenReset());
-      deleteByQueryCommandsCumulative.measure(-deleteByQueryCommands.sumThenReset());
+      updateHandlerMetric.add(-addCommands.sumThenReset(), CUMULATIVE_ADDS);
+      updateHandlerMetric.add(-deleteByIdCommands.sumThenReset(), DELETES_BY_ID);
+      updateHandlerMetric.add(-deleteByQueryCommands.sumThenReset(), DELETES_BY_QUERY);
       if (error) {
         numErrors.increment();
-        numErrorsCumulative.inc();
+        updateHandlerMetric.add(1L, CUMULATIVE_ERRORS);
       }
     }
   }
@@ -1092,14 +1064,14 @@ public class DirectUpdateHandler2 extends UpdateHandler
   public void split(SplitIndexCommand cmd) throws IOException {
     commit(new CommitUpdateCommand(cmd.req, false));
     SolrIndexSplitter splitter = new SolrIndexSplitter(cmd);
-    splitCommands.inc();
+    updateHandlerMetric.add(1L, SPLITS);
     NamedList<Object> results = new NamedList<>();
     try {
       splitter.split(results);
       cmd.rsp.addResponse(results);
     } catch (IOException e) {
       numErrors.increment();
-      numErrorsCumulative.inc();
+      updateHandlerMetric.add(1L, CUMULATIVE_ERRORS);
       throw e;
     }
   }

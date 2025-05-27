@@ -21,6 +21,7 @@ import static org.apache.solr.handler.admin.MetricsHandler.PROMETHEUS_METRICS_WT
 
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.api.metrics.LongCounter;
 import io.opentelemetry.api.metrics.ObservableLongGauge;
 import java.io.Closeable;
 import java.io.FileNotFoundException;
@@ -116,8 +117,6 @@ import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.metrics.SolrCoreMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
-import org.apache.solr.metrics.otel.OtelMetricFactory;
-import org.apache.solr.metrics.otel.instruments.OtelLongCounter;
 import org.apache.solr.metrics.otel.instruments.OtelLongTimer;
 import org.apache.solr.pkg.PackageListeners;
 import org.apache.solr.pkg.PackagePluginHolder;
@@ -256,12 +255,19 @@ public class SolrCore implements SolrInfoBean, Closeable {
 
   private volatile boolean newSearcherReady = false;
 
-  private OtelLongCounter newSearcherCounter;
-  private OtelLongCounter newSearcherMaxReachedCounter;
-  private OtelLongCounter newSearcherOtherErrorsCounter;
+  private LongCounter solrSearcherCounter;
+  private ObservableLongGauge coreStats;
   private OtelLongTimer newSearcherTimer;
   private OtelLongTimer newSearcherWarmupTimer;
-  private ObservableLongGauge coreMetric;
+
+  private Attributes SEARCHER_NEW;
+  private Attributes SEARCHER_MAX_REACHED;
+  private Attributes SEARCHER_ERRORS;
+  private Attributes CORE_START_TIME;
+  private Attributes CORE_SIZE_BYTES;
+  private Attributes CORE_SEGMENT_COUNT;
+  private Attributes CORE_TOTAL_SPACE;
+  private Attributes CORE_USABLE_SPACE;
 
   private final String metricTag = SolrMetricProducer.getUniqueMetricTag(this, null);
   private final SolrMetricsContext solrMetricsContext;
@@ -1325,81 +1331,62 @@ public class SolrCore implements SolrInfoBean, Closeable {
             .put(AttributeKey.stringKey("core"), cd.getCoreNodeName())
             .put(AttributeKey.stringKey("shard"), cd.getShardId());
 
-    var baseSearcherAttributes =
-        baseAttributes.put(AttributeKey.stringKey("category"), Category.SEARCHER.toString());
-    var baseGaugeCoreAttributes =
-        baseAttributes.put(AttributeKey.stringKey("category"), Category.CORE.toString());
-
-    var baseSearcherCounterMetric =
-        parentContext.longCounter("solr_searcher_metric", "Searcher metrics");
+    solrSearcherCounter = parentContext.longCounter("solr_searcher_metric", "Searcher metrics");
     var baseSearcherTimerMetric =
         parentContext.longHistogram("solr_searcher_metric_timer", "Searcher metrics");
 
-    newSearcherCounter =
-        OtelMetricFactory.createLongCounter(
-            baseSearcherCounterMetric,
-            baseSearcherAttributes.put(AttributeKey.stringKey("type"), "new").build());
+    var baseCoreAttributes =
+        baseAttributes.put(AttributeKey.stringKey("category"), Category.CORE.toString());
+    var baseSearcherAttributes =
+        baseAttributes.put(AttributeKey.stringKey("category"), Category.SEARCHER.toString());
 
-    newSearcherMaxReachedCounter =
-        OtelMetricFactory.createLongCounter(
-            baseSearcherCounterMetric,
-            baseSearcherAttributes.put(AttributeKey.stringKey("type"), "maxReached").build());
+    this.SEARCHER_NEW = baseSearcherAttributes.put(AttributeKey.stringKey("type"), "new").build();
+    this.SEARCHER_MAX_REACHED =
+        baseSearcherAttributes.put(AttributeKey.stringKey("type"), "maxReached").build();
+    this.SEARCHER_ERRORS =
+        baseSearcherAttributes.put(AttributeKey.stringKey("type"), "errors").build();
+    this.CORE_START_TIME =
+        baseCoreAttributes.put(AttributeKey.stringKey("type"), "startTime").build();
+    this.CORE_SIZE_BYTES =
+        baseCoreAttributes.put(AttributeKey.stringKey("type"), "sizeInBytes").build();
+    this.CORE_SEGMENT_COUNT =
+        baseCoreAttributes.put(AttributeKey.stringKey("type"), "segmentCount").build();
+    this.CORE_TOTAL_SPACE =
+        baseCoreAttributes.put(AttributeKey.stringKey("type"), "totalSpace").build();
+    this.CORE_USABLE_SPACE =
+        baseCoreAttributes.put(AttributeKey.stringKey("type"), "usableSpace").build();
 
-    newSearcherOtherErrorsCounter =
-        OtelMetricFactory.createLongCounter(
-            baseSearcherCounterMetric,
-            baseSearcherAttributes.put(AttributeKey.stringKey("type"), "errors").build());
+    this.newSearcherTimer = new OtelLongTimer(baseSearcherTimerMetric, SEARCHER_NEW);
 
-    newSearcherTimer =
-        OtelMetricFactory.createLongTimerHistogram(
-            baseSearcherTimerMetric,
-            baseSearcherAttributes.put(AttributeKey.stringKey("type"), "new").build());
-
-    newSearcherWarmupTimer =
-        OtelMetricFactory.createLongTimerHistogram(
+    // TODO do we need this OtelLongTimer?
+    this.newSearcherWarmupTimer =
+        new OtelLongTimer(
             baseSearcherTimerMetric,
             baseSearcherAttributes.put(AttributeKey.stringKey("type"), "warmup").build());
 
-    coreMetric =
+    coreStats =
         parentContext.observableLongGauge(
             "solr_core_metric",
             "Solr core metrics",
             (observableLongMeasurement -> {
-              observableLongMeasurement.record(
-                  startTime.getTime(),
-                  baseGaugeCoreAttributes.put(AttributeKey.stringKey("type"), "startTime").build());
+              observableLongMeasurement.record(startTime.getTime(), CORE_START_TIME);
 
-              if (!isClosed())
-                observableLongMeasurement.record(
-                    getIndexSize(),
-                    baseGaugeCoreAttributes
-                        .put(AttributeKey.stringKey("type"), "sizeInBytes")
-                        .build());
+              if (!isClosed()) observableLongMeasurement.record(getIndexSize(), CORE_SIZE_BYTES);
               if (isReady())
-                observableLongMeasurement.record(
-                    getSegmentCount(),
-                    baseGaugeCoreAttributes
-                        .put(AttributeKey.stringKey("type"), "segmentCount")
-                        .build());
+                observableLongMeasurement.record(getSegmentCount(), CORE_SEGMENT_COUNT);
 
               // initialize disk total / free metrics
               Path dataDirPath = Path.of(dataDir);
               // TODO this try/catch doesn't seem right
               try {
                 observableLongMeasurement.record(
-                    Files.getFileStore(dataDirPath).getTotalSpace(),
-                    baseGaugeCoreAttributes
-                        .put(AttributeKey.stringKey("type"), "totalSpace")
-                        .build());
+                    Files.getFileStore(dataDirPath).getTotalSpace(), CORE_TOTAL_SPACE);
               } catch (IOException e) {
                 throw new RuntimeException(e);
               }
               try {
                 observableLongMeasurement.record(
-                    Files.getFileStore(dataDirPath).getUsableSpace(),
-                    baseGaugeCoreAttributes
-                        .put(AttributeKey.stringKey("type"), "usableSpace")
-                        .build());
+                    Files.getFileStore(dataDirPath).getUsableSpace(), CORE_USABLE_SPACE);
               } catch (IOException e) {
                 throw new RuntimeException(e);
               }
@@ -2568,14 +2555,14 @@ public class SolrCore implements SolrInfoBean, Closeable {
         // first: increment count to signal other threads that we are
         //        opening a new searcher.
         onDeckSearchers++;
-        newSearcherCounter.inc();
+        solrSearcherCounter.add(1L, SEARCHER_NEW);
         if (onDeckSearchers < 1) {
           // should never happen... just a sanity check
           log.error("ERROR!!! onDeckSearchers is {}", onDeckSearchers);
           onDeckSearchers = 1; // reset
         } else if (onDeckSearchers > maxWarmingSearchers) {
           onDeckSearchers--;
-          newSearcherMaxReachedCounter.inc();
+          solrSearcherCounter.add(1L, SEARCHER_MAX_REACHED);
           try {
             searcherLock.wait();
           } catch (InterruptedException e) {
@@ -2737,7 +2724,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
 
       newSearcherTimer.stop();
       if (!success) {
-        newSearcherOtherErrorsCounter.inc();
+        solrSearcherCounter.add(1L, SEARCHER_ERRORS);
         synchronized (searcherLock) {
           onDeckSearchers--;
 
