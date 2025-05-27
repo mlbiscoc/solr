@@ -4,12 +4,12 @@ import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.metrics.LongCounter;
 import org.apache.solr.metrics.otel.OtelLongMetric;
 
-public class OtelLongCounter implements OtelLongMetric {
+public class BoundLongCounter implements OtelLongMetric {
 
   private final LongCounter baseCounter;
   private final io.opentelemetry.api.common.Attributes attributes;
 
-  public OtelLongCounter(LongCounter baseCounter, Attributes attributes) {
+  public BoundLongCounter(LongCounter baseCounter, Attributes attributes) {
     this.baseCounter = baseCounter;
     this.attributes = attributes;
   }

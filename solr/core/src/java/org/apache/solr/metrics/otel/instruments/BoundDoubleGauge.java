@@ -4,11 +4,11 @@ import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.metrics.DoubleGauge;
 import org.apache.solr.metrics.otel.OtelDoubleMetric;
 
-public class OtelDoubleGauge implements OtelDoubleMetric {
+public class BoundDoubleGauge implements OtelDoubleMetric {
   private final DoubleGauge gauge;
   private final Attributes attributes;
 
-  public OtelDoubleGauge(DoubleGauge gauge, Attributes attributes) {
+  public BoundDoubleGauge(DoubleGauge gauge, Attributes attributes) {
     this.gauge = gauge;
     this.attributes = attributes;
   }

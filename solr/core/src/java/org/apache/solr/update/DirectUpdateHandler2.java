@@ -57,8 +57,8 @@ import org.apache.solr.metrics.SolrDelegateRegistryMetricsContext;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
-import org.apache.solr.metrics.otel.OtelMetricFactory;
-import org.apache.solr.metrics.otel.instruments.OtelLongCounter;
+import org.apache.solr.metrics.otel.MetricFactory;
+import org.apache.solr.metrics.otel.instruments.BoundLongUpDownCounter;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
@@ -97,16 +97,16 @@ public class DirectUpdateHandler2 extends UpdateHandler
   LongAdder numDocsPending = new LongAdder();
   LongAdder numErrors = new LongAdder();
 
-  OtelLongCounter numErrorsCumulative;
-  OtelLongCounter deleteByQueryCommandsCumulative;
-  OtelLongCounter deleteByIdCommandsCumulative;
-  OtelLongCounter addCommandsCumulative;
-  OtelLongCounter expungeDeleteCommands;
-  OtelLongCounter mergeIndexesCommands;
-  OtelLongCounter commitCommands;
-  OtelLongCounter splitCommands;
-  OtelLongCounter optimizeCommands;
-  OtelLongCounter rollbackCommands;
+  BoundLongUpDownCounter numErrorsCumulative;
+  BoundLongUpDownCounter deleteByQueryCommandsCumulative;
+  BoundLongUpDownCounter deleteByIdCommandsCumulative;
+  BoundLongUpDownCounter addCommandsCumulative;
+  BoundLongUpDownCounter expungeDeleteCommands;
+  BoundLongUpDownCounter mergeIndexesCommands;
+  BoundLongUpDownCounter commitCommands;
+  BoundLongUpDownCounter splitCommands;
+  BoundLongUpDownCounter optimizeCommands;
+  BoundLongUpDownCounter rollbackCommands;
   ObservableLongGauge commitStats;
   ObservableLongGauge updateStats;
 
@@ -231,11 +231,11 @@ public class DirectUpdateHandler2 extends UpdateHandler
             .putAll(attributes)
             .put(AttributeKey.stringKey("category"), getCategory().toString());
     var baseUpdateHandlerMetric =
-        solrMetricsContext.longCounter(
+        solrMetricsContext.longUpDownCounter(
             "solr_update_handler_metric", "Metrics around update handler");
 
     commitCommands =
-        OtelMetricFactory.createLongCounter(
+        MetricFactory.createBoundLongUpDownCounter(
             baseUpdateHandlerMetric,
             baseAttributes.put(AttributeKey.stringKey("type"), "commits").build());
     commitStats =
@@ -285,27 +285,27 @@ public class DirectUpdateHandler2 extends UpdateHandler
             }));
 
     optimizeCommands =
-        OtelMetricFactory.createLongCounter(
+        MetricFactory.createBoundLongUpDownCounter(
             baseUpdateHandlerMetric,
             baseAttributes.put(AttributeKey.stringKey("type"), "optimizes").build());
 
     rollbackCommands =
-        OtelMetricFactory.createLongCounter(
+        MetricFactory.createBoundLongUpDownCounter(
             baseUpdateHandlerMetric,
             baseAttributes.put(AttributeKey.stringKey("type"), "rollbacks").build());
 
     splitCommands =
-        OtelMetricFactory.createLongCounter(
+        MetricFactory.createBoundLongUpDownCounter(
             baseUpdateHandlerMetric,
             baseAttributes.put(AttributeKey.stringKey("type"), "splits").build());
 
     mergeIndexesCommands =
-        OtelMetricFactory.createLongCounter(
+        MetricFactory.createBoundLongUpDownCounter(
             baseUpdateHandlerMetric,
             baseAttributes.put(AttributeKey.stringKey("type"), "merges").build());
 
     expungeDeleteCommands =
-        OtelMetricFactory.createLongCounter(
+        MetricFactory.createBoundLongUpDownCounter(
             baseUpdateHandlerMetric,
             baseAttributes.put(AttributeKey.stringKey("type"), "expungeDeletes").build());
 
@@ -331,19 +331,19 @@ public class DirectUpdateHandler2 extends UpdateHandler
                   baseAttributes.put(AttributeKey.stringKey("type"), "errors").build());
             });
     addCommandsCumulative =
-        OtelMetricFactory.createLongCounter(
+        MetricFactory.createBoundLongUpDownCounter(
             baseUpdateHandlerMetric,
             baseAttributes.put(AttributeKey.stringKey("type"), "cumulativeAdds").build());
     deleteByIdCommandsCumulative =
-        OtelMetricFactory.createLongCounter(
+        MetricFactory.createBoundLongUpDownCounter(
             baseUpdateHandlerMetric,
             baseAttributes.put(AttributeKey.stringKey("type"), "cumulativeDeletesById").build());
     deleteByQueryCommandsCumulative =
-        OtelMetricFactory.createLongCounter(
+        MetricFactory.createBoundLongUpDownCounter(
             baseUpdateHandlerMetric,
             baseAttributes.put(AttributeKey.stringKey("type"), "cumulativeDeletesByQuery").build());
     numErrorsCumulative =
-        OtelMetricFactory.createLongCounter(
+        MetricFactory.createBoundLongUpDownCounter(
             baseUpdateHandlerMetric,
             baseAttributes.put(AttributeKey.stringKey("type"), "cumulativeErrors").build());
 

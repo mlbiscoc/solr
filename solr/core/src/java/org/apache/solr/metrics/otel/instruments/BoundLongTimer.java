@@ -4,13 +4,13 @@ import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.metrics.LongHistogram;
 import java.util.concurrent.TimeUnit;
 
-public class OtelLongTimer extends OtelLongHistogram {
+public class BoundLongTimer extends BoundLongHistogram {
 
   // TODO is this right with ThreadLocal?
   // Use ThreadLocal so start()/stop() pairs are thread-safe
   private final ThreadLocal<TimingContext> current = new ThreadLocal<>();
 
-  public OtelLongTimer(LongHistogram histogram, Attributes attributes) {
+  public BoundLongTimer(LongHistogram histogram, Attributes attributes) {
     super(histogram, attributes);
   }
 

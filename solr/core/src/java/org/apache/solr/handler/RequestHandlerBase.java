@@ -42,10 +42,9 @@ import org.apache.solr.metrics.SolrDelegateRegistryMetricsContext;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
-import org.apache.solr.metrics.otel.OtelMetricFactory;
-import org.apache.solr.metrics.otel.instruments.OtelDoubleCounter;
-import org.apache.solr.metrics.otel.instruments.OtelLongCounter;
-import org.apache.solr.metrics.otel.instruments.OtelLongTimer;
+import org.apache.solr.metrics.otel.MetricFactory;
+import org.apache.solr.metrics.otel.instruments.BoundLongCounter;
+import org.apache.solr.metrics.otel.instruments.BoundLongTimer;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
@@ -202,13 +201,12 @@ public abstract class RequestHandlerBase
     //    public final Counter totalTime;
 
     //    public LongCounter oNumRequsests = null;
-    public OtelLongCounter oNumRequests = null;
-    public OtelLongCounter oNumErrorRequests = null;
-    public OtelLongCounter oNumServerErrorRequests = null;
-    public OtelLongCounter oNumClientErrorRequests = null;
-    public OtelLongCounter oNumTimeoutRequests = null;
-    public OtelLongTimer oRequestTimes = null;
-    public OtelDoubleCounter oNumTotalTime = null;
+    public BoundLongCounter oNumRequests = null;
+    public BoundLongCounter oNumErrorRequests = null;
+    public BoundLongCounter oNumServerErrorRequests = null;
+    public BoundLongCounter oNumClientErrorRequests = null;
+    public BoundLongCounter oNumTimeoutRequests = null;
+    public BoundLongTimer oRequestTimes = null;
 
     // TODO We need the timeouts and more
     //    public final Timer requestTimes;
@@ -238,7 +236,7 @@ public abstract class RequestHandlerBase
               "solr_handler_requests_total_time", "Track requests total time from handler base");
 
       oNumRequests =
-          OtelMetricFactory.createLongCounter(
+          MetricFactory.createBoundLongCounter(
               baseRequestMetric,
               Attributes.builder()
                   .putAll(attributes)
@@ -246,7 +244,7 @@ public abstract class RequestHandlerBase
                   .build());
 
       oNumErrorRequests =
-          OtelMetricFactory.createLongCounter(
+          MetricFactory.createBoundLongCounter(
               baseRequestMetric,
               Attributes.builder()
                   .putAll(attributes)
@@ -254,7 +252,7 @@ public abstract class RequestHandlerBase
                   .build());
 
       oNumServerErrorRequests =
-          OtelMetricFactory.createLongCounter(
+          MetricFactory.createBoundLongCounter(
               baseRequestMetric,
               Attributes.builder()
                   .putAll(attributes)
@@ -262,7 +260,7 @@ public abstract class RequestHandlerBase
                   .build());
 
       oNumClientErrorRequests =
-          OtelMetricFactory.createLongCounter(
+          MetricFactory.createBoundLongCounter(
               baseRequestMetric,
               Attributes.builder()
                   .putAll(attributes)
@@ -270,16 +268,15 @@ public abstract class RequestHandlerBase
                   .build());
 
       oNumTimeoutRequests =
-          OtelMetricFactory.createLongCounter(
+          MetricFactory.createBoundLongCounter(
               baseRequestMetric,
               Attributes.builder()
                   .putAll(attributes)
                   .put(AttributeKey.stringKey("type"), "timeouts")
                   .build());
 
-      oNumTotalTime = OtelMetricFactory.createDoubleCounter(baseRequestTotalTime, attributes);
-
-      oRequestTimes = OtelMetricFactory.createLongTimerHistogram(baseRequestTimeMetric, attributes);
+      oRequestTimes =
+          MetricFactory.createBoundLongTimerHistogram(baseRequestTimeMetric, attributes);
 
       oNumRequests.measure(0L);
       oNumErrorRequests.measure(0L);
@@ -287,7 +284,6 @@ public abstract class RequestHandlerBase
       oNumClientErrorRequests.measure(0L);
       oNumTimeoutRequests.measure(0L);
       oRequestTimes.measure(0L);
-      oNumTotalTime.measure(0.0);
     }
   }
 

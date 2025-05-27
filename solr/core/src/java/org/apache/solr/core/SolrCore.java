@@ -116,9 +116,9 @@ import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.metrics.SolrCoreMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
-import org.apache.solr.metrics.otel.OtelMetricFactory;
-import org.apache.solr.metrics.otel.instruments.OtelLongCounter;
-import org.apache.solr.metrics.otel.instruments.OtelLongTimer;
+import org.apache.solr.metrics.otel.MetricFactory;
+import org.apache.solr.metrics.otel.instruments.BoundLongCounter;
+import org.apache.solr.metrics.otel.instruments.BoundLongTimer;
 import org.apache.solr.pkg.PackageListeners;
 import org.apache.solr.pkg.PackagePluginHolder;
 import org.apache.solr.pkg.SolrPackageLoader;
@@ -256,11 +256,11 @@ public class SolrCore implements SolrInfoBean, Closeable {
 
   private volatile boolean newSearcherReady = false;
 
-  private OtelLongCounter newSearcherCounter;
-  private OtelLongCounter newSearcherMaxReachedCounter;
-  private OtelLongCounter newSearcherOtherErrorsCounter;
-  private OtelLongTimer newSearcherTimer;
-  private OtelLongTimer newSearcherWarmupTimer;
+  private BoundLongCounter newSearcherCounter;
+  private BoundLongCounter newSearcherMaxReachedCounter;
+  private BoundLongCounter newSearcherOtherErrorsCounter;
+  private BoundLongTimer newSearcherTimer;
+  private BoundLongTimer newSearcherWarmupTimer;
   private ObservableLongGauge coreMetric;
 
   private final String metricTag = SolrMetricProducer.getUniqueMetricTag(this, null);
@@ -1336,27 +1336,27 @@ public class SolrCore implements SolrInfoBean, Closeable {
         parentContext.longHistogram("solr_searcher_metric_timer", "Searcher metrics");
 
     newSearcherCounter =
-        OtelMetricFactory.createLongCounter(
+        MetricFactory.createBoundLongCounter(
             baseSearcherCounterMetric,
             baseSearcherAttributes.put(AttributeKey.stringKey("type"), "new").build());
 
     newSearcherMaxReachedCounter =
-        OtelMetricFactory.createLongCounter(
+        MetricFactory.createBoundLongCounter(
             baseSearcherCounterMetric,
             baseSearcherAttributes.put(AttributeKey.stringKey("type"), "maxReached").build());
 
     newSearcherOtherErrorsCounter =
-        OtelMetricFactory.createLongCounter(
+        MetricFactory.createBoundLongCounter(
             baseSearcherCounterMetric,
             baseSearcherAttributes.put(AttributeKey.stringKey("type"), "errors").build());
 
     newSearcherTimer =
-        OtelMetricFactory.createLongTimerHistogram(
+        MetricFactory.createBoundLongTimerHistogram(
             baseSearcherTimerMetric,
             baseSearcherAttributes.put(AttributeKey.stringKey("type"), "new").build());
 
     newSearcherWarmupTimer =
-        OtelMetricFactory.createLongTimerHistogram(
+        MetricFactory.createBoundLongTimerHistogram(
             baseSearcherTimerMetric,
             baseSearcherAttributes.put(AttributeKey.stringKey("type"), "warmup").build());
 
