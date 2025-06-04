@@ -21,6 +21,7 @@ import static org.apache.solr.jersey.RequestContextKeys.HANDLER_METRICS;
 import static org.apache.solr.jersey.RequestContextKeys.SOLR_QUERY_REQUEST;
 import static org.apache.solr.jersey.RequestContextKeys.TIMER;
 
+import com.codahale.metrics.Timer;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.container.ContainerRequestFilter;
 import jakarta.ws.rs.container.ContainerResponseContext;
@@ -88,10 +89,16 @@ public class RequestMetricHandling {
           (SolrQueryRequest) requestContext.getProperty(SOLR_QUERY_REQUEST);
       final RequestHandlerBase.HandlerMetrics metrics =
           handlerBase.getMetricsForThisRequest(solrQueryRequest);
+      final RequestHandlerBase.DropwizardHandlerMetrics dropwizardMetrics =
+              handlerBase.getDropwizardMetricsForThisRequest(solrQueryRequest);
       requestContext.setProperty(HANDLER_METRICS, metrics);
       requestContext.setProperty(TIMER, metrics.requestTimes);
       metrics.requestTimes.start();
       metrics.requests.inc();
+
+      requestContext.setProperty("dropwizard" + HANDLER_METRICS, dropwizardMetrics);
+      requestContext.setProperty("dropwizard" + TIMER, dropwizardMetrics.requestTimes.time());
+      dropwizardMetrics.requests.inc();
     }
   }
 
@@ -109,7 +116,10 @@ public class RequestMetricHandling {
 
       final RequestHandlerBase.HandlerMetrics metrics =
           (RequestHandlerBase.HandlerMetrics) requestContext.getProperty(HANDLER_METRICS);
+      final RequestHandlerBase.DropwizardHandlerMetrics dropwizardMetrics =
+              (RequestHandlerBase.DropwizardHandlerMetrics) requestContext.getProperty("dropwizard" + HANDLER_METRICS);
       if (metrics == null) return;
+      if (dropwizardMetrics == null) return;
 
       // Increment the timeout count if responseHeader indicates a timeout
       if (responseContext.hasEntity()
@@ -117,12 +127,15 @@ public class RequestMetricHandling {
         final SolrJerseyResponse response = (SolrJerseyResponse) responseContext.getEntity();
         if (Boolean.TRUE.equals(response.responseHeader.partialResults)) {
           metrics.numTimeouts.inc();
+          dropwizardMetrics.numTimeouts.mark();
         }
       } else {
         log.debug("Skipping partialResults check because entity was not SolrJerseyResponse");
       }
       final BoundLongTimer timer = (BoundLongTimer) requestContext.getProperty(TIMER);
       timer.stop();
+      final Timer.Context dropwizardTimer = (Timer.Context) requestContext.getProperty("dropwizard" + TIMER);
+      dropwizardMetrics.totalTime.inc(dropwizardTimer.stop());
     }
   }
 }

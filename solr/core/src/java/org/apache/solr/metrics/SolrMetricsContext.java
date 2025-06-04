@@ -134,7 +134,7 @@ public class SolrMetricsContext {
    * Register a metric name that this component reports. This method is called by various metric
    * registration methods in {@link org.apache.solr.metrics.SolrMetricManager} in order to capture
    * what metric names are reported from this component (which in turn is called from {@link
-   * SolrMetricProducer#initializeMetrics(SolrMetricsContext,
+   * SolrMetricProducer#initializeOtelMetrics(SolrMetricsContext,
    * io.opentelemetry.api.common.Attributes)}).
    */
   // TODO We can continue to register metric names

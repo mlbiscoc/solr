@@ -64,6 +64,7 @@ import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.logging.MDCLoggingContext;
+import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.pkg.PackageAPI;
 import org.apache.solr.pkg.PackageListeners;
@@ -119,6 +120,7 @@ public class SearchHandler extends RequestHandlerBase
   private static final boolean DISABLE_REQUEST_ID_DEFAULT =
       Boolean.getBoolean("solr.disableRequestId");
 
+  private DropwizardHandlerMetrics dropwizardMetricsShard = DropwizardHandlerMetrics.NO_OP;
   private HandlerMetrics metricsShard = HandlerMetrics.NO_OP;
   private final Map<String, Counter> shardPurposes = new ConcurrentHashMap<>();
 
@@ -154,8 +156,22 @@ public class SearchHandler extends RequestHandlerBase
   }
 
   @Override
-  public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
-    super.initializeMetrics(
+  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+    super.initializeMetrics(parentContext, scope);
+    dropwizardMetricsShard =
+            new DropwizardHandlerMetrics( // will register various metrics in the context
+                    solrMetricsContext, getCategory().toString(), scope + SHARD_HANDLER_SUFFIX);
+    solrMetricsContext.gauge(
+            new MetricsMap(map -> shardPurposes.forEach((k, v) -> map.putNoEx(k, v.getCount()))),
+            true,
+            "purposes",
+            getCategory().toString(),
+            scope + SHARD_HANDLER_SUFFIX);
+  }
+
+  @Override
+  public void initializeOtelMetrics(SolrMetricsContext parentContext, Attributes attributes) {
+    super.initializeOtelMetrics(
         parentContext,
         Attributes.builder()
             .putAll(attributes)
@@ -169,6 +185,11 @@ public class SearchHandler extends RequestHandlerBase
                 .put(AttributeKey.stringKey("category"), getCategory().toString())
                 .put(AttributeKey.stringKey("isShard"), "true")
                 .build());
+  }
+
+  @Override
+  public DropwizardHandlerMetrics getDropwizardMetricsForThisRequest(SolrQueryRequest req) {
+    return req.getParams().getBool(ShardParams.IS_SHARD, false) ? this.dropwizardMetricsShard : this.dropwizardMetrics;
   }
 
   @Override

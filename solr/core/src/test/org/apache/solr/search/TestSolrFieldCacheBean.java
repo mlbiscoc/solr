@@ -70,7 +70,7 @@ public class TestSolrFieldCacheBean extends SolrTestCaseJ4 {
     SolrMetricManager metricManager = h.getCoreContainer().getMetricManager();
     SolrMetricsContext solrMetricsContext =
         new SolrMetricsContext(metricManager, registryName, "foo");
-    mbean.initializeMetrics(solrMetricsContext, null);
+    mbean.initializeMetrics(solrMetricsContext, "");
     MetricsMap metricsMap =
         (MetricsMap)
             ((SolrMetricManager.GaugeWrapper)
@@ -89,7 +89,7 @@ public class TestSolrFieldCacheBean extends SolrTestCaseJ4 {
     SolrMetricManager metricManager = h.getCoreContainer().getMetricManager();
     SolrMetricsContext solrMetricsContext =
         new SolrMetricsContext(metricManager, registryName, "foo");
-    mbean.initializeMetrics(solrMetricsContext, null);
+    mbean.initializeMetrics(solrMetricsContext, "");
     MetricsMap metricsMap =
         (MetricsMap)
             ((SolrMetricManager.GaugeWrapper)

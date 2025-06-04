@@ -19,6 +19,9 @@ package org.apache.solr.handler;
 import static org.apache.solr.core.RequestParams.USEPARAM;
 import static org.apache.solr.response.SolrQueryResponse.haveCompleteResults;
 
+import com.codahale.metrics.Counter;
+import com.codahale.metrics.Meter;
+import com.codahale.metrics.Timer;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
 import java.lang.invoke.MethodHandles;
@@ -76,6 +79,7 @@ public abstract class RequestHandlerBase
 
   protected SolrMetricsContext solrMetricsContext;
   protected HandlerMetrics metrics = HandlerMetrics.NO_OP;
+  protected DropwizardHandlerMetrics dropwizardMetrics = DropwizardHandlerMetrics.NO_OP;
   private final long handlerStart;
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -159,8 +163,55 @@ public abstract class RequestHandlerBase
     return solrMetricsContext;
   }
 
+  /* To be deprecated */
   @Override
-  public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
+  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+    if (aggregateNodeLevelMetricsEnabled) {
+      this.solrMetricsContext =
+              new SolrDelegateRegistryMetricsContext(
+                      parentContext.getMetricManager(),
+                      parentContext.getRegistryName(),
+                      SolrMetricProducer.getUniqueMetricTag(this, parentContext.getTag()),
+                      SolrMetricManager.getRegistryName(SolrInfoBean.Group.node));
+    } else {
+      this.solrMetricsContext = parentContext.getChildContext(this);
+    }
+    dropwizardMetrics = new DropwizardHandlerMetrics(solrMetricsContext, getCategory().toString(), scope);
+    solrMetricsContext.gauge(
+            () -> handlerStart, true, "handlerStart", getCategory().toString(), scope);
+  }
+
+  /** Metrics for this handler. */
+  public static class DropwizardHandlerMetrics {
+    public static final DropwizardHandlerMetrics NO_OP =
+            new DropwizardHandlerMetrics(
+                    new SolrMetricsContext(
+                            new SolrMetricManager(
+                                    null, new MetricsConfig.MetricsConfigBuilder().setEnabled(false).build()),
+                            "NO_OP",
+                            "NO_OP"));
+
+    public final Meter numErrors;
+    public final Meter numServerErrors;
+    public final Meter numClientErrors;
+    public final Meter numTimeouts;
+    public final Counter requests;
+    public final Timer requestTimes;
+    public final Counter totalTime;
+
+    public DropwizardHandlerMetrics(SolrMetricsContext solrMetricsContext, String... metricPath) {
+      numErrors = solrMetricsContext.meter("errors", metricPath);
+      numServerErrors = solrMetricsContext.meter("serverErrors", metricPath);
+      numClientErrors = solrMetricsContext.meter("clientErrors", metricPath);
+      numTimeouts = solrMetricsContext.meter("timeouts", metricPath);
+      requests = solrMetricsContext.counter("requests", metricPath);
+      requestTimes = solrMetricsContext.timer("requestTimes", metricPath);
+      totalTime = solrMetricsContext.counter("totalTime", metricPath);
+    }
+  }
+
+  @Override
+  public void initializeOtelMetrics(SolrMetricsContext parentContext, Attributes attributes) {
     if (aggregateNodeLevelMetricsEnabled) {
       this.solrMetricsContext =
           new SolrDelegateRegistryMetricsContext(
@@ -276,8 +327,12 @@ public abstract class RequestHandlerBase
     if (publishCpuTime) {
       ThreadCpuTimer.beginContext(REQUEST_CPU_TIMER_CONTEXT);
     }
+    DropwizardHandlerMetrics dropwizardMetrics = getDropwizardMetricsForThisRequest(req);
     HandlerMetrics metrics = getMetricsForThisRequest(req);
+    dropwizardMetrics.requests.inc();
     metrics.requests.inc();
+
+//    Timer.Context timer = dropwizardMetrics.requestTimes.time();
     metrics.requestTimes.start();
     try {
       TestInjection.injectLeaderTragedy(req.getCore());
@@ -290,6 +345,7 @@ public abstract class RequestHandlerBase
       // count timeouts
 
       if (!haveCompleteResults(rsp.getResponseHeader())) {
+        dropwizardMetrics.numTimeouts.mark();
         metrics.numTimeouts.inc();
         rsp.setHttpCaching(false);
       }
@@ -297,10 +353,12 @@ public abstract class RequestHandlerBase
       rsp.setPartialResults(req);
     } catch (Exception e) {
       Exception normalized = normalizeReceivedException(req, e);
-      processErrorMetricsOnException(normalized, metrics);
+      processErrorMetricsOnException(normalized, metrics, dropwizardMetrics);
       rsp.setException(normalized);
     } finally {
       try {
+//        long elapsed = timer.stop();
+//        dropwizardMetrics.totalTime.inc(elapsed);
         metrics.requestTimes.stop();
 
         if (publishCpuTime) {
@@ -333,7 +391,7 @@ public abstract class RequestHandlerBase
     }
   }
 
-  public static void processErrorMetricsOnException(Exception e, HandlerMetrics metrics) {
+  public static void processErrorMetricsOnException(Exception e, HandlerMetrics metrics, DropwizardHandlerMetrics dropwizardMetrics) {
     boolean isClientError = false;
     if (e instanceof SolrException se) {
       if (se.code() == SolrException.ErrorCode.CONFLICT.code) {
@@ -343,12 +401,15 @@ public abstract class RequestHandlerBase
       }
     }
 
+    dropwizardMetrics.numErrors.mark();
     metrics.numErrors.inc();
     if (isClientError) {
       log.error("Client exception", e);
+      dropwizardMetrics.numClientErrors.mark();
       metrics.numClientErrors.inc();
     } else {
       log.error("Server exception", e);
+      dropwizardMetrics.numServerErrors.mark();
       metrics.numServerErrors.inc();
     }
   }
@@ -371,6 +432,11 @@ public abstract class RequestHandlerBase
   /** The metrics to be used for this request. */
   public HandlerMetrics getMetricsForThisRequest(SolrQueryRequest req) {
     return this.metrics;
+  }
+
+  /* TODO SOLR-17458: Temporary until Dropwizard removed */
+  public DropwizardHandlerMetrics getDropwizardMetricsForThisRequest(SolrQueryRequest req) {
+    return this.dropwizardMetrics;
   }
 
   //////////////////////// SolrInfoMBeans methods //////////////////////

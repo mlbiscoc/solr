@@ -44,14 +44,11 @@ public interface SolrMetricProducer extends AutoCloseable {
    * Deprecated entry point for initializing metrics. TODO SOLR-17458: This will be removed after
    * completely removing Dropwizard
    */
-  default void initializeMetrics(SolrMetricsContext parentContext, String scope) {
-    Attributes attrs = Attributes.builder().put("scope", scope).build();
-    initializeMetrics(parentContext, attrs);
-  }
+  void initializeMetrics(SolrMetricsContext parentContext, String scope);
 
   /** TODO SOLR-17458: New preferred entry point for initializing metrics. */
-  default void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
-    // NOOP by default
+  default void initializeOtelMetrics(SolrMetricsContext parentContext, Attributes attributes) {
+    // NOOP by default.
   }
 
   /**

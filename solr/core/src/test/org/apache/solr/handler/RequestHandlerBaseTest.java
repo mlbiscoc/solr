@@ -27,6 +27,11 @@ import com.codahale.metrics.Counter;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.Timer;
 import java.util.Map;
+
+import io.opentelemetry.api.common.AttributeKey;
+import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.api.metrics.LongCounter;
+import io.opentelemetry.api.metrics.LongHistogram;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.MapSolrParams;
@@ -65,8 +70,8 @@ public class RequestHandlerBaseTest extends SolrTestCaseJ4 {
 
     RequestHandlerBase.processErrorMetricsOnException(e, metrics);
 
-    verify(metrics.numErrors).mark();
-    verify(metrics.numServerErrors).mark();
+    verify(metrics.numErrors).inc();
+    verify(metrics.numServerErrors).inc();
     verifyNoInteractions(metrics.numClientErrors);
   }
 
@@ -89,8 +94,8 @@ public class RequestHandlerBaseTest extends SolrTestCaseJ4 {
 
     RequestHandlerBase.processErrorMetricsOnException(e, metrics);
 
-    verify(metrics.numErrors).mark();
-    verify(metrics.numClientErrors).mark();
+    verify(metrics.numErrors).inc();
+    verify(metrics.numClientErrors).inc();
     verifyNoInteractions(metrics.numServerErrors);
   }
 
@@ -171,10 +176,10 @@ public class RequestHandlerBaseTest extends SolrTestCaseJ4 {
   //  requires a MetricsManager, which requires ...
   private RequestHandlerBase.HandlerMetrics createHandlerMetrics() {
     final SolrMetricsContext metricsContext = mock(SolrMetricsContext.class);
-    when(metricsContext.timer(any(), any())).thenReturn(mock(Timer.class));
-    when(metricsContext.meter(any(), any())).then(invocation -> mock(Meter.class));
-    when(metricsContext.counter(any(), any())).thenReturn(mock(Counter.class));
 
-    return new RequestHandlerBase.HandlerMetrics(metricsContext, "someBaseMetricPath");
+    when(metricsContext.longCounter(any(), any())).thenReturn(mock(LongCounter.class));
+    when(metricsContext.longHistogram(any(), any())).thenReturn(mock(LongHistogram.class));
+
+    return new RequestHandlerBase.HandlerMetrics(metricsContext, Attributes.of(AttributeKey.stringKey("scope"), "someBaseMetricPath"));
   }
 }

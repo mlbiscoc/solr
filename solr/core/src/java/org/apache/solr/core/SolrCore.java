@@ -19,8 +19,11 @@ package org.apache.solr.core;
 import static org.apache.solr.common.params.CommonParams.PATH;
 import static org.apache.solr.handler.admin.MetricsHandler.PROMETHEUS_METRICS_WT;
 
+import com.codahale.metrics.Counter;
+import com.codahale.metrics.Timer;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.api.common.AttributesBuilder;
 import io.opentelemetry.api.metrics.LongCounter;
 import io.opentelemetry.api.metrics.LongHistogram;
 import io.opentelemetry.api.metrics.ObservableLongGauge;
@@ -171,6 +174,7 @@ import org.apache.solr.update.processor.UpdateRequestProcessorChain.ProcessorInf
 import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
 import org.apache.solr.util.IOFunction;
 import org.apache.solr.util.IndexOutputOutputStream;
+import org.apache.solr.util.NumberUtils;
 import org.apache.solr.util.PropertiesInputStream;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.TestInjection;
@@ -256,12 +260,19 @@ public class SolrCore implements SolrInfoBean, Closeable {
 
   private volatile boolean newSearcherReady = false;
 
-  private BoundLongCounter newSearcherCounter;
-  private BoundLongCounter newSearcherMaxReachedCounter;
-  private BoundLongCounter newSearcherOtherErrorsCounter;
-  private BoundLongTimer newSearcherTimer;
-  private BoundLongTimer newSearcherWarmupTimer;
+  private BoundLongCounter otelNewSearcherCounter;
+  private BoundLongCounter otelNewSearcherMaxReachedCounter;
+  private BoundLongCounter otelNewSearcherOtherErrorsCounter;
+  private BoundLongTimer otelNewSearcherTimer;
+  private BoundLongTimer otelNewSearcherWarmupTimer;
   private ObservableLongGauge coreMetric;
+
+  // TODO SOLR-17458: To be deprecated
+  private Timer newSearcherTimer;
+  private Timer newSearcherWarmupTimer;
+  private Counter newSearcherCounter;
+  private Counter newSearcherMaxReachedCounter;
+  private Counter newSearcherOtherErrorsCounter;
 
   private final String metricTag = SolrMetricProducer.getUniqueMetricTag(this, null);
   private final SolrMetricsContext solrMetricsContext;
@@ -1111,7 +1122,8 @@ public class SolrCore implements SolrInfoBean, Closeable {
 
       // initialize core metrics
       // TODO SOLR-17458: Migrate to OTEL
-      initializeMetrics(solrMetricsContext, "");
+      initializeMetrics(solrMetricsContext, null);
+      initializeOtelMetrics(solrMetricsContext, Attributes.empty());
 
       // init pluggable circuit breakers, after metrics because some circuit breakers use metrics
       initPlugins(null, CircuitBreaker.class);
@@ -1309,16 +1321,110 @@ public class SolrCore implements SolrInfoBean, Closeable {
   }
 
   @Override
-  public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
+  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+    newSearcherCounter = parentContext.counter("new", Category.SEARCHER.toString());
+    newSearcherTimer = parentContext.timer("time", Category.SEARCHER.toString(), "new");
+    newSearcherWarmupTimer = parentContext.timer("warmup", Category.SEARCHER.toString(), "new");
+    newSearcherMaxReachedCounter =
+            parentContext.counter("maxReached", Category.SEARCHER.toString(), "new");
+    newSearcherOtherErrorsCounter =
+            parentContext.counter("errors", Category.SEARCHER.toString(), "new");
+
+    parentContext.gauge(
+            () -> name == null ? parentContext.nullString() : name,
+            true,
+            "coreName",
+            Category.CORE.toString());
+    parentContext.gauge(() -> startTime, true, "startTime", Category.CORE.toString());
+    parentContext.gauge(() -> getOpenCount(), true, "refCount", Category.CORE.toString());
+    parentContext.gauge(
+            () -> getInstancePath().toString(), true, "instanceDir", Category.CORE.toString());
+    parentContext.gauge(
+            () -> isClosed() ? parentContext.nullString() : getIndexDir(),
+            true,
+            "indexDir",
+            Category.CORE.toString());
+    parentContext.gauge(
+            () -> isClosed() ? parentContext.nullNumber() : getIndexSize(),
+            true,
+            "sizeInBytes",
+            Category.INDEX.toString());
+    parentContext.gauge(
+            () -> isClosed() ? parentContext.nullString() : NumberUtils.readableSize(getIndexSize()),
+            true,
+            "size",
+            Category.INDEX.toString());
+    parentContext.gauge(
+            () -> isReady() ? getSegmentCount() : parentContext.nullNumber(),
+            true,
+            "segments",
+            Category.INDEX.toString());
 
     final CloudDescriptor cd = getCoreDescriptor().getCloudDescriptor();
+    if (cd != null) {
+      parentContext.gauge(cd::getCollectionName, true, "collection", Category.CORE.toString());
+      parentContext.gauge(cd::getShardId, true, "shard", Category.CORE.toString());
+      parentContext.gauge(cd::isLeader, true, "isLeader", Category.CORE.toString());
+      parentContext.gauge(
+              () -> String.valueOf(cd.getLastPublished()),
+              true,
+              "replicaState",
+              Category.CORE.toString());
+    }
 
-    var baseAttributes =
-        Attributes.builder()
-            .putAll(attributes)
-            .put(AttributeKey.stringKey("collection"), cd.getCollectionName())
-            .put(AttributeKey.stringKey("core"), cd.getCoreNodeName())
-            .put(AttributeKey.stringKey("shard"), cd.getShardId());
+    // initialize disk total / free metrics
+    Path dataDirPath = Path.of(dataDir);
+    parentContext.gauge(
+            () -> {
+              try {
+                return Files.getFileStore(dataDirPath).getTotalSpace();
+              } catch (IOException e) {
+                return 0L;
+              }
+            },
+            true,
+            "totalSpace",
+            Category.CORE.toString(),
+            "fs");
+    parentContext.gauge(
+            () -> {
+              try {
+                return Files.getFileStore(dataDirPath).getUsableSpace();
+              } catch (IOException e) {
+                return 0L;
+              }
+            },
+            true,
+            "usableSpace",
+            Category.CORE.toString(),
+            "fs");
+    parentContext.gauge(
+            () -> dataDirPath.toAbsolutePath().toString(),
+            true,
+            "path",
+            Category.CORE.toString(),
+            "fs");
+  }
+
+  @Override
+  public void initializeOtelMetrics(SolrMetricsContext parentContext, Attributes attributes) {
+
+    final CloudDescriptor cd = getCoreDescriptor().getCloudDescriptor();
+    AttributesBuilder baseAttributes;
+    if (cd != null) {
+      baseAttributes =
+              Attributes.builder()
+                      .putAll(attributes)
+                      .put(AttributeKey.stringKey("collection"), cd.getCollectionName())
+                      .put(AttributeKey.stringKey("core"), cd.getCoreNodeName())
+                      .put(AttributeKey.stringKey("shard"), cd.getShardId());
+    } else {
+      baseAttributes = Attributes.builder()
+              .putAll(attributes)
+              .put(AttributeKey.stringKey("core"), getCoreDescriptor().getName());
+    }
+
+
 
     var baseSearcherAttributes =
         baseAttributes.put(AttributeKey.stringKey("category"), Category.SEARCHER.toString());
@@ -1333,27 +1439,27 @@ public class SolrCore implements SolrInfoBean, Closeable {
             "solr_metrics_core_searcher_timer",
             "Solr core metrics on new searchers and warmup times");
 
-    newSearcherCounter =
+    otelNewSearcherCounter =
         new BoundLongCounter(
             baseSearcherCounterMetric,
             baseSearcherAttributes.put(AttributeKey.stringKey("type"), "newSearcher").build());
 
-    newSearcherMaxReachedCounter =
+    otelNewSearcherMaxReachedCounter =
         new BoundLongCounter(
             baseSearcherCounterMetric,
             baseSearcherAttributes.put(AttributeKey.stringKey("type"), "maxReached").build());
 
-    newSearcherOtherErrorsCounter =
+    otelNewSearcherOtherErrorsCounter =
         new BoundLongCounter(
             baseSearcherCounterMetric,
             baseSearcherAttributes.put(AttributeKey.stringKey("type"), "errors").build());
 
-    newSearcherTimer =
+    otelNewSearcherTimer =
         new BoundLongTimer(
             baseSearcherTimerMetric,
             baseSearcherAttributes.put(AttributeKey.stringKey("type"), "new").build());
 
-    newSearcherWarmupTimer =
+    otelNewSearcherWarmupTimer =
         new BoundLongTimer(
             baseSearcherTimerMetric,
             baseSearcherAttributes.put(AttributeKey.stringKey("type"), "warmup").build());
@@ -2563,6 +2669,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
         // first: increment count to signal other threads that we are
         //        opening a new searcher.
         onDeckSearchers++;
+        otelNewSearcherCounter.inc();
         newSearcherCounter.inc();
         if (onDeckSearchers < 1) {
           // should never happen... just a sanity check
@@ -2570,6 +2677,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
           onDeckSearchers = 1; // reset
         } else if (onDeckSearchers > maxWarmingSearchers) {
           onDeckSearchers--;
+          otelNewSearcherMaxReachedCounter.inc();
           newSearcherMaxReachedCounter.inc();
           try {
             searcherLock.wait();
@@ -2594,7 +2702,8 @@ public class SolrCore implements SolrInfoBean, Closeable {
     boolean success = false;
 
     openSearcherLock.lock();
-    newSearcherTimer.start();
+    Timer.Context timerContext = newSearcherTimer.time();
+    otelNewSearcherTimer.start();
     try {
       searchHolder = openNewSearcher(updateHandlerReopens, false);
       // the searchHolder will be incremented once already (and it will eventually be assigned to
@@ -2637,7 +2746,8 @@ public class SolrCore implements SolrInfoBean, Closeable {
           future =
               searcherExecutor.submit(
                   () -> {
-                    newSearcherWarmupTimer.start();
+                    Timer.Context warmupContext = newSearcherWarmupTimer.time();
+                    otelNewSearcherWarmupTimer.start();
                     try {
                       newSearcher.warm(currSearcher);
                     } catch (Throwable e) {
@@ -2646,7 +2756,8 @@ public class SolrCore implements SolrInfoBean, Closeable {
                         throw (Error) e;
                       }
                     } finally {
-                      newSearcherWarmupTimer.stop();
+                      warmupContext.close();
+                      otelNewSearcherWarmupTimer.stop();
                     }
                     return null;
                   });
@@ -2729,9 +2840,10 @@ public class SolrCore implements SolrInfoBean, Closeable {
       if (e instanceof RuntimeException) throw (RuntimeException) e;
       throw new SolrException(ErrorCode.SERVER_ERROR, e);
     } finally {
-
-      newSearcherTimer.stop();
+      timerContext.close();
+      otelNewSearcherTimer.stop();
       if (!success) {
+        otelNewSearcherOtherErrorsCounter.inc();
         newSearcherOtherErrorsCounter.inc();
         synchronized (searcherLock) {
           onDeckSearchers--;

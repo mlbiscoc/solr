@@ -109,6 +109,8 @@ import org.slf4j.MDC;
  * org.apache.solr.core.CoreContainer}, and most registries are local to each instance, with the
  * exception of two global registries: <code>solr.jetty</code> and <code>solr.jvm</code>, which are
  * shared between all {@link org.apache.solr.core.CoreContainer}-s
+ * TODO SOLR-17458: Need to re-write what java docs on what SolrMetricManager is beside just helper methods for Otel instruments
+ * Should we keep references of Scope? Might make more sense to store a custom Otel Metric Reader instead of keeping the concept of registry
  */
 public class SolrMetricManager {
 
@@ -156,6 +158,12 @@ public class SolrMetricManager {
     timerSupplier = MetricSuppliers.timerSupplier(null, null);
     histogramSupplier = MetricSuppliers.histogramSupplier(null, null);
     meterProvider = GlobalOpenTelemetry.getMeterProvider();
+  }
+
+  // TODO SOLR-17458: This is temporary until complete removal of dropwizard
+  public SolrMetricManager(
+          SolrResourceLoader loader, MetricsConfig metricsConfig) {
+    this(loader, metricsConfig, GlobalOpenTelemetry.getMeterProvider());
   }
 
   public SolrMetricManager(

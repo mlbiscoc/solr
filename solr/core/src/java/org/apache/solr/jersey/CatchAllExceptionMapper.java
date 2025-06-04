@@ -91,8 +91,10 @@ public class CatchAllExceptionMapper implements ExceptionMapper<Exception> {
         RequestHandlerBase.normalizeReceivedException(solrQueryRequest, exception);
     final RequestHandlerBase.HandlerMetrics metrics =
         (RequestHandlerBase.HandlerMetrics) containerRequestContext.getProperty(HANDLER_METRICS);
+    final RequestHandlerBase.DropwizardHandlerMetrics dropwizardMetrics =
+            (RequestHandlerBase.DropwizardHandlerMetrics) containerRequestContext.getProperty("dropwizard" + HANDLER_METRICS);
     if (metrics != null) {
-      RequestHandlerBase.processErrorMetricsOnException(normalizedException, metrics);
+      RequestHandlerBase.processErrorMetricsOnException(normalizedException, metrics, dropwizardMetrics);
     }
 
     // Then, convert the exception into a SolrJerseyResponse (creating one as necessary
