@@ -25,9 +25,11 @@ import com.codahale.metrics.Metric;
 import com.codahale.metrics.MetricFilter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
+import io.prometheus.metrics.model.registry.PrometheusScrapeRequest;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -128,7 +130,36 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
 
     // TODO SOLR-17458: Make this the default option after dropwizard removal
     if (PROMETHEUS_METRICS_WT.equals(params.get(CommonParams.WT))) {
-      consumer.accept("metrics", metricManager.getMetricReader().collect());
+
+      // Metric naming filter
+      String[] names = params.getParams("name");
+      Set<String> nameFilter = new HashSet<>();
+      if (names != null) {
+        for (String name : names) {
+          nameFilter.addAll(StrUtils.splitSmart(name, ','));
+        }
+      }
+
+      // Label Filter
+      String[] labels = params.getParams("labels");
+      Map<String, Set<String>> labelFilter = new HashMap<>();
+      if (labels != null) {
+        for (String label : labels) {
+          List<String> pairs = StrUtils.splitSmart(label, ',');
+          for (String pair : pairs) {
+            List<String> keyVal = StrUtils.splitSmart(pair, ':');
+            if (labelFilter.containsKey(keyVal.get(0))) {
+              labelFilter.get(keyVal.get(0)).add(keyVal.get(1));
+            } else {
+              Set<String> vals = new HashSet<>();
+              vals.add(keyVal.get(1));
+              labelFilter.put(keyVal.get(0), vals);
+            }
+          }
+        }
+      }
+
+      consumer.accept("metrics", metricManager.getMetricReader().collect(nameFilter, labelFilter));
       return;
     }
 
@@ -529,6 +560,19 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
 
     public MetricFilter asMetricFilter() {
       return (name, metric) -> klass == null || klass.isInstance(metric);
+    }
+  }
+
+  public static class SolrScrapeRequest implements PrometheusScrapeRequest {
+    @Override
+    public String getRequestPath() {
+      // Not used
+      return null;
+    }
+
+    @Override
+    public String[] getParameterValues(String name) {
+      return null;
     }
   }
 }

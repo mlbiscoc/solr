@@ -33,7 +33,6 @@ import com.github.benmanes.caffeine.cache.Interner;
 import com.google.common.annotations.VisibleForTesting;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.trace.Tracer;
-import io.opentelemetry.exporter.prometheus.PrometheusMetricReader;
 import jakarta.inject.Singleton;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -140,6 +139,7 @@ import org.apache.solr.metrics.SolrCoreMetricManager;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
+import org.apache.solr.metrics.otel.FilterablePrometheusMetricReader;
 import org.apache.solr.pkg.SolrPackageLoader;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
@@ -426,7 +426,8 @@ public class CoreContainer {
     this.solrHome = config.getSolrHome();
     this.solrCores = SolrCores.newSolrCores(this);
     this.nodeKeyPair = new SolrNodeKeyPair(cfg.getCloudConfig());
-    PrometheusMetricReader metricReader = new PrometheusMetricReader(true, null);
+    FilterablePrometheusMetricReader metricReader =
+        new FilterablePrometheusMetricReader(true, null);
     OpenTelemetryConfigurator.initializeOpenTelemetrySdk(cfg, loader, metricReader);
     this.metricManager = new SolrMetricManager(loader, cfg.getMetricsConfig(), metricReader);
     this.tracer = TraceUtils.getGlobalTracer();

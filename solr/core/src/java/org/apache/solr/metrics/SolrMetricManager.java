@@ -50,7 +50,6 @@ import io.opentelemetry.api.metrics.ObservableLongCounter;
 import io.opentelemetry.api.metrics.ObservableLongGauge;
 import io.opentelemetry.api.metrics.ObservableLongMeasurement;
 import io.opentelemetry.api.metrics.ObservableLongUpDownCounter;
-import io.opentelemetry.exporter.prometheus.PrometheusMetricReader;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -81,6 +80,7 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.logging.MDCLoggingContext;
+import org.apache.solr.metrics.otel.FilterablePrometheusMetricReader;
 import org.apache.solr.util.stats.MetricUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -149,7 +149,7 @@ public class SolrMetricManager {
 
   private final MeterProvider meterProvider;
   private final Map<String, io.opentelemetry.api.metrics.Meter> meters = new ConcurrentHashMap<>();
-  private final PrometheusMetricReader metricReader;
+  private final FilterablePrometheusMetricReader metricReader;
 
   public SolrMetricManager() {
     metricsConfig = new MetricsConfig.MetricsConfigBuilder().build();
@@ -162,7 +162,9 @@ public class SolrMetricManager {
   }
 
   public SolrMetricManager(
-      SolrResourceLoader loader, MetricsConfig metricsConfig, PrometheusMetricReader metricReader) {
+      SolrResourceLoader loader,
+      MetricsConfig metricsConfig,
+      FilterablePrometheusMetricReader metricReader) {
     this.metricsConfig = metricsConfig;
     this.metricReader = metricReader;
     this.meterProvider = MetricUtils.getMeterProvider();
@@ -1587,7 +1589,7 @@ public class SolrMetricManager {
     return metricsConfig;
   }
 
-  public PrometheusMetricReader getMetricReader() {
+  public FilterablePrometheusMetricReader getMetricReader() {
     return this.metricReader;
   }
 }

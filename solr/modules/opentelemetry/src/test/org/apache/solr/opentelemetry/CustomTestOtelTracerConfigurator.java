@@ -24,6 +24,7 @@ import io.opentelemetry.sdk.trace.export.SimpleSpanProcessor;
 import java.lang.invoke.MethodHandles;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.OpenTelemetryConfigurator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -98,6 +99,7 @@ public class CustomTestOtelTracerConfigurator extends OtelTracerConfigurator {
         exporter = null;
       }
       System.clearProperty("otel.traces.exporter");
+      OpenTelemetryConfigurator.resetForTest();
     }
   }
 }
