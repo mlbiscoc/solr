@@ -6,7 +6,6 @@ import io.opentelemetry.exporter.prometheus.PrometheusMetricReader;
 import io.prometheus.metrics.model.snapshots.CounterSnapshot;
 import io.prometheus.metrics.model.snapshots.GaugeSnapshot;
 import io.prometheus.metrics.model.snapshots.HistogramSnapshot;
-import io.prometheus.metrics.model.snapshots.MetricSnapshot;
 import io.prometheus.metrics.model.snapshots.MetricSnapshots;
 import java.util.List;
 import java.util.Map;
@@ -24,75 +23,93 @@ public class FilterablePrometheusMetricReader extends PrometheusMetricReader {
       Set<String> includedNames, Map<String, Set<String>> includedLabels) {
 
     MetricSnapshots snapshotsToFilter =
-        (includedNames.isEmpty()) ? super.collect() : super.collect(includedNames::contains);
+        (includedNames.isEmpty()) ? collect() : collect(includedNames::contains);
 
     if (includedLabels.isEmpty()) {
       return snapshotsToFilter;
     }
 
+    // Build a new MetricSnapshot based on label filters
     MetricSnapshots.Builder filteredSnapshots = MetricSnapshots.builder();
-    for (MetricSnapshot ms : snapshotsToFilter) {
-      if (ms instanceof CounterSnapshot) {
-        CounterSnapshot c = (CounterSnapshot) ms;
-        List<CounterSnapshot.CounterDataPointSnapshot> kept =
-            c.getDataPoints().stream()
-                .filter(
-                    dp ->
-                        includedLabels.entrySet().stream()
-                            .allMatch(
-                                entry ->
-                                    dp.getLabels().stream()
-                                        .anyMatch(
-                                            l ->
-                                                l.getName().equals(entry.getKey())
-                                                    && entry.getValue().contains(l.getValue()))))
-                .collect(toList());
-        if (!kept.isEmpty()) {
-          filteredSnapshots.metricSnapshot(new CounterSnapshot(c.getMetadata(), kept));
-        }
-        continue;
-      }
-      if (ms instanceof HistogramSnapshot) {
-        HistogramSnapshot h = (HistogramSnapshot) ms;
-        List<HistogramSnapshot.HistogramDataPointSnapshot> kept =
-            h.getDataPoints().stream()
-                .filter(
-                    dp ->
-                        includedLabels.entrySet().stream()
-                            .allMatch(
-                                entry ->
-                                    dp.getLabels().stream()
-                                        .anyMatch(
-                                            l ->
-                                                l.getName().equals(entry.getKey())
-                                                    && entry.getValue().contains(l.getValue()))))
-                .collect(toList());
-        if (!kept.isEmpty()) {
-          filteredSnapshots.metricSnapshot(new HistogramSnapshot(h.getMetadata(), kept));
-        }
-        continue;
-      }
-      if (ms instanceof GaugeSnapshot) {
-        GaugeSnapshot g = (GaugeSnapshot) ms;
-        List<GaugeSnapshot.GaugeDataPointSnapshot> kept =
-            g.getDataPoints().stream()
-                .filter(
-                    dp ->
-                        includedLabels.entrySet().stream()
-                            .allMatch(
-                                entry ->
-                                    dp.getLabels().stream()
-                                        .anyMatch(
-                                            l ->
-                                                l.getName().equals(entry.getKey())
-                                                    && entry.getValue().contains(l.getValue()))))
-                .collect(toList());
-        if (!kept.isEmpty()) {
-          filteredSnapshots.metricSnapshot(new GaugeSnapshot(g.getMetadata(), kept));
-        }
-      }
-    }
+    snapshotsToFilter.forEach(
+        metricSnapshot -> {
+          switch (metricSnapshot) {
+            case CounterSnapshot counter -> {
+              List<CounterSnapshot.CounterDataPointSnapshot> filtered =
+                  filterCounterDatapoint(counter, includedLabels);
+              if (!filtered.isEmpty()) {
+                filteredSnapshots.metricSnapshot(
+                    new CounterSnapshot(counter.getMetadata(), filtered));
+              }
+            }
+            case HistogramSnapshot histogram -> {
+              List<HistogramSnapshot.HistogramDataPointSnapshot> filtered =
+                  filterHistogramDatapoint(histogram, includedLabels);
+              if (!filtered.isEmpty()) {
+                filteredSnapshots.metricSnapshot(
+                    new HistogramSnapshot(histogram.getMetadata(), filtered));
+              }
+            }
+            case GaugeSnapshot gauge -> {
+              List<GaugeSnapshot.GaugeDataPointSnapshot> filtered =
+                  filterGaugeDatapoint(gauge, includedLabels);
+              if (!filtered.isEmpty()) {
+                filteredSnapshots.metricSnapshot(new GaugeSnapshot(gauge.getMetadata(), filtered));
+              }
+            }
+            default -> throw new IllegalStateException(
+                "Unknown type filtering prometheus metric labels: " + metricSnapshot.getClass());
+          }
+        });
     return filteredSnapshots.build();
+  }
+
+  private List<CounterSnapshot.CounterDataPointSnapshot> filterCounterDatapoint(
+      CounterSnapshot cs, Map<String, Set<String>> includedLabels) {
+    return cs.getDataPoints().stream()
+        .filter(
+            dp ->
+                includedLabels.entrySet().stream()
+                    .allMatch(
+                        entry ->
+                            dp.getLabels().stream()
+                                .anyMatch(
+                                    l ->
+                                        l.getName().equals(entry.getKey())
+                                            && entry.getValue().contains(l.getValue()))))
+        .collect(toList());
+  }
+
+  private List<HistogramSnapshot.HistogramDataPointSnapshot> filterHistogramDatapoint(
+      HistogramSnapshot hs, Map<String, Set<String>> includedLabels) {
+    return hs.getDataPoints().stream()
+        .filter(
+            dp ->
+                includedLabels.entrySet().stream()
+                    .allMatch(
+                        entry ->
+                            dp.getLabels().stream()
+                                .anyMatch(
+                                    l ->
+                                        l.getName().equals(entry.getKey())
+                                            && entry.getValue().contains(l.getValue()))))
+        .collect(toList());
+  }
+
+  private List<GaugeSnapshot.GaugeDataPointSnapshot> filterGaugeDatapoint(
+      GaugeSnapshot gs, Map<String, Set<String>> includedLabels) {
+    return gs.getDataPoints().stream()
+        .filter(
+            dp ->
+                includedLabels.entrySet().stream()
+                    .allMatch(
+                        entry ->
+                            dp.getLabels().stream()
+                                .anyMatch(
+                                    l ->
+                                        l.getName().equals(entry.getKey())
+                                            && entry.getValue().contains(l.getValue()))))
+        .collect(toList());
   }
 
   @Override
