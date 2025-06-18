@@ -19,7 +19,6 @@ package org.apache.solr.update;
 import static org.apache.solr.util.stats.InstrumentedHttpRequestExecutor.KNOWN_METRIC_NAME_STRATEGIES;
 
 import com.google.common.annotations.VisibleForTesting;
-import io.opentelemetry.api.common.Attributes;
 import java.lang.invoke.MethodHandles;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
@@ -204,14 +203,12 @@ public class UpdateShardHandler implements SolrInfoBean {
 
   // TODO SOLR-17458: Add Otel
   @Override
-  public void initializeMetrics(
-      SolrMetricsContext parentContext, Attributes attributes, String scope) {
+  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
     solrMetricsContext = parentContext.getChildContext(this);
     String expandedScope = SolrMetricManager.mkName(scope, getCategory().name());
     // TODO SOLR-17458: Add Otel
-    trackHttpSolrMetrics.initializeMetrics(solrMetricsContext, Attributes.empty(), expandedScope);
-    defaultConnectionManager.initializeMetrics(
-        solrMetricsContext, Attributes.empty(), expandedScope);
+    trackHttpSolrMetrics.initializeMetrics(solrMetricsContext, expandedScope);
+    defaultConnectionManager.initializeMetrics(solrMetricsContext, expandedScope);
     updateExecutor =
         MetricUtils.instrumentedExecutorService(
             updateExecutor,

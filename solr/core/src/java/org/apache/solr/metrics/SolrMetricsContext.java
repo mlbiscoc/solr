@@ -23,6 +23,7 @@ import com.codahale.metrics.Histogram;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
+import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.metrics.DoubleCounter;
 import io.opentelemetry.api.metrics.DoubleGauge;
 import io.opentelemetry.api.metrics.DoubleHistogram;
@@ -49,12 +50,15 @@ public class SolrMetricsContext {
   private final String registryName;
   private final SolrMetricManager metricManager;
   private final String tag;
+  private final Attributes attributes;
   private final Set<String> metricNames = ConcurrentHashMap.newKeySet();
 
-  public SolrMetricsContext(SolrMetricManager metricManager, String registryName, String tag) {
+  public SolrMetricsContext(
+      SolrMetricManager metricManager, String registryName, String tag, Attributes attributes) {
     this.registryName = registryName;
     this.metricManager = metricManager;
     this.tag = tag;
+    this.attributes = attributes;
   }
 
   /** See {@link SolrMetricManager#nullNumber()}. */
@@ -126,7 +130,10 @@ public class SolrMetricsContext {
   public SolrMetricsContext getChildContext(Object child) {
     SolrMetricsContext childContext =
         new SolrMetricsContext(
-            metricManager, registryName, SolrMetricProducer.getUniqueMetricTag(child, tag));
+            metricManager,
+            registryName,
+            SolrMetricProducer.getUniqueMetricTag(child, tag),
+            attributes);
     return childContext;
   }
 
@@ -134,8 +141,7 @@ public class SolrMetricsContext {
    * Register a metric name that this component reports. This method is called by various metric
    * registration methods in {@link org.apache.solr.metrics.SolrMetricManager} in order to capture
    * what metric names are reported from this component (which in turn is called from {@link
-   * SolrMetricProducer#initializeMetrics(SolrMetricsContext,
-   * io.opentelemetry.api.common.Attributes, String)}).
+   * SolrMetricProducer#initializeMetrics(SolrMetricsContext, String)}).
    */
   // TODO We can continue to register metric names
   public void registerMetricName(String name) {
@@ -277,5 +283,9 @@ public class SolrMetricsContext {
   // TODO Change this to OTEL Scope?
   public MetricRegistry getMetricRegistry() {
     return metricManager.registry(registryName);
+  }
+
+  public Attributes getAttributes() {
+    return attributes;
   }
 }

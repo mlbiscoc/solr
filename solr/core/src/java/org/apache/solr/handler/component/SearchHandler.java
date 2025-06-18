@@ -155,21 +155,13 @@ public class SearchHandler extends RequestHandlerBase
 
   // TODO SOLR-17458: Fix metric Attributes
   @Override
-  public void initializeMetrics(
-      SolrMetricsContext parentContext, Attributes attributes, String scope) {
-    super.initializeMetrics(
-        parentContext,
-        Attributes.builder()
-            .putAll(attributes)
-            .put(AttributeKey.stringKey("category"), getCategory().toString())
-            .put(AttributeKey.stringKey("internal"), "false")
-            .build(),
-        scope);
+  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+    super.initializeMetrics(parentContext, scope);
     metricsShard =
         new HandlerMetrics( // will register various metrics in the context
             solrMetricsContext,
             Attributes.builder()
-                .putAll(attributes)
+                .putAll(solrMetricsContext.getAttributes())
                 .put(AttributeKey.stringKey("category"), getCategory().toString())
                 .put(AttributeKey.stringKey("internal"), "true")
                 .build(),

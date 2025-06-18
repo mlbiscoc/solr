@@ -24,7 +24,6 @@ import com.github.benmanes.caffeine.cache.RemovalCause;
 import com.github.benmanes.caffeine.cache.RemovalListener;
 import com.github.benmanes.caffeine.cache.stats.CacheStats;
 import com.google.common.annotations.VisibleForTesting;
-import io.opentelemetry.api.common.Attributes;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.invoke.MethodHandles;
@@ -476,8 +475,7 @@ public class CaffeineCache<K, V> extends SolrCacheBase
 
   // TODO SOLR-17458: Migrate to Otel
   @Override
-  public void initializeMetrics(
-      SolrMetricsContext parentContext, Attributes attributes, String scope) {
+  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
     solrMetricsContext = parentContext.getChildContext(this);
     cacheMap =
         new MetricsMap(

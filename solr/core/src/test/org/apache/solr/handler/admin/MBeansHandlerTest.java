@@ -16,7 +16,6 @@
  */
 package org.apache.solr.handler.admin;
 
-import io.opentelemetry.api.common.Attributes;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -172,8 +171,7 @@ public class MBeansHandlerTest extends SolrTestCaseJ4 {
           }
 
           @Override
-          public void initializeMetrics(
-              SolrMetricsContext parentContext, Attributes attributes, String scope) {
+          public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
             this.solrMetricsContext = parentContext.getChildContext(this);
           }
 
@@ -185,7 +183,6 @@ public class MBeansHandlerTest extends SolrTestCaseJ4 {
     bean.initializeMetrics(
         new SolrMetricsContext(
             h.getCoreContainer().getMetricManager(), "testMetricsSnapshot", "foobar"),
-        Attributes.empty(),
         "foo");
     runSnapshots = true;
     Thread modifier =

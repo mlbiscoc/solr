@@ -18,7 +18,6 @@
 package org.apache.solr.handler.admin;
 
 import com.codahale.metrics.Counter;
-import io.opentelemetry.api.common.Attributes;
 import io.prometheus.metrics.model.snapshots.CounterSnapshot;
 import io.prometheus.metrics.model.snapshots.GaugeSnapshot;
 import io.prometheus.metrics.model.snapshots.Labels;
@@ -744,8 +743,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
 
     void reset(DumpRequestHandler rh) {
       this.rh = rh;
-      if (metricsInfo != null)
-        this.rh.initializeMetrics(metricsInfo, Attributes.empty(), "/dumphandler");
+      if (metricsInfo != null) this.rh.initializeMetrics(metricsInfo, "/dumphandler");
     }
 
     @Override
@@ -770,9 +768,8 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     }
 
     @Override
-    public void initializeMetrics(
-        SolrMetricsContext parentContext, Attributes attributes, String scope) {
-      super.initializeMetrics(parentContext, attributes, scope);
+    public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+      super.initializeMetrics(parentContext, scope);
       MetricsMap metrics = new MetricsMap(map -> gaugevals.forEach((k, v) -> map.putNoEx(k, v)));
       solrMetricsContext.gauge(metrics, true, "dumphandlergauge", getCategory().toString(), scope);
     }

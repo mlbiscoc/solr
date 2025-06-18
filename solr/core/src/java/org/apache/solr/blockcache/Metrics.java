@@ -16,7 +16,6 @@
  */
 package org.apache.solr.blockcache;
 
-import io.opentelemetry.api.common.Attributes;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
@@ -57,8 +56,7 @@ public class Metrics extends SolrCacheBase implements SolrInfoBean {
 
   // TODO SOLR-17458: Migrate to Otel
   @Override
-  public void initializeMetrics(
-      SolrMetricsContext parentContext, Attributes attributes, String scope) {
+  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
     solrMetricsContext = parentContext.getChildContext(this);
     metricsMap =
         new MetricsMap(

@@ -62,7 +62,17 @@ public class SolrCoreMetricManager implements Closeable {
     metricManager = core.getCoreContainer().getMetricManager();
     String registryName =
         createRegistryName(cloudMode, collectionName, shardName, replicaName, core.getName());
-    solrMetricsContext = new SolrMetricsContext(metricManager, registryName, core.getMetricTag());
+    solrMetricsContext =
+        new SolrMetricsContext(
+            metricManager,
+            registryName,
+            core.getMetricTag(),
+            Attributes.builder()
+                .put(CORE_ATTR, core.getCoreDescriptor().getName())
+                .put(COLLECTION_ATTR, collectionName)
+                .put(SHARD_ATTR, shardName)
+                .put(REPLICA_ATTR, replicaName)
+                .build());
     leaderRegistryName = createLeaderRegistryName(cloudMode, collectionName, shardName);
   }
 
@@ -123,8 +133,19 @@ public class SolrCoreMetricManager implements Closeable {
     if (oldLeaderRegistryName != null) {
       metricManager.closeReporters(oldLeaderRegistryName, solrMetricsContext.getTag());
     }
+
+    // NOCOMMIT: Come back to this for de-registering SdkMeterProviders
     solrMetricsContext =
-        new SolrMetricsContext(metricManager, newRegistryName, solrMetricsContext.getTag());
+        new SolrMetricsContext(
+            metricManager,
+            newRegistryName,
+            solrMetricsContext.getTag(),
+            Attributes.builder()
+                .put(CORE_ATTR, core.getCoreDescriptor().getName())
+                .put(COLLECTION_ATTR, collectionName)
+                .put(SHARD_ATTR, shardName)
+                .put(REPLICA_ATTR, replicaName)
+                .build());
     // load reporters again, using the new core name
     loadReporters();
   }
@@ -147,16 +168,7 @@ public class SolrCoreMetricManager implements Closeable {
 
     // NOCOMMIT SOLR-17458: These attributes may not work for standalone mode
     // use deprecated method for back-compat, remove in 9.0
-    producer.initializeMetrics(
-        solrMetricsContext,
-        Attributes.builder()
-            .put(CORE_ATTR, core.getCoreDescriptor().getName())
-            .put(COLLECTION_ATTR, collectionName)
-            .put(SHARD_ATTR, shardName)
-            .put(REPLICA_ATTR, replicaName)
-            .put((scope.startsWith("/")) ? HANDLER_ATTR : SCOPE_ATTR, scope)
-            .build(),
-        scope);
+    producer.initializeMetrics(solrMetricsContext, scope);
   }
 
   /** Return the registry used by this SolrCore. */

@@ -19,7 +19,6 @@ package org.apache.solr.search;
 import com.github.benmanes.caffeine.cache.RemovalCause;
 import com.github.benmanes.caffeine.cache.RemovalListener;
 import com.google.common.annotations.VisibleForTesting;
-import io.opentelemetry.api.common.Attributes;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.lang.ref.WeakReference;
@@ -292,8 +291,7 @@ public class ThinCache<S, K, V> extends SolrCacheBase
   private long priorEvictions;
 
   @Override
-  public void initializeMetrics(
-      SolrMetricsContext parentContext, Attributes attributes, String scope) {
+  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
     solrMetricsContext = parentContext.getChildContext(this);
     cacheMap =
         new MetricsMap(

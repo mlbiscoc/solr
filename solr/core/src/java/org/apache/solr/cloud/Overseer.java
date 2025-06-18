@@ -19,6 +19,7 @@ package org.apache.solr.cloud;
 import static org.apache.solr.common.params.CommonParams.ID;
 
 import com.codahale.metrics.Timer;
+import io.opentelemetry.api.common.Attributes;
 import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -728,11 +729,13 @@ public class Overseer implements SolrCloseable {
     this.distributedClusterStateUpdater =
         new DistributedClusterStateUpdater(config.getDistributedClusterStateUpdates());
 
+    // NOCOMMIT: Create base set of overseer attributes
     this.solrMetricsContext =
         new SolrMetricsContext(
             zkController.getCoreContainer().getMetricManager(),
             SolrInfoBean.Group.overseer.toString(),
-            metricTag);
+            metricTag,
+            Attributes.empty());
   }
 
   public synchronized void start(String id) {

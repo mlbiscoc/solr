@@ -17,6 +17,8 @@
 package org.apache.solr.handler;
 
 import static org.apache.solr.core.RequestParams.USEPARAM;
+import static org.apache.solr.metrics.SolrCoreMetricManager.HANDLER_ATTR;
+import static org.apache.solr.metrics.SolrCoreMetricManager.SCOPE_ATTR;
 import static org.apache.solr.response.SolrQueryResponse.haveCompleteResults;
 
 import com.codahale.metrics.Counter;
@@ -163,20 +165,20 @@ public abstract class RequestHandlerBase
   }
 
   @Override
-  public void initializeMetrics(
-      SolrMetricsContext parentContext, Attributes attributes, String scope) {
+  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
     if (aggregateNodeLevelMetricsEnabled) {
       this.solrMetricsContext =
           new SolrDelegateRegistryMetricsContext(
               parentContext.getMetricManager(),
               parentContext.getRegistryName(),
               SolrMetricProducer.getUniqueMetricTag(this, parentContext.getTag()),
-              SolrMetricManager.getRegistryName(SolrInfoBean.Group.node));
+              SolrMetricManager.getRegistryName(SolrInfoBean.Group.node),
+              parentContext.getAttributes());
     } else {
       this.solrMetricsContext = parentContext.getChildContext(this);
     }
 
-    metrics = new HandlerMetrics(solrMetricsContext, attributes, getCategory().toString(), scope);
+    metrics = new HandlerMetrics(solrMetricsContext, getCategory().toString(), scope);
 
     // NOCOMMIT: I don't see value in this metric
     solrMetricsContext.gauge(
@@ -185,15 +187,17 @@ public abstract class RequestHandlerBase
 
   /** Metrics for this handler. */
   public static class HandlerMetrics {
+    // NOCOMMIT SOLR-17458: Need to refactor this to use OTEL MeterProvider.noop()
     public static final HandlerMetrics NO_OP =
         new HandlerMetrics(
             new SolrMetricsContext(
                 new SolrMetricManager(
                     null, new MetricsConfig.MetricsConfigBuilder().setEnabled(false).build(), null),
                 "NO_OP",
-                "NO_OP"),
-            Attributes.empty());
-
+                "NO_OP",
+                Attributes.empty()),
+            "NO_OP",
+            "NO_OP");
     public final Meter numErrors;
     public final Meter numServerErrors;
     public final Meter numClientErrors;
@@ -208,8 +212,23 @@ public abstract class RequestHandlerBase
     public AttributedLongCounter otelNumTimeouts;
     public AttributedLongTimer otelRequestTimes;
 
+    // NOCOMMIT SOLR-17458: This is a hack for now because Dropwizard and Otel sit together.
+    // Remember to remove this later
+    public HandlerMetrics(SolrMetricsContext solrMetricsContext, String category, String scope) {
+      this(
+          solrMetricsContext,
+          Attributes.builder()
+              .putAll(solrMetricsContext.getAttributes())
+              .put((scope.startsWith("/")) ? HANDLER_ATTR : SCOPE_ATTR, scope)
+              .build(),
+          category,
+          scope);
+    }
+
+    // NOCOMMIT SOLR-17458: Remove metricPath and solrMetricsContext. HandlerMetrics constructor
+    // should only need baseAttributes once dropwizard is removed
     public HandlerMetrics(
-        SolrMetricsContext solrMetricsContext, Attributes attributes, String... metricPath) {
+        SolrMetricsContext solrMetricsContext, Attributes baseAttributes, String... metricPath) {
 
       // NOCOMMIT SOLR-17458: To be removed
       numErrors = solrMetricsContext.meter("errors", metricPath);
@@ -227,35 +246,29 @@ public abstract class RequestHandlerBase
           solrMetricsContext.longHistogram(
               "solr_metrics_core_requests_times", "HTTP Solr request times", "ms");
 
+      var attr = Attributes.builder().putAll(baseAttributes);
+
       otelRequests =
-          new AttributedLongCounter(
-              baseRequestMetric,
-              Attributes.builder().putAll(attributes).put(TYPE_ATTR, "requests").build());
+          new AttributedLongCounter(baseRequestMetric, attr.put(TYPE_ATTR, "requests").build());
 
       otelNumServerErrors =
           new AttributedLongCounter(
               baseRequestMetric,
-              Attributes.builder()
-                  .putAll(attributes)
-                  .put(AttributeKey.stringKey("source"), "server")
+              attr.put(AttributeKey.stringKey("source"), "server")
                   .put(TYPE_ATTR, "errors")
                   .build());
 
       otelNumClientErrors =
           new AttributedLongCounter(
               baseRequestMetric,
-              Attributes.builder()
-                  .putAll(attributes)
-                  .put(AttributeKey.stringKey("source"), "client")
+              attr.put(AttributeKey.stringKey("source"), "client")
                   .put(TYPE_ATTR, "errors")
                   .build());
 
       otelNumTimeouts =
-          new AttributedLongCounter(
-              baseRequestMetric,
-              Attributes.builder().putAll(attributes).put(TYPE_ATTR, "timeouts").build());
+          new AttributedLongCounter(baseRequestMetric, attr.put(TYPE_ATTR, "timeouts").build());
 
-      otelRequestTimes = new AttributedLongTimer(baseRequestTimeMetric, attributes);
+      otelRequestTimes = new AttributedLongTimer(baseRequestTimeMetric, attr.build());
     }
   }
 

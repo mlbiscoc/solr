@@ -16,7 +16,6 @@
  */
 package org.apache.solr.search;
 
-import io.opentelemetry.api.common.Attributes;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricsContext;
@@ -53,8 +52,7 @@ public class SolrFieldCacheBean implements SolrInfoBean {
 
   // TODO SOLR-17458: Migrate to Otel
   @Override
-  public void initializeMetrics(
-      SolrMetricsContext parentContext, Attributes attributes, String scope) {
+  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
     this.solrMetricsContext = parentContext;
     MetricsMap metricsMap =
         new MetricsMap(

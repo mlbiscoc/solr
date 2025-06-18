@@ -19,7 +19,6 @@ package org.apache.solr.search;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.RemovalCause;
-import io.opentelemetry.api.common.Attributes;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -49,11 +48,11 @@ public class TestCaffeineCache extends SolrTestCase {
     CaffeineCache<Integer, String> lfuCache = new CaffeineCache<>();
     SolrMetricsContext solrMetricsContext = new SolrMetricsContext(metricManager, registry, "foo");
     // TODO SOLR-17458: Fix tests for OTEL
-    lfuCache.initializeMetrics(solrMetricsContext, Attributes.empty(), scope + "-1");
+    lfuCache.initializeMetrics(solrMetricsContext, scope + "-1");
 
     CaffeineCache<Integer, String> newLFUCache = new CaffeineCache<>();
     // TODO SOLR-17458: Fix tests for OTEL
-    newLFUCache.initializeMetrics(solrMetricsContext, Attributes.empty(), scope + "-2");
+    newLFUCache.initializeMetrics(solrMetricsContext, scope + "-2");
 
     Map<String, String> params = new HashMap<>();
     params.put("size", "100");

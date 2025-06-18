@@ -21,6 +21,7 @@ import com.codahale.metrics.Counter;
 import com.codahale.metrics.Histogram;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.Timer;
+import io.opentelemetry.api.common.Attributes;
 
 /**
  * This class represents a metrics context that is delegate aware in that it is aware of multiple
@@ -38,8 +39,12 @@ public class SolrDelegateRegistryMetricsContext extends SolrMetricsContext {
   private final String delegateRegistry;
 
   public SolrDelegateRegistryMetricsContext(
-      SolrMetricManager metricManager, String registry, String tag, String delegateRegistry) {
-    super(metricManager, registry, tag);
+      SolrMetricManager metricManager,
+      String registry,
+      String tag,
+      String delegateRegistry,
+      Attributes attributes) {
+    super(metricManager, registry, tag, attributes);
     this.delegateRegistry = delegateRegistry;
   }
 
@@ -79,6 +84,7 @@ public class SolrDelegateRegistryMetricsContext extends SolrMetricsContext {
         getMetricManager(),
         getRegistryName(),
         SolrMetricProducer.getUniqueMetricTag(child, getTag()),
-        delegateRegistry);
+        delegateRegistry,
+        getAttributes());
   }
 }

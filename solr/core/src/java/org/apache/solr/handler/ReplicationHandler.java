@@ -30,7 +30,6 @@ import static org.apache.solr.handler.admin.api.ReplicationAPIBase.OFFSET;
 import static org.apache.solr.handler.admin.api.ReplicationAPIBase.STATUS;
 import static org.apache.solr.handler.admin.api.ReplicationAPIBase.TLOG_FILE;
 
-import io.opentelemetry.api.common.Attributes;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -839,9 +838,8 @@ public class ReplicationHandler extends RequestHandlerBase
 
   // NOCOMMIT SOLR-17458: Update with OTEL
   @Override
-  public void initializeMetrics(
-      SolrMetricsContext parentContext, Attributes attributes, String scope) {
-    super.initializeMetrics(parentContext, attributes, scope);
+  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+    super.initializeMetrics(parentContext, scope);
     solrMetricsContext.gauge(
         () ->
             (core != null && !core.isClosed()

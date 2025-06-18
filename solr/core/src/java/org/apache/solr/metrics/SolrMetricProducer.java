@@ -49,13 +49,12 @@ public interface SolrMetricProducer extends AutoCloseable {
    * <p>{@link Attributes} passed is the base or common set of attributes that should be attached to
    * every metric that will be initialized
    */
-  void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes, String scope);
+  void initializeMetrics(SolrMetricsContext parentContext, String scope);
 
   /**
    * Implementations should return the context used in {@link #initializeMetrics(SolrMetricsContext,
-   * Attributes, String)} to ensure proper cleanup of metrics at the end of the life-cycle of this
-   * component. This should be the child context if one was created, or null if the parent context
-   * was used.
+   * String)} to ensure proper cleanup of metrics at the end of the life-cycle of this component.
+   * This should be the child context if one was created, or null if the parent context was used.
    */
   SolrMetricsContext getSolrMetricsContext();
 

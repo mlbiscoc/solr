@@ -16,7 +16,6 @@
  */
 package org.apache.solr.search;
 
-import io.opentelemetry.api.common.Attributes;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
@@ -96,13 +95,13 @@ public class TestThinCache extends SolrTestCaseJ4 {
     lfuCache.setBacking(cacheScope, backing);
     SolrMetricsContext solrMetricsContext = new SolrMetricsContext(metricManager, registry, "foo");
     // TODO SOLR-17458: Fix test later
-    lfuCache.initializeMetrics(solrMetricsContext, Attributes.empty(), scope + "-1");
+    lfuCache.initializeMetrics(solrMetricsContext, scope + "-1");
 
     Object cacheScope2 = new Object();
     ThinCache<Object, Integer, String> newLFUCache = new ThinCache<>();
     newLFUCache.setBacking(cacheScope2, backing);
     // TODO SOLR-17458: Fix test later
-    newLFUCache.initializeMetrics(solrMetricsContext, Attributes.empty(), scope + "-2");
+    newLFUCache.initializeMetrics(solrMetricsContext, scope + "-2");
 
     Map<String, String> params = new HashMap<>();
     params.put("size", "100");

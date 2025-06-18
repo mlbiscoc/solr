@@ -19,7 +19,6 @@ package org.apache.solr.handler;
 
 import static org.apache.solr.common.params.CommonParams.JSON;
 
-import io.opentelemetry.api.common.Attributes;
 import java.lang.invoke.MethodHandles;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -87,9 +86,8 @@ public class ExportHandler extends SearchHandler {
 
   // TODO SOLR-17458: Migrate to Otel
   @Override
-  public void initializeMetrics(
-      SolrMetricsContext parentContext, Attributes attributes, String scope) {
-    super.initializeMetrics(parentContext, attributes, scope);
+  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+    super.initializeMetrics(parentContext, scope);
     this.writerMetricsPath = SolrMetricManager.mkName("writer", getCategory().toString(), scope);
   }
 

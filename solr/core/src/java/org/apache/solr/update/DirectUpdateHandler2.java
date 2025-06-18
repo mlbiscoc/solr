@@ -208,15 +208,15 @@ public class DirectUpdateHandler2 extends UpdateHandler
 
   // TODO SOLR-17458: Migrate to Otel
   @Override
-  public void initializeMetrics(
-      SolrMetricsContext parentContext, Attributes attributes, String scope) {
+  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
     if (core.getSolrConfig().getUpdateHandlerInfo().aggregateNodeLevelMetricsEnabled) {
       this.solrMetricsContext =
           new SolrDelegateRegistryMetricsContext(
               parentContext.getMetricManager(),
               parentContext.getRegistryName(),
               SolrMetricProducer.getUniqueMetricTag(this, parentContext.getTag()),
-              SolrMetricManager.getRegistryName(SolrInfoBean.Group.node));
+              SolrMetricManager.getRegistryName(SolrInfoBean.Group.node),
+              Attributes.empty());
     } else {
       this.solrMetricsContext = parentContext.getChildContext(this);
     }
