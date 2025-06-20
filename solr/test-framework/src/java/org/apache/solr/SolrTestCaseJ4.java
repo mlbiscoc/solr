@@ -113,6 +113,7 @@ import org.apache.solr.common.util.XML;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoresLocator;
 import org.apache.solr.core.NodeConfig;
+import org.apache.solr.core.OpenTelemetryConfigurator;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrXmlConfig;
@@ -250,7 +251,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
   @BeforeClass
   public static void setupTestCases() {
-    GlobalOpenTelemetry.resetForTest();
+    OpenTelemetryConfigurator.resetForTest();
     resetExceptionIgnores();
 
     testExecutor =

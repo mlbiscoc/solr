@@ -129,8 +129,8 @@ public class PrometheusResponseWriter implements QueryResponseWriter {
         }
         case InfoSnapshot infoSnapshot -> {
           // InfoSnapshot is a special case in that each SdkMeterProvider will create a duplicate
-          // InfoSnapshot metric called target_info
-          // containing OTEL SDK metadata. Only one of these need to be kept
+          // metric called target_info containing OTEL SDK metadata. Only one of these need to be
+          // kept
           if (otelInfoSnapshots == null) {
             otelInfoSnapshots =
                 new InfoSnapshot(infoSnapshot.getMetadata(), infoSnapshot.getDataPoints());
@@ -149,7 +149,7 @@ public class PrometheusResponseWriter implements QueryResponseWriter {
     counterSnapshotMap.values().forEach(b -> snapshotsBuilder.metricSnapshot(b.build()));
     gaugeSnapshotMap.values().forEach(b -> snapshotsBuilder.metricSnapshot(b.build()));
     histogramSnapshotMap.values().forEach(b -> snapshotsBuilder.metricSnapshot(b.build()));
-    snapshotsBuilder.metricSnapshot(otelInfoSnapshots);
+    if (otelInfoSnapshots != null) snapshotsBuilder.metricSnapshot(otelInfoSnapshots);
     return snapshotsBuilder.build();
   }
 }
