@@ -256,12 +256,6 @@ public abstract class RequestHandlerBase
               Attributes.builder().putAll(attributes).put(TYPE_ATTR, "timeouts").build());
 
       otelRequestTimes = new AttributedLongTimer(baseRequestTimeMetric, attributes);
-
-      otelRequests.inc();
-      otelNumTimeouts.inc();
-      otelNumClientErrors.inc();
-      otelNumServerErrors.inc();
-      otelRequestTimes.start().stop();
     }
   }
 

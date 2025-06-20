@@ -43,6 +43,7 @@ import io.opentelemetry.api.metrics.LongHistogramBuilder;
 import io.opentelemetry.api.metrics.LongUpDownCounter;
 import io.opentelemetry.api.metrics.LongUpDownCounterBuilder;
 import io.opentelemetry.api.metrics.ObservableDoubleCounter;
+import io.opentelemetry.api.metrics.ObservableDoubleGauge;
 import io.opentelemetry.api.metrics.ObservableDoubleMeasurement;
 import io.opentelemetry.api.metrics.ObservableDoubleUpDownCounter;
 import io.opentelemetry.api.metrics.ObservableLongCounter;
@@ -258,7 +259,8 @@ public class SolrMetricManager {
     return builder.build();
   }
 
-  public LongGauge longGauge(String providerName, String gaugeName, String description, String unit) {
+  public LongGauge longGauge(
+      String providerName, String gaugeName, String description, String unit) {
     LongGaugeBuilder builder =
         sdkMeterProvider(providerName)
             .get(OTEL_SCOPE_NAME)
@@ -315,6 +317,23 @@ public class SolrMetricManager {
             .gaugeBuilder(gaugeName)
             .setDescription(description)
             .ofLongs();
+    if (unit != null) builder.setUnit(unit);
+
+    return builder.buildWithCallback(callback);
+  }
+
+  public ObservableDoubleGauge observableDoubleGauge(
+      String providerName,
+      String gaugeName,
+      String description,
+      Consumer<ObservableDoubleMeasurement> callback,
+      String unit) {
+    DoubleGaugeBuilder builder =
+        sdkMeterProvider(providerName)
+            .get(OTEL_SCOPE_NAME)
+            .gaugeBuilder(gaugeName)
+            .setDescription(description);
+
     if (unit != null) builder.setUnit(unit);
 
     return builder.buildWithCallback(callback);
@@ -747,7 +766,7 @@ public class SolrMetricManager {
     }
   }
 
-  public void closerMeterProvider(String registry) {
+  public void closeMeterProvider(String registry) {
     sdkMeterProviders.computeIfPresent(
         enforcePrefix(registry),
         (key, sdkMeterProvider) -> {
@@ -1639,5 +1658,9 @@ public class SolrMetricManager {
 
   public Map<String, PrometheusMetricReader> getPrometheusMetricReaders() {
     return Map.copyOf(prometheusMetricReaders);
+  }
+
+  public PrometheusMetricReader getPrometheusMetricReader(String metricReaderName) {
+    return prometheusMetricReaders.get(enforcePrefix(metricReaderName));
   }
 }
