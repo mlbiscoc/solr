@@ -29,7 +29,7 @@ import com.codahale.metrics.Timer;
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.common.AttributesBuilder;
-import io.opentelemetry.api.metrics.MeterProvider;
+import io.opentelemetry.sdk.metrics.SdkMeterProvider;
 import java.beans.BeanInfo;
 import java.beans.IntrospectionException;
 import java.beans.Introspector;
@@ -858,8 +858,8 @@ public class MetricUtils {
     }
   }
 
-  public static MeterProvider getMeterProvider() {
-    return GlobalOpenTelemetry.getMeterProvider();
+  public static SdkMeterProvider getMeterProvider() {
+    return (SdkMeterProvider) GlobalOpenTelemetry.getMeterProvider();
   }
 
   public static Attributes createAttributes(String... attributes) {

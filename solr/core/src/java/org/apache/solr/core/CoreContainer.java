@@ -427,8 +427,8 @@ public class CoreContainer {
     this.solrCores = SolrCores.newSolrCores(this);
     this.nodeKeyPair = new SolrNodeKeyPair(cfg.getCloudConfig());
     PrometheusMetricReader metricReader = new PrometheusMetricReader(true, null);
-    OpenTelemetryConfigurator.initializeOpenTelemetrySdk(cfg, loader, metricReader);
-    this.metricManager = new SolrMetricManager(loader, cfg.getMetricsConfig(), metricReader);
+    OpenTelemetryConfigurator.initializeOpenTelemetrySdk(cfg, loader);
+    this.metricManager = new SolrMetricManager(loader, cfg.getMetricsConfig());
     this.tracer = TraceUtils.getGlobalTracer();
 
     containerHandlers.put(PublicKeyHandler.PATH, new PublicKeyHandler(nodeKeyPair));
@@ -849,6 +849,7 @@ public class CoreContainer {
         new SolrMetricsContext(
             metricManager, SolrMetricManager.getRegistryName(SolrInfoBean.Group.node), metricTag);
 
+    // NOCOMMIT: Do we need this for OTEL or is this specific for reporters?
     coreContainerWorkExecutor =
         MetricUtils.instrumentedExecutorService(
             coreContainerWorkExecutor,
@@ -2281,7 +2282,9 @@ public class CoreContainer {
     }
 
     // delete metrics specific to this core
+    // NOCOMMIT: Remove this
     metricManager.removeRegistry(core.getCoreMetricManager().getRegistryName());
+    metricManager.closerMeterProvider(core.getCoreMetricManager().getRegistryName());
 
     if (zkSys.getZkController() != null) {
       // cancel recovery in cloud mode

@@ -189,7 +189,7 @@ public abstract class RequestHandlerBase
         new HandlerMetrics(
             new SolrMetricsContext(
                 new SolrMetricManager(
-                    null, new MetricsConfig.MetricsConfigBuilder().setEnabled(false).build(), null),
+                    null, new MetricsConfig.MetricsConfigBuilder().setEnabled(false).build()),
                 "NO_OP",
                 "NO_OP"),
             Attributes.empty());
@@ -256,6 +256,12 @@ public abstract class RequestHandlerBase
               Attributes.builder().putAll(attributes).put(TYPE_ATTR, "timeouts").build());
 
       otelRequestTimes = new AttributedLongTimer(baseRequestTimeMetric, attributes);
+
+      otelRequests.inc();
+      otelNumTimeouts.inc();
+      otelNumClientErrors.inc();
+      otelNumServerErrors.inc();
+      otelRequestTimes.start().stop();
     }
   }
 
