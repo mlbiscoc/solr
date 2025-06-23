@@ -861,20 +861,4 @@ public class MetricUtils {
   public static SdkMeterProvider getMeterProvider() {
     return (SdkMeterProvider) GlobalOpenTelemetry.getMeterProvider();
   }
-
-  public static Attributes createAttributes(String... attributes) {
-    if (attributes.length % 2 == 1) {
-      throw new SolrException(
-          SolrException.ErrorCode.SERVER_ERROR, "Odd number of field/value strings passed");
-    }
-
-    AttributesBuilder builder = Attributes.builder();
-    for (int i = 0; i < attributes.length; i += 2) {
-      String key = attributes[i];
-      String value = attributes[i + 1];
-      builder.put(key, value);
-    }
-
-    return builder.build();
-  }
 }
