@@ -52,7 +52,9 @@ import io.opentelemetry.api.metrics.ObservableLongGauge;
 import io.opentelemetry.api.metrics.ObservableLongMeasurement;
 import io.opentelemetry.api.metrics.ObservableLongUpDownCounter;
 import io.opentelemetry.api.metrics.ObservableMeasurement;
+import io.opentelemetry.sdk.metrics.Aggregation;
 import io.opentelemetry.sdk.metrics.SdkMeterProvider;
+import io.opentelemetry.sdk.metrics.View;
 import io.opentelemetry.sdk.metrics.internal.SdkMeterProviderUtil;
 import io.opentelemetry.sdk.metrics.internal.exemplar.ExemplarFilter;
 import java.io.IOException;
@@ -773,7 +775,11 @@ public class SolrMetricManager {
               var reader = new FilterablePrometheusMetricReader(true, null);
               // NOCOMMIT: We need to add a Periodic Metric Reader here if we want to push with OTLP
               // with an exporter
-              var provider = SdkMeterProvider.builder().registerMetricReader(reader);
+
+              var provider = SdkMeterProvider.builder()
+//                  .registerView(View.builder().setAttributeFilter().setAggregation(Aggregation.drop()).build())
+
+                  .registerMetricReader(reader);
               SdkMeterProviderUtil.setExemplarFilter(provider, ExemplarFilter.traceBased());
               return new MeterProviderAndReaders(provider.build(), reader);
             })

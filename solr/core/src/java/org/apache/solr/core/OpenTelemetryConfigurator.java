@@ -24,6 +24,7 @@ import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
 import io.opentelemetry.context.propagation.ContextPropagators;
+import io.opentelemetry.instrumentation.log4j.appender.v2_17.OpenTelemetryAppender;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
 import java.lang.invoke.MethodHandles;
 import java.util.Locale;
@@ -78,7 +79,10 @@ public abstract class OpenTelemetryConfigurator implements NamedListInitializedP
       log.info("OpenTelemetry tracer enabled with simple propagation only.");
       ExecutorUtil.addThreadLocalProvider(new ContextThreadLocalProvider());
     }
+    OpenTelemetrySdk openTelemetrySdk =  OpenTelemetrySdk.builder().build();
 
+    OpenTelemetryAppender.install(openTelemetrySdk);
+    openTelemetrySdk.getSdkLoggerProvider()
     OpenTelemetry otel =
         OpenTelemetry.propagating(ContextPropagators.create(SimplePropagator.getInstance()));
     GlobalOpenTelemetry.set(otel);
