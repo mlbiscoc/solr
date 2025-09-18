@@ -51,10 +51,10 @@ public interface NodeMetric<T> extends Metric<T> {
   //      new NodeMetricImpl<>(NodeValueFetcher.Metrics.HEAPUSAGE.tagName);
   //
   //  /** System load average. */
-  //  NodeMetricImpl<Double> SYSLOAD_AVG =
-  //      new NodeMetricImpl<>("sysLoadAvg", "jvm_system_cpu_utilization_ratio");
+  NodeMetricImpl<Double> SYSLOAD_AVG =
+      new NodeMetricImpl<>("sysLoadAvg", "jvm_system_cpu_utilization_ratio");
   //
   //  /** Number of available processors. */
-  //  NodeMetricImpl<Integer> AVAILABLE_PROCESSORS =
-  //      new NodeMetricImpl<>("availableProcessors", "os.availableProcessors");
+  NodeMetricImpl<Integer> AVAILABLE_PROCESSORS =
+      new NodeMetricImpl<>("availableProcessors", "jvm_cpu_count");
 }

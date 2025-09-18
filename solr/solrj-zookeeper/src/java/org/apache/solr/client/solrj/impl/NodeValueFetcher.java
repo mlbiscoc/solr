@@ -91,8 +91,8 @@ public class NodeValueFetcher {
         }
       }
     },
-    SYSLOADAVG("sysLoadAvg", "jvm_system_cpu_utilization_ratio"),
-    HEAPUSAGE("heapUsage", "jvm_memory_used_bytes");
+    SYSLOADAVG("sysLoadAvg", "jvm_system_cpu_utilization_ratio");
+    //    HEAPUSAGE("heapUsage", "jvm_memory_used_bytes");
 
     public final String tagName;
     public final String metricName;
@@ -261,7 +261,7 @@ public class NodeValueFetcher {
         // Don't try to reach out to the node if we already know it is down
         return;
       }
-
+      getRemoteSystemProps(requestedTags, ctx);
       getRemotePropertiesAndMetrics(requestedTags, ctx);
       getRemoteTags(requestedTags, ctx);
     } catch (Exception e) {
@@ -269,35 +269,67 @@ public class NodeValueFetcher {
     }
   }
 
+  private void getRemoteSystemProps(
+      Set<String> requestedTagNames, SolrClientNodeStateProvider.RemoteCallCtx ctx) {
+
+    //      ctx.tags.put(tag.toString(), v);
+    //      if (tag.startsWith(SYSPROP)) { // CHECK WITH A DEBUGGER WHAT THIS RETURNS???
+    //        metricsKeyVsTag
+    //            .computeIfAbsent(
+    //                //                "solr.jvm:system.properties:" +
+    // tag.substring(SYSPROP.length()),
+    //                tag, k -> new HashSet<>())
+    //            .add(tag);
+    //        continue; // Lets skip system props for now
+    //      }
+
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    try {
+      SimpleSolrResponse rsp = ctx.invokeWithRetry(ctx.getNode(), "/admin/info/properties", params);
+      NamedList<?> systemPropsRsp = (NamedList<?>) rsp.getResponse().get("system.properties");
+      for (String requestedProperty : requestedTagNames) {
+        if (requestedProperty.startsWith(SYSPROP)) {
+          Object property = systemPropsRsp.get(requestedProperty.substring(SYSPROP.length()));
+          if (property != null) ctx.tags.put(requestedProperty, property.toString());
+        }
+      }
+
+    } catch (Exception e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error getting remote info", e);
+    }
+  }
+
   /** Retrieve values that match JVM system properties and metrics. */
   private void getRemotePropertiesAndMetrics(
       Set<String> requestedTagNames, SolrClientNodeStateProvider.RemoteCallCtx ctx) {
 
-    Map<String, Set<Object>> metricsKeyVsTag = new HashMap<>();
-    ModifiableSolrParams params = new ModifiableSolrParams();
     for (String tag : requestedTagNames) {
-      if (tag.startsWith(SYSPROP)) { // CHECK WITH A DEBUGGER WHAT THIS RETURNS???
-        metricsKeyVsTag
-            .computeIfAbsent(
-                //                "solr.jvm:system.properties:" + tag.substring(SYSPROP.length()),
-                tag, k -> new HashSet<>())
-            .add(tag);
-        continue; // Lets skip system props for now
+      if (tag.startsWith(SYSPROP)) {
+        // System properties are handled in getRemoteSystemProps
+        continue;
       } else if (tag.startsWith(METRICS_PREFIX)) {
-        metricsKeyVsTag
-            //            .computeIfAbsent(tag.substring(METRICS_PREFIX.length()), k -> new
-            // HashSet<>())
-            .computeIfAbsent(tag, k -> new HashSet<>())
-            .add(tag);
+        // Handle each metric individually to properly handle label filters
+        Map<String, Set<Object>> metricsKeyVsTag = new HashMap<>();
+        ModifiableSolrParams params = new ModifiableSolrParams();
+
+        metricsKeyVsTag.computeIfAbsent(tag, k -> new HashSet<>()).add(tag);
+
         var parseMetricString = tag.split(":");
+        if (parseMetricString.length > 2) {
+          // Metric has label filters
+          var kvLabel = parseMetricString[2].split("=");
+          params.add(kvLabel[0], kvLabel[1]);
+        }
         String metricName = parseMetricString[1];
-        var kvLabel = parseMetricString[2].split("=");
         params.add("name", metricName);
-        params.add(kvLabel[0], kvLabel[1]);
+
+        // Fetch this specific metric
+        SolrClientNodeStateProvider.fetchReplicaMetrics(
+            ctx.getNode(), ctx, metricsKeyVsTag, params);
+
+        // The result should now be in ctx.tags with the tag as the key
+        // fetchReplicaMetrics should have called ctx.tags.put(tag.toString(), v)
       }
-    }
-    if (!metricsKeyVsTag.isEmpty()) {
-      SolrClientNodeStateProvider.fetchReplicaMetrics(ctx.getNode(), ctx, metricsKeyVsTag, params);
     }
   }
 }

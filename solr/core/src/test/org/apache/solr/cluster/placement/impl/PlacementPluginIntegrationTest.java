@@ -82,8 +82,9 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    // placement plugins need metrics
+    // placement plugins need metrics and JVM metrics
     System.setProperty("metricsEnabled", "true");
+    System.setProperty("solr.metrics.jvm.enabled", "true");
     configureCluster(3).addConfig("conf", configset("cloud-minimal")).configure();
     cc = cluster.getJettySolrRunner(0).getCoreContainer();
     cloudManager = cc.getZkController().getSolrCloudManager();
@@ -450,19 +451,16 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
     Cluster cluster = new SimpleClusterAbstractionsImpl.ClusterImpl(cloudManager);
     SolrCollection collection = cluster.getCollection(COLLECTION);
     AttributeFetcher attributeFetcher = new AttributeFetcherImpl(cloudManager);
-    //    NodeMetric<String> someMetricKey = new
-    // NodeMetricImpl<>("solr.jvm:system.properties:user.name");
     String sysprop = "user.name";
     attributeFetcher
         .fetchFrom(cluster.getLiveNodes())
         //        .requestNodeMetric(NodeMetric.HEAP_USAGE)
-        //        .requestNodeMetric(NodeMetric.SYSLOAD_AVG)
+        .requestNodeMetric(NodeMetric.SYSLOAD_AVG)
         .requestNodeMetric(NodeMetric.NUM_CORES)
         .requestNodeMetric(NodeMetric.FREE_DISK_GB)
         .requestNodeMetric(NodeMetric.TOTAL_DISK_GB)
-        //        .requestNodeMetric(NodeMetric.AVAILABLE_PROCESSORS)
-        //        .requestNodeMetric(someMetricKey)
-        //        .requestNodeSystemProperty(sysprop)
+        .requestNodeMetric(NodeMetric.AVAILABLE_PROCESSORS)
+        .requestNodeSystemProperty(sysprop)
         .requestCollectionMetrics(
             collection,
             Set.of(
@@ -488,18 +486,15 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
       Optional<Integer> intOpt = attributeValues.getNodeMetric(node, NodeMetric.NUM_CORES);
       assertTrue("cores", intOpt.isPresent());
       assertTrue("cores should be > 0", intOpt.get() > 0);
-      //      assertTrue(
-      //          "systemLoadAverage 2",
-      //          attributeValues.getNodeMetric(node, NodeMetric.SYSLOAD_AVG).isPresent());
-      //      assertTrue(
-      //          "availableProcessors",
-      //          attributeValues.getNodeMetric(node, NodeMetric.AVAILABLE_PROCESSORS).isPresent());
-      //      Optional<String> userNameOpt = attributeValues.getNodeMetric(node, someMetricKey);
-      //      assertTrue("user.name", userNameOpt.isPresent());
-      //      assertEquals("userName", userName, userNameOpt.get());
-      //      Optional<String> syspropOpt = attributeValues.getSystemProperty(node, sysprop);
-      //      assertTrue("sysprop", syspropOpt.isPresent());
-      //      assertEquals("user.name sysprop", userName, syspropOpt.get());
+      assertTrue(
+          "systemLoadAverage 2",
+          attributeValues.getNodeMetric(node, NodeMetric.SYSLOAD_AVG).isPresent());
+      assertTrue(
+          "availableProcessors",
+          attributeValues.getNodeMetric(node, NodeMetric.AVAILABLE_PROCESSORS).isPresent());
+      Optional<String> syspropOpt = attributeValues.getSystemProperty(node, sysprop);
+      assertTrue("sysprop", syspropOpt.isPresent());
+      assertEquals("user.name sysprop", userName, syspropOpt.get());
     }
     assertTrue(attributeValues.getCollectionMetrics(COLLECTION).isPresent());
     CollectionMetrics collectionMetrics = attributeValues.getCollectionMetrics(COLLECTION).get();

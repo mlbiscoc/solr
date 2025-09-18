@@ -203,6 +203,9 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
     var req =
         new GenericSolrRequest(
             SolrRequest.METHOD.GET, "/admin/metrics", SolrRequest.SolrRequestType.ADMIN, params);
+    //    var req =
+    //        new GenericSolrRequest(
+    //            SolrRequest.METHOD.GET, "/admin/metrics", SolrRequest.SolrRequestType.ADMIN);
     req.setResponseParser(new InputStreamResponseParser("prometheus"));
 
     String baseUrl =
@@ -218,20 +221,22 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
       String[] lines = output.split("\n");
       for (String line : lines) {
         if (line.startsWith("#")) continue;
+
+        // For each metric tag, check if this line matches
         metricsKeyVsTag.forEach(
             (key, tags) -> {
               Long v = extractPrometheusValue(line);
               for (Object tag : tags) {
-                String sys = (String) tag;
-                if (((String) tag).startsWith(SYSPROP)) {
+                String tagStr = tag.toString();
+                if (tagStr.startsWith(SYSPROP)) {
                   continue;
                 }
                 if (tag instanceof Function) {
-                  @SuppressWarnings({"unchecked"})
+                  @SuppressWarnings({"unchecked", "rawtypes"})
                   Pair<String, Object> p = (Pair<String, Object>) ((Function) tag).apply(v);
                   ctx.tags.put(p.first(), p.second());
                 } else {
-                  ctx.tags.put(tag.toString(), v);
+                  if (v != null) ctx.tags.put(tag.toString(), v);
                 }
               }
             });
