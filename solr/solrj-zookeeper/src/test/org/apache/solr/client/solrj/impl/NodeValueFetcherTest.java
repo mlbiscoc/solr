@@ -84,7 +84,7 @@ public class NodeValueFetcherTest extends SolrCloudTestCase {
         // make sure we only get the tag we asked
         assertEquals(1, ctx.tags.size());
 
-        int coresOnNode = (Integer) ctx.tags.get("cores");
+        Long coresOnNode = (Long) ctx.tags.get("cores");
         totalCores += coresOnNode;
       }
 

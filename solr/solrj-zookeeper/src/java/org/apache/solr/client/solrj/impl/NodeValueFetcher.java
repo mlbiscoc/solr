@@ -17,22 +17,23 @@
 
 package org.apache.solr.client.solrj.impl;
 
-import java.util.ArrayList;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.apache.solr.client.solrj.SolrRequest.METHOD;
+import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
+import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.response.SimpleSolrResponse;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
-import org.apache.solr.common.util.Utils;
 
 /**
  * This class is responsible for fetching metrics and other attributes from a given node in Solr
@@ -48,127 +49,203 @@ public class NodeValueFetcher {
   public static final String CORES = "cores";
   public static final String SYSPROP = "sysprop.";
   public static final Set<String> tags =
-      Set.of(NODE, PORT, HOST, CORES, Tags.FREEDISK.tagName, Tags.HEAPUSAGE.tagName);
+      //      Set.of(NODE, PORT, HOST, CORES, Tags.FREEDISK.tagName, Tags.HEAPUSAGE.tagName);
+      Set.of(NODE, PORT, HOST, CORES);
   public static final Pattern hostAndPortPattern = Pattern.compile("(?:https?://)?([^:]+):(\\d+)");
   public static final String METRICS_PREFIX = "metrics:";
 
   /** Various well known tags that can be fetched from a node */
-  public enum Tags {
-    FREEDISK(
-        "freedisk", "solr.node", "CONTAINER.fs.usableSpace", "solr.node/CONTAINER.fs.usableSpace"),
-    TOTALDISK(
-        "totaldisk", "solr.node", "CONTAINER.fs.totalSpace", "solr.node/CONTAINER.fs.totalSpace"),
-    CORES("cores", "solr.node", "CONTAINER.cores", null) {
+  public enum Metrics {
+    FREEDISK("freedisk", "solr_cores_filesystem_disk_space", "type", "usable_space"),
+    TOTALDISK("totaldisk", "solr_cores_filesystem_disk_space", "type", "total_space"),
+    CORES("cores", "solr_cores_loaded") {
       @Override
-      public Object extractResult(Object root) {
-        NamedList<?> node = (NamedList<?>) Utils.getObjectByPath(root, false, "solr.node");
-        int count = 0;
-        for (String leafCoreMetricName : new String[] {"lazy", "loaded", "unloaded"}) {
-          Number n = (Number) node.get("CONTAINER.cores." + leafCoreMetricName);
-          if (n != null) count += n.intValue();
+      public Object extractResult(NamedList<Object> root) {
+        Object metrics = root.get("stream");
+
+        if (metrics == null || metricName == null) {
+          return null;
         }
-        return count;
+        try (InputStream in = (InputStream) metrics) {
+          String output = new String(in.readAllBytes(), StandardCharsets.UTF_8);
+
+          String[] lines = output.split("\n");
+          int count = 0;
+          for (String line : lines) {
+            if (line.startsWith("#")) continue;
+
+            if (!line.startsWith(metricName)) {
+              throw new SolrException(
+                  SolrException.ErrorCode.SERVER_ERROR,
+                  "Response should only contain "
+                      + metricName
+                      + " metric in response. Found: "
+                      + line);
+            }
+            count += extractPrometheusValue(line);
+          }
+          return count;
+        } catch (Exception e) {
+          throw new SolrException(
+              SolrException.ErrorCode.SERVER_ERROR, "Unable to read prometheus metrics output", e);
+        }
       }
     },
-    SYSLOADAVG("sysLoadAvg", "solr.jvm", "os.systemLoadAverage", "solr.jvm/os.systemLoadAverage"),
-    HEAPUSAGE("heapUsage", "solr.jvm", "memory.heap.usage", "solr.jvm/memory.heap.usage");
-    // the metrics group
-    public final String group;
-    // the metrics prefix
-    public final String prefix;
+    SYSLOADAVG("sysLoadAvg", "jvm_system_cpu_utilization_ratio"),
+    HEAPUSAGE("heapUsage", "jvm_memory_used_bytes");
+
     public final String tagName;
-    // the json path in the response
-    public final String path;
+    public final String metricName;
+    public final String labelKey;
+    public final String labelValue;
 
-    Tags(String name, String group, String prefix, String path) {
-      this.group = group;
-      this.prefix = prefix;
+    Metrics(String name, String metricName) {
+      this(name, metricName, null, null);
+    }
+
+    Metrics(String name, String metricName, String labelKey, String labelValue) {
       this.tagName = name;
-      this.path = path;
+      this.metricName = metricName;
+      this.labelKey = labelKey;
+      this.labelValue = labelValue;
     }
 
-    public Object extractResult(Object root) {
-      Object v = Utils.getObjectByPath(root, true, path);
-      return v == null ? null : convertVal(v);
-    }
-
-    public Object convertVal(Object val) {
-      if (val instanceof String) {
-        return Double.valueOf((String) val);
-      } else if (val instanceof Number num) {
-        return num.doubleValue();
-
+    public Object extractResult(NamedList<Object> root) {
+      if (labelKey != null && labelValue != null) {
+        return extractFromPrometheusResponseWithLabel(root, metricName, labelKey, labelValue);
       } else {
-        throw new IllegalArgumentException("Unknown type : " + val);
+        return extractFromPrometheusResponse(root, metricName);
       }
+    }
+
+    private Long extractFromPrometheusResponse(NamedList<Object> root, String metricName) {
+      Object metrics = root.get("stream");
+
+      if (metrics == null || metricName == null) {
+        return null;
+      }
+
+      try (InputStream in = (InputStream) metrics) {
+        String output = new String(in.readAllBytes(), StandardCharsets.UTF_8);
+        String[] lines = output.split("\n");
+        for (String line : lines) {
+          if (line.startsWith("#")) continue;
+          if (!line.startsWith(metricName)) {
+            throw new SolrException(
+                SolrException.ErrorCode.SERVER_ERROR,
+                "Response should only contain "
+                    + metricName
+                    + " metric in response. Found: "
+                    + line);
+          }
+          return extractPrometheusValue(line);
+        }
+      } catch (Exception e) {
+        throw new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR, "Unable to read prometheus metrics output", e);
+      }
+
+      return null;
+    }
+
+    private Long extractFromPrometheusResponseWithLabel(
+        NamedList<Object> root, String metricName, String labelKey, String labelValue) {
+      Object metrics = root.get("stream");
+
+      if (metrics == null || metricName == null) {
+        return null;
+      }
+
+      try (InputStream in = (InputStream) metrics) {
+        String output = new String(in.readAllBytes(), StandardCharsets.UTF_8);
+        String[] lines = output.split("\n");
+        for (String line : lines) {
+          if (line.startsWith("#")) continue;
+          if (!line.startsWith(metricName)) {
+            continue; // Skip lines that don't match our metric
+          }
+
+          // Check if the line contains the expected label
+          String expectedLabel = labelKey + "=\"" + labelValue + "\"";
+          if (line.contains(expectedLabel)) {
+            return extractPrometheusValue(line);
+          }
+        }
+      } catch (Exception e) {
+        throw new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR, "Unable to read prometheus metrics output", e);
+      }
+
+      return null;
+    }
+
+    public static long extractPrometheusValue(String line) {
+      line = line.trim();
+      String actualValue;
+      if (line.contains("}")) {
+        actualValue = line.substring(line.lastIndexOf("} ") + 1);
+      } else {
+        actualValue = line.split(" ")[1];
+      }
+      return (long) Double.parseDouble(actualValue);
     }
   }
 
-  /** Retrieve values that match JVM system properties and metrics. */
-  private void getRemotePropertiesAndMetrics(
-      Set<String> requestedTagNames, SolrClientNodeStateProvider.RemoteCallCtx ctx) {
-
-    Map<String, Set<Object>> metricsKeyVsTag = new HashMap<>();
-    for (String tag : requestedTagNames) {
-      if (tag.startsWith(SYSPROP)) {
-        metricsKeyVsTag
-            .computeIfAbsent(
-                "solr.jvm:system.properties:" + tag.substring(SYSPROP.length()),
-                k -> new HashSet<>())
-            .add(tag);
-      } else if (tag.startsWith(METRICS_PREFIX)) {
-        metricsKeyVsTag
-            .computeIfAbsent(tag.substring(METRICS_PREFIX.length()), k -> new HashSet<>())
-            .add(tag);
-      }
-    }
-    if (!metricsKeyVsTag.isEmpty()) {
-      SolrClientNodeStateProvider.fetchReplicaMetrics(ctx.getNode(), ctx, metricsKeyVsTag);
-    }
-  }
-
-  /** Retrieve values of well known tags, as defined in {@link Tags}. */
+  /** Retrieve values of well known tags, as defined in {@link Metrics}. */
   private void getRemoteTags(
       Set<String> requestedTagNames, SolrClientNodeStateProvider.RemoteCallCtx ctx) {
 
     // First resolve names into actual Tags instances
-    EnumSet<Tags> requestedTags = EnumSet.noneOf(Tags.class);
-    for (Tags t : Tags.values()) {
+    EnumSet<Metrics> requestedMetricNames = EnumSet.noneOf(Metrics.class);
+    for (Metrics t : Metrics.values()) {
       if (requestedTagNames.contains(t.tagName)) {
-        requestedTags.add(t);
+        requestedMetricNames.add(t);
       }
     }
-    if (requestedTags.isEmpty()) {
+    if (requestedMetricNames.isEmpty()) {
       return;
     }
 
-    Set<String> groups = new HashSet<>();
-    List<String> prefixes = new ArrayList<>();
-    for (Tags t : requestedTags) {
-      groups.add(t.group);
-      prefixes.add(t.prefix);
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.add("wt", "prometheus");
+
+    // Collect unique metric names
+    Set<String> uniqueMetricNames = new HashSet<>();
+    for (Metrics t : requestedMetricNames) {
+      uniqueMetricNames.add(t.metricName);
     }
 
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    params.add("group", StrUtils.join(groups, ','));
-    params.add("prefix", StrUtils.join(prefixes, ','));
+    // Use metric name filtering to get only the metrics we need
+    params.add("name", StrUtils.join(uniqueMetricNames, ','));
+
+    // Add label filters for disk space metrics
+    for (Metrics t : requestedMetricNames) {
+      if (t.labelKey != null && t.labelValue != null) {
+        params.add(t.labelKey, t.labelValue);
+      }
+    }
 
     try {
+      var req = new GenericSolrRequest(METHOD.GET, "/admin/metrics", SolrRequestType.ADMIN, params);
+      req.setResponseParser(new InputStreamResponseParser("prometheus"));
+
+      String baseUrl =
+          ctx.zkClientClusterStateProvider.getZkStateReader().getBaseUrlForNodeName(ctx.getNode());
       SimpleSolrResponse rsp =
-          ctx.invokeWithRetry(ctx.getNode(), CommonParams.METRICS_PATH, params);
-      NamedList<?> metrics = (NamedList<?>) rsp.getResponse().get("metrics");
-      if (metrics != null) {
-        for (Tags t : requestedTags) {
-          ctx.tags.put(t.tagName, t.extractResult(metrics));
+          ctx.cloudSolrClient.getHttpClient().requestWithBaseUrl(baseUrl, req::process);
+
+      for (Metrics t : requestedMetricNames) {
+        Object value = t.extractResult(rsp.getResponse());
+        if (value != null) {
+          ctx.tags.put(t.tagName, value);
         }
       }
     } catch (Exception e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error getting remote info", e);
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
   }
 
   public void getTags(Set<String> requestedTags, SolrClientNodeStateProvider.RemoteCallCtx ctx) {
-
     try {
       if (requestedTags.contains(NODE)) ctx.tags.put(NODE, ctx.getNode());
       if (requestedTags.contains(HOST)) {
@@ -189,6 +266,38 @@ public class NodeValueFetcher {
       getRemoteTags(requestedTags, ctx);
     } catch (Exception e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+    }
+  }
+
+  /** Retrieve values that match JVM system properties and metrics. */
+  private void getRemotePropertiesAndMetrics(
+      Set<String> requestedTagNames, SolrClientNodeStateProvider.RemoteCallCtx ctx) {
+
+    Map<String, Set<Object>> metricsKeyVsTag = new HashMap<>();
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    for (String tag : requestedTagNames) {
+      if (tag.startsWith(SYSPROP)) { // CHECK WITH A DEBUGGER WHAT THIS RETURNS???
+        metricsKeyVsTag
+            .computeIfAbsent(
+                //                "solr.jvm:system.properties:" + tag.substring(SYSPROP.length()),
+                tag, k -> new HashSet<>())
+            .add(tag);
+        continue; // Lets skip system props for now
+      } else if (tag.startsWith(METRICS_PREFIX)) {
+        metricsKeyVsTag
+            //            .computeIfAbsent(tag.substring(METRICS_PREFIX.length()), k -> new
+            // HashSet<>())
+            .computeIfAbsent(tag, k -> new HashSet<>())
+            .add(tag);
+        var parseMetricString = tag.split(":");
+        String metricName = parseMetricString[1];
+        var kvLabel = parseMetricString[2].split("=");
+        params.add("name", metricName);
+        params.add(kvLabel[0], kvLabel[1]);
+      }
+    }
+    if (!metricsKeyVsTag.isEmpty()) {
+      SolrClientNodeStateProvider.fetchReplicaMetrics(ctx.getNode(), ctx, metricsKeyVsTag, params);
     }
   }
 }

@@ -36,10 +36,7 @@ import org.apache.solr.cluster.placement.AttributeValues;
 import org.apache.solr.cluster.placement.CollectionMetrics;
 import org.apache.solr.cluster.placement.NodeMetric;
 import org.apache.solr.cluster.placement.ReplicaMetric;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.core.SolrInfoBean;
-import org.apache.solr.metrics.SolrMetricManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -89,13 +86,22 @@ public class AttributeFetcherImpl implements AttributeFetcher {
     return this;
   }
 
+  // TODO: This method is now overly complex and very confusing for trying to get metrics across
+  // nodes probably because of the complex filtering parameters of Dropwizard
+  //  With migration to OTEL, we should come back and clean up this so it is not so confusing of
+  // trying to link multiple maps with one another
   @Override
   public AttributeValues fetchAttributes() {
 
     // Maps in which attribute values will be added
+    // TODO: We will look at this after
     Map<String, Map<Node, String>> systemSnitchToNodeToValue = new HashMap<>();
+
+    // Map of Nodemetric to a Map of node to value
+    // { node_metric: {NODE: "123" } }
     Map<NodeMetric<?>, Map<Node, Object>> metricSnitchToNodeToValue = new HashMap<>();
     Map<String, CollectionMetricsBuilder> collectionMetricsBuilders = new HashMap<>();
+
     Map<Node, Set<String>> nodeToReplicaInternalTags = new HashMap<>();
     Map<String, Set<ReplicaMetric<?>>> requestedCollectionNamesMetrics =
         requestedCollectionMetrics.entrySet().stream()
@@ -217,34 +223,34 @@ public class AttributeFetcherImpl implements AttributeFetcher {
         systemSnitchToNodeToValue, metricSnitchToNodeToValue, collectionMetrics);
   }
 
-  private static SolrInfoBean.Group getGroupFromMetricRegistry(NodeMetric.Registry registry) {
-    switch (registry) {
-      case SOLR_JVM:
-        return SolrInfoBean.Group.jvm;
-      case SOLR_NODE:
-        return SolrInfoBean.Group.node;
-      case SOLR_JETTY:
-        return SolrInfoBean.Group.jetty;
-      default:
-        throw new SolrException(
-            SolrException.ErrorCode.SERVER_ERROR, "Unsupported registry value " + registry);
-    }
-  }
+  //
+  //  private static SolrInfoBean.Group getGroupFromMetricRegistry(NodeMetric.Registry registry) {
+  //    switch (registry) {
+  //      case SOLR_JVM:
+  //        return SolrInfoBean.Group.jvm;
+  //      case SOLR_NODE:
+  //        return SolrInfoBean.Group.node;
+  //      case SOLR_JETTY:
+  //        return SolrInfoBean.Group.jetty;
+  //      default:
+  //        throw new SolrException(
+  //            SolrException.ErrorCode.SERVER_ERROR, "Unsupported registry value " + registry);
+  //    }
+  //  }
 
   public static String getMetricTag(NodeMetric<?> metric) {
-    if (metric.getRegistry() != NodeMetric.Registry.UNSPECIFIED) {
-      // regular registry + metricName
-      return NodeValueFetcher.METRICS_PREFIX
-          + SolrMetricManager.getRegistryName(getGroupFromMetricRegistry(metric.getRegistry()))
-          + ":"
-          + metric.getInternalName();
-    } else if (NodeValueFetcher.tags.contains(metric.getInternalName())) {
+    String metricTagName;
+    if (NodeValueFetcher.tags.contains(metric.getInternalName())) {
       // "special" well-known tag
-      return metric.getInternalName();
+      metricTagName = metric.getInternalName();
     } else {
       // a fully-qualified metric key
-      return NodeValueFetcher.METRICS_PREFIX + metric.getInternalName();
+      metricTagName = NodeValueFetcher.METRICS_PREFIX + metric.getInternalName();
     }
+    if (metric instanceof NodeMetricImpl<?> nodeMetric && nodeMetric.hasLabels()) {
+      metricTagName = metricTagName + ":" + nodeMetric.labelKey + "=" + nodeMetric.labelValue;
+    }
+    return metricTagName;
   }
 
   public static String getSystemPropertySnitchTag(String name) {

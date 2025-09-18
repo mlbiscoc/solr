@@ -84,7 +84,7 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
       allCollections.add(request.getCollection());
     }
 
-    Collection<WeightedNode> weightedNodes =
+    Collection<WeightedNode> weightedNodes = // THIS WEIGHTED NODES IS WRONG
         getWeightedNodes(placementContext, allNodes, allCollections, true).values();
     while (!outstandingRequests.isEmpty()) {
       OutstandingPlacementRequest request = outstandingRequests.poll();
