@@ -86,10 +86,12 @@ public class AttributeFetcherImpl implements AttributeFetcher {
     return this;
   }
 
-  // TODO: This method is now overly complex and very confusing for trying to get metrics across
-  // nodes probably because of the complex filtering parameters of Dropwizard
-  //  With migration to OTEL, we should come back and clean up this so it is not so confusing of
-  // trying to link multiple maps with one another
+  // TODO: This method is overly complex and very confusing for trying to get metrics across
+  // nodes. Probably because of the complex filtering parameters of Dropwizard and trying to collect
+  // system property strings + ints + longs in a single map and have a conversion method in the
+  // middle of it.
+  // With migration to OTEL, we should come back and clean up this so it is not so confusing of
+  // trying to link multiple maps with one another with a much cleaner implementation
   @Override
   public AttributeValues fetchAttributes() {
 

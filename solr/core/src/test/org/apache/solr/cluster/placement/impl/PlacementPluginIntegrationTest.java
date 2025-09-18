@@ -440,7 +440,6 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
     System.clearProperty(AffinityPlacementConfig.NODE_TYPE_SYSPROP);
   }
 
-  // NOCOMMIT: This test needs to be fixed after migrating the collection metrics builder
   @Test
   public void testAttributeFetcherImpl() throws Exception {
     CollectionAdminResponse rsp =
@@ -461,12 +460,7 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
         .requestNodeMetric(NodeMetric.TOTAL_DISK_GB)
         .requestNodeMetric(NodeMetric.AVAILABLE_PROCESSORS)
         .requestNodeSystemProperty(sysprop)
-        .requestCollectionMetrics(
-            collection,
-            Set.of(
-                ReplicaMetricImpl.INDEX_SIZE_GB,
-                ReplicaMetricImpl.QUERY_RATE_1MIN,
-                ReplicaMetricImpl.UPDATE_RATE_1MIN));
+        .requestCollectionMetrics(collection, Set.of(ReplicaMetricImpl.INDEX_SIZE_GB));
     AttributeValues attributeValues = attributeFetcher.fetchAttributes();
     String userName = System.getProperty("user.name");
     // node metrics
@@ -485,7 +479,7 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
       assertTrue("free disk should be > 0 but was " + doubleOpt, doubleOpt.get() > 0);
       Optional<Integer> intOpt = attributeValues.getNodeMetric(node, NodeMetric.NUM_CORES);
       assertTrue("cores", intOpt.isPresent());
-      assertTrue("cores should be > 0", intOpt.get() > 0);
+      assertTrue("cores should be > 0", intOpt.get() > 0L);
       assertTrue(
           "systemLoadAverage 2",
           attributeValues.getNodeMetric(node, NodeMetric.SYSLOAD_AVG).isPresent());
@@ -523,13 +517,6 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
                         assertTrue(
                             "indexSize should be < 0.01 but was " + indexSizeOpt.get(),
                             indexSizeOpt.get() < 0.01);
-
-                        assertNotNull(
-                            "queryRate",
-                            replicaMetrics.getReplicaMetric(ReplicaMetricImpl.QUERY_RATE_1MIN));
-                        assertNotNull(
-                            "updateRate",
-                            replicaMetrics.getReplicaMetric(ReplicaMetricImpl.UPDATE_RATE_1MIN));
                       });
             });
   }

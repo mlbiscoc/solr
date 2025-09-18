@@ -28,14 +28,6 @@ public class ReplicaMetricImpl<T> extends MetricImpl<T> implements ReplicaMetric
   public static final ReplicaMetricImpl<Double> INDEX_SIZE_GB =
       new ReplicaMetricImpl<>("sizeGB", "solr_core_index_size_bytes", BYTES_TO_GB_CONVERTER);
 
-  /** 1-min query rate of the /select handler. */
-  public static final ReplicaMetricImpl<Double> QUERY_RATE_1MIN =
-      new ReplicaMetricImpl<>("queryRate", "QUERY./select.requestTimes:1minRate");
-
-  /** 1-min update rate of the /update handler. */
-  public static final ReplicaMetricImpl<Double> UPDATE_RATE_1MIN =
-      new ReplicaMetricImpl<>("updateRate", "UPDATE./update.requestTimes:1minRate");
-
   public ReplicaMetricImpl(String name, String internalName) {
     super(name, internalName);
   }
