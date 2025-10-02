@@ -1107,7 +1107,6 @@ public class SolrCore implements SolrInfoBean, Closeable {
       // Initialize the metrics manager
       this.coreMetricManager = initCoreMetricManager(solrConfig);
       this.solrMetricsContext = coreMetricManager.getSolrMetricsContext();
-      this.coreMetricManager.loadReporters();
 
       if (updateHandler == null) {
         directoryFactory = initDirectoryFactory();

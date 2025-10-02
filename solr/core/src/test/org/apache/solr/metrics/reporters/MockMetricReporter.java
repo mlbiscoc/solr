@@ -21,7 +21,6 @@ import com.codahale.metrics.MetricRegistry;
 import java.util.Locale;
 import java.util.NoSuchElementException;
 import org.apache.solr.metrics.SolrMetricManager;
-import org.apache.solr.metrics.SolrMetricReporter;
 
 public class MockMetricReporter extends SolrMetricReporter {
 

@@ -187,8 +187,7 @@ public class MBeansHandlerTest extends SolrTestCaseJ4 {
           }
         };
     bean.initializeMetrics(
-        new SolrMetricsContext(
-            h.getCoreContainer().getMetricManager(), "testMetricsSnapshot", "foobar"),
+        new SolrMetricsContext(h.getCoreContainer().getMetricManager(), "testMetricsSnapshot"),
         Attributes.empty(),
         "foo");
     runSnapshots = true;

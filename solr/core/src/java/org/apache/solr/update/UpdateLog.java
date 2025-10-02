@@ -661,7 +661,6 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
 
     toClose = Collections.unmodifiableList(observables);
 
-    solrMetricsContext.gauge(() -> state.getValue(), true, "state", scope);
     observables.add(
         solrMetricsContext.observableLongGauge(
             "solr_core_update_log_state",

@@ -27,7 +27,6 @@ import static org.apache.solr.handler.component.ResponseBuilder.STAGE_TOP_GROUPS
 import static org.apache.solr.request.SolrRequestInfo.getQueryLimits;
 import static org.apache.solr.response.SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_DETAILS_KEY;
 
-import com.codahale.metrics.Counter;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
 import java.io.IOException;
@@ -42,7 +41,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
@@ -124,7 +122,8 @@ public class SearchHandler extends RequestHandlerBase
       Boolean.getBoolean("solr.disableRequestId");
 
   private HandlerMetrics metricsShard = HandlerMetrics.NO_OP;
-  private final Map<String, Counter> shardPurposes = new ConcurrentHashMap<>();
+  // NOCOMMIT: what is this?
+  //  private final Map<String, Counter> shardPurposes = new ConcurrentHashMap<>();
 
   protected volatile List<SearchComponent> components;
   private ShardHandlerFactory shardHandlerFactory;
@@ -405,8 +404,9 @@ public class SearchHandler extends RequestHandlerBase
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     if (req.getParams().getBool(ShardParams.IS_SHARD, false)) {
       int purpose = req.getParams().getInt(ShardParams.SHARDS_PURPOSE, 0);
-      SolrPluginUtils.forEachRequestPurpose(
-          purpose, n -> shardPurposes.computeIfAbsent(n, name -> new Counter()).inc());
+      // NOCOMMIT: what is this?
+      //      SolrPluginUtils.forEachRequestPurpose(
+      //          purpose, n -> shardPurposes.computeIfAbsent(n, name -> new Counter()).inc());
     }
 
     List<SearchComponent> components = getComponents();

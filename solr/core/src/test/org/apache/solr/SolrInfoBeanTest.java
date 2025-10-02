@@ -59,7 +59,7 @@ public class SolrInfoBeanTest extends SolrTestCaseJ4 {
     int checked = 0;
     SolrMetricManager metricManager = h.getCoreContainer().getMetricManager();
     String registry = h.getCore().getCoreMetricManager().getRegistryName();
-    SolrMetricsContext solrMetricsContext = new SolrMetricsContext(metricManager, registry, "foo");
+    SolrMetricsContext solrMetricsContext = new SolrMetricsContext(metricManager, registry);
     String scope = TestUtil.randomSimpleString(random(), 2, 10);
     for (Class<?> clazz : classes) {
       if (SolrInfoBean.class.isAssignableFrom(clazz)) {

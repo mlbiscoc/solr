@@ -94,7 +94,7 @@ public class TestThinCache extends SolrTestCaseJ4 {
     ThinCache.NodeLevelCache<Object, Integer, String> backing = new ThinCache.NodeLevelCache<>();
     ThinCache<Object, Integer, String> lfuCache = new ThinCache<>();
     lfuCache.setBacking(cacheScope, backing);
-    SolrMetricsContext solrMetricsContext = new SolrMetricsContext(metricManager, registry, "foo");
+    SolrMetricsContext solrMetricsContext = new SolrMetricsContext(metricManager, registry);
     lfuCache.initializeMetrics(solrMetricsContext, Attributes.empty(), scope + "-1");
 
     Object cacheScope2 = new Object();

@@ -26,6 +26,7 @@ import static org.apache.solr.common.params.CommonParams.INFO_HANDLER_PATH;
 import static org.apache.solr.common.params.CommonParams.METRICS_PATH;
 import static org.apache.solr.common.params.CommonParams.ZK_PATH;
 import static org.apache.solr.common.params.CommonParams.ZK_STATUS_PATH;
+import static org.apache.solr.metrics.SolrMetricManager.NODE_REGISTRY;
 import static org.apache.solr.metrics.SolrMetricProducer.CATEGORY_ATTR;
 import static org.apache.solr.metrics.SolrMetricProducer.HANDLER_ATTR;
 import static org.apache.solr.metrics.SolrMetricProducer.NAME_ATTR;
@@ -779,9 +780,7 @@ public class CoreContainer {
     containerPluginsRegistry.registerListener(
         clusterEventProducerFactory.getPluginRegistryListener());
 
-    solrMetricsContext =
-        new SolrMetricsContext(
-            metricManager, SolrMetricManager.getRegistryName(SolrInfoBean.Group.node), metricTag);
+    solrMetricsContext = new SolrMetricsContext(metricManager, NODE_REGISTRY);
 
     shardHandlerFactory =
         ShardHandlerFactory.newInstance(cfg.getShardHandlerFactoryPluginInfo(), loader);
@@ -914,10 +913,6 @@ public class CoreContainer {
     containerHandlers.put(AUTHC_PATH, securityConfHandler);
 
     PluginInfo[] metricReporters = cfg.getMetricsConfig().getMetricReporters();
-    metricManager.loadReporters(metricReporters, loader, this, null, null, SolrInfoBean.Group.node);
-    metricManager.loadReporters(metricReporters, loader, this, null, null, SolrInfoBean.Group.jvm);
-    metricManager.loadReporters(
-        metricReporters, loader, this, null, null, SolrInfoBean.Group.jetty);
 
     containerProperties.putAll(cfg.getSolrProperties());
 
@@ -956,10 +951,6 @@ public class CoreContainer {
         solrMetricsContext,
         Attributes.of(CATEGORY_ATTR, SolrInfoBean.Category.CACHE.toString()),
         "");
-
-    if (isZooKeeperAware()) {
-      metricManager.loadClusterReporters(metricReporters, this);
-    }
 
     // setup executor to load cores in parallel
     coreLoadExecutor =
@@ -1271,28 +1262,12 @@ public class CoreContainer {
       customThreadPool.execute(replayUpdatesExecutor::shutdownAndAwaitTermination);
 
       if (metricManager != null) {
-        metricManager.closeReporters(SolrMetricManager.getRegistryName(SolrInfoBean.Group.node));
-        metricManager.closeReporters(SolrMetricManager.getRegistryName(SolrInfoBean.Group.jvm));
-        metricManager.closeReporters(SolrMetricManager.getRegistryName(SolrInfoBean.Group.jetty));
-
-        metricManager.unregisterGauges(
-            SolrMetricManager.getRegistryName(SolrInfoBean.Group.node), metricTag);
-        metricManager.unregisterGauges(
-            SolrMetricManager.getRegistryName(SolrInfoBean.Group.jvm), metricTag);
-        metricManager.unregisterGauges(
-            SolrMetricManager.getRegistryName(SolrInfoBean.Group.jetty), metricTag);
-
         // Close all OTEL meter providers and metrics
         metricManager.closeAllRegistries();
       }
 
       if (isZooKeeperAware()) {
         cancelCoreRecoveries();
-
-        if (metricManager != null) {
-          metricManager.closeReporters(
-              SolrMetricManager.getRegistryName(SolrInfoBean.Group.cluster));
-        }
       }
 
       try {
@@ -1796,8 +1771,7 @@ public class CoreContainer {
   private void resetIndexDirectory(CoreDescriptor dcore, ConfigSet coreConfig) {
     SolrConfig config = coreConfig.getSolrConfig();
 
-    String registryName =
-        SolrMetricManager.getRegistryName(SolrInfoBean.Group.core, dcore.getName());
+    String registryName = SolrMetricManager.enforcePrefix(dcore.getName());
     DirectoryFactory df = DirectoryFactory.loadDirectoryFactory(config, this, registryName);
     String dataDir = SolrCore.findDataDir(df, null, config, dcore);
 
