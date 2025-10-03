@@ -57,8 +57,10 @@ import io.opentelemetry.sdk.metrics.internal.exemplar.ExemplarFilter;
 import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
@@ -472,6 +474,13 @@ public class SolrMetricManager {
               return new MeterProviderAndReaders(builder.build(), reader);
             })
         .sdkMeterProvider();
+  }
+
+  /** Return a set of existing registry names. */
+  public Set<String> registryNames() {
+    Set<String> set = new HashSet<>();
+    set.addAll(meterProviderAndReaders.keySet());
+    return set;
   }
 
   /**

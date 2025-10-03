@@ -279,8 +279,6 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     public void initializeMetrics(
         SolrMetricsContext parentContext, Attributes attributes, String scope) {
       super.initializeMetrics(parentContext, attributes, scope);
-      MetricsMap metrics = new MetricsMap(map -> gaugevals.forEach((k, v) -> map.putNoEx(k, v)));
-      solrMetricsContext.gauge(metrics, true, "dumphandlergauge", getCategory().toString(), scope);
     }
 
     @Override

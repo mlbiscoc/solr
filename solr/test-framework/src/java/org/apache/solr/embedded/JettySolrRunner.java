@@ -16,9 +16,6 @@
  */
 package org.apache.solr.embedded;
 
-import com.codahale.metrics.ConsoleReporter;
-import com.codahale.metrics.MetricFilter;
-import com.codahale.metrics.MetricRegistry;
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
@@ -32,7 +29,6 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.io.PrintStream;
 import java.lang.invoke.MethodHandles;
 import java.net.BindException;
@@ -40,9 +36,6 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
@@ -50,7 +43,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Random;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -63,7 +55,6 @@ import org.apache.solr.client.solrj.request.CoresApi;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.servlet.CoreContainerProvider;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.util.TimeOut;
@@ -673,41 +664,6 @@ public class JettySolrRunner {
       } else {
         MDC.clear();
       }
-    }
-  }
-
-  public void outputMetrics(Path outputDirectory, String fileName) throws IOException {
-    if (getCoreContainer() != null) {
-
-      if (outputDirectory != null) {
-        Path outDir = outputDirectory;
-        Files.createDirectories(outDir);
-      }
-
-      SolrMetricManager metricsManager = getCoreContainer().getMetricManager();
-
-      Set<String> registryNames = metricsManager.registryNames();
-      for (String registryName : registryNames) {
-        MetricRegistry metricsRegisty = metricsManager.registry(registryName);
-        try (PrintStream ps =
-            outputDirectory == null
-                ? new PrintStream(OutputStream.nullOutputStream(), false, StandardCharsets.UTF_8)
-                : new PrintStream(
-                    outputDirectory.resolve(registryName + "_" + fileName).toString(),
-                    StandardCharsets.UTF_8)) {
-          ConsoleReporter reporter =
-              ConsoleReporter.forRegistry(metricsRegisty)
-                  .convertRatesTo(TimeUnit.SECONDS)
-                  .convertDurationsTo(TimeUnit.MILLISECONDS)
-                  .filter(MetricFilter.ALL)
-                  .outputTo(ps)
-                  .build();
-          reporter.report();
-        }
-      }
-
-    } else {
-      throw new IllegalStateException("No CoreContainer found");
     }
   }
 

@@ -135,44 +135,44 @@ public final class SolrMetricTestUtils {
     return metrics;
   }
 
-  public static SolrMetricProducer getProducerOf(
-      SolrInfoBean.Category category, String scope, Map<String, Counter> metrics) {
-    return new SolrMetricProducer() {
-      SolrMetricsContext solrMetricsContext;
-
-      @Override
-      public void initializeMetrics(
-          SolrMetricsContext parentContext, Attributes attributes, String scope) {
-        this.solrMetricsContext = parentContext.getChildContext(this);
-        if (category == null) {
-          throw new IllegalArgumentException("null category");
-        }
-        if (metrics == null || metrics.isEmpty()) {
-          return;
-        }
-        for (Map.Entry<String, Counter> entry : metrics.entrySet()) {
-          solrMetricsContext.counter(entry.getKey(), category.toString(), scope);
-        }
-      }
-
-      @Override
-      public SolrMetricsContext getSolrMetricsContext() {
-        return solrMetricsContext;
-      }
-
-      @Override
-      public String toString() {
-        return "SolrMetricProducer.of{"
-            + "\ncategory="
-            + category
-            + "\nscope="
-            + scope
-            + "\nmetrics="
-            + metrics
-            + "\n}";
-      }
-    };
-  }
+  //  public static SolrMetricProducer getProducerOf(
+  //      SolrInfoBean.Category category, String scope, Map<String, Counter> metrics) {
+  //    return new SolrMetricProducer() {
+  //      SolrMetricsContext solrMetricsContext;
+  //
+  //      @Override
+  //      public void initializeMetrics(
+  //          SolrMetricsContext parentContext, Attributes attributes, String scope) {
+  //        this.solrMetricsContext = parentContext.getChildContext(this);
+  //        if (category == null) {
+  //          throw new IllegalArgumentException("null category");
+  //        }
+  //        if (metrics == null || metrics.isEmpty()) {
+  //          return;
+  //        }
+  //        for (Map.Entry<String, Counter> entry : metrics.entrySet()) {
+  //          solrMetricsContext.counter(entry.getKey(), category.toString(), scope);
+  //        }
+  //      }
+  //
+  //      @Override
+  //      public SolrMetricsContext getSolrMetricsContext() {
+  //        return solrMetricsContext;
+  //      }
+  //
+  //      @Override
+  //      public String toString() {
+  //        return "SolrMetricProducer.of{"
+  //            + "\ncategory="
+  //            + category
+  //            + "\nscope="
+  //            + scope
+  //            + "\nmetrics="
+  //            + metrics
+  //            + "\n}";
+  //      }
+  //    };
+  //  }
 
   public static DataPointSnapshot getDataPointSnapshot(
       PrometheusMetricReader reader, String metricName, Labels labels) {

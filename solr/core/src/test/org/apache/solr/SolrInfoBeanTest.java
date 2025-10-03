@@ -37,6 +37,7 @@ import org.apache.solr.search.CaffeineCache;
 import org.junit.BeforeClass;
 
 /** A simple test used to increase code coverage for some standard things... */
+// NOCOMMIT: This test is getting removed and the handler
 public class SolrInfoBeanTest extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {

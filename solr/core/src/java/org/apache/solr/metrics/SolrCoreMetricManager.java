@@ -190,9 +190,9 @@ public class SolrCoreMetricManager implements Closeable {
       boolean cloud, String collectionName, String shardName, String replicaName, String coreName) {
     if (cloud) { // build registry name from logical names
       return SolrMetricManager.enforcePrefix(
-          SolrMetricManager.mkName("core", collectionName, shardName, replicaName));
+          "core." + collectionName + "." + shardName + "." + replicaName);
     } else {
-      return SolrMetricManager.enforcePrefix(SolrMetricManager.mkName("core", coreName));
+      return SolrMetricManager.enforcePrefix("core." + coreName);
     }
   }
 

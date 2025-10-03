@@ -220,4 +220,5 @@ dependencies {
   testImplementation libs.apache.httpcomponents.httpcore
 
   testImplementation libs.opentelemetry.sdktesting
+  testImplementation libs.dropwizard.metrics.core
 }
