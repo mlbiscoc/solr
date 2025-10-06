@@ -16,7 +16,6 @@
  */
 package org.apache.solr.cloud;
 
-import com.codahale.metrics.Timer;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
@@ -114,7 +113,7 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
    */
   public void remove(QueueEvent event, boolean setResult)
       throws KeeperException, InterruptedException {
-    Timer.Context time = stats.time(dir + "_remove_event");
+    Stats.TimingContext time = stats.time(dir + "_remove_event");
     try {
       String path = event.getId();
 
@@ -232,7 +231,7 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
           SolrException.ErrorCode.CONFLICT,
           "Solr is shutting down, no more overseer tasks may be offered");
     }
-    Timer.Context time = stats.time(dir + "_offer");
+    Stats.TimingContext time = stats.time(dir + "_offer");
     try {
       // Create and watch the response node before creating the request node;
       // otherwise we may miss the response.
@@ -276,19 +275,17 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
     ArrayList<QueueEvent> topN = new ArrayList<>();
 
     log.debug("Peeking for top {} elements. ExcludeSet: {}", n, excludeSet);
-    Timer.Context time;
+    Stats.TimingContext time;
     if (waitMillis == Long.MAX_VALUE) time = stats.time(dir + "_peekTopN_wait_forever");
     else time = stats.time(dir + "_peekTopN_wait" + waitMillis);
 
-    try {
+    try (time) {
       for (Pair<String, byte[]> element :
           peekElements(n, waitMillis, child -> !excludeSet.test(dir + "/" + child))) {
         topN.add(new QueueEvent(dir + "/" + element.first(), element.second(), null));
       }
       printQueueEventsListElementIds(topN);
       return topN;
-    } finally {
-      time.stop();
     }
   }
 

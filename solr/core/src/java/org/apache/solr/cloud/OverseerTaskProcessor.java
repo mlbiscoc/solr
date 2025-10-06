@@ -19,7 +19,6 @@ package org.apache.solr.cloud;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonParams.ID;
 
-import com.codahale.metrics.Timer;
 import io.opentelemetry.api.common.Attributes;
 import java.io.Closeable;
 import java.lang.invoke.MethodHandles;
@@ -152,8 +151,7 @@ public class OverseerTaskProcessor implements SolrInfoBean, Runnable, Closeable 
     thisNode = MDCLoggingContext.getNodeName();
 
     this.overseerTaskProcessorMetricsContext = solrMetricsContext.getChildContext(this);
-    initializeMetrics(
-        solrMetricsContext, Attributes.of(CATEGORY_ATTR, getCategory().toString()), "");
+    initializeMetrics(solrMetricsContext, Attributes.of(CATEGORY_ATTR, getCategory().toString()));
   }
 
   @Override
@@ -407,8 +405,7 @@ public class OverseerTaskProcessor implements SolrInfoBean, Runnable, Closeable 
   }
 
   @Override
-  public void initializeMetrics(
-      SolrMetricsContext parentContext, Attributes attributes, String scope) {
+  public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
     this.toClose =
         parentContext.observableLongGauge(
             "solr_overseer_collection_work_queue_size",
@@ -426,7 +423,6 @@ public class OverseerTaskProcessor implements SolrInfoBean, Runnable, Closeable 
   @Override
   public void close() {
     isClosed = true;
-    overseerTaskProcessorMetricsContext.unregister();
     if (tpe != null) {
       if (!ExecutorUtil.isShutdown(tpe)) {
         ExecutorUtil.shutdownAndAwaitTermination(tpe);
@@ -473,7 +469,7 @@ public class OverseerTaskProcessor implements SolrInfoBean, Runnable, Closeable 
 
   protected LeaderStatus amILeader() {
     String statsName = "collection_am_i_leader";
-    Timer.Context timerContext = stats.time(statsName);
+    Stats.TimingContext timerContext = stats.time(statsName);
     boolean success = true;
     String propsId = null;
     try {
@@ -555,7 +551,7 @@ public class OverseerTaskProcessor implements SolrInfoBean, Runnable, Closeable 
     @Override
     public void run() {
       String statsName = messageHandler.getTimerName(operation);
-      final Timer.Context timerContext = stats.time(statsName);
+      final Stats.TimingContext timerContext = stats.time(statsName);
 
       boolean success = false;
       final String asyncId = message.getStr(ASYNC);

@@ -18,8 +18,6 @@ package org.apache.solr.cloud;
 
 import static org.apache.solr.core.ConfigSetProperties.DEFAULT_FILENAME;
 
-import com.codahale.metrics.MetricRegistry;
-import io.dropwizard.metrics.jetty12.ee10.InstrumentedEE10Handler;
 import jakarta.servlet.Filter;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -85,7 +83,6 @@ import org.apache.solr.util.TimeOut;
 import org.apache.solr.util.tracing.TraceUtils;
 import org.apache.zookeeper.KeeperException;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
-import org.eclipse.jetty.server.Handler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -492,10 +489,7 @@ public class MiniSolrCloudCluster {
     }
     Files.write(runnerPath.resolve("solr.xml"), solrXml.getBytes(StandardCharsets.UTF_8));
     JettyConfig newConfig = JettyConfig.builder(config).build();
-    JettySolrRunner jetty =
-        !trackJettyMetrics
-            ? new JettySolrRunner(runnerPath.toString(), nodeProps, newConfig)
-            : new JettySolrRunnerWithMetrics(runnerPath.toString(), nodeProps, newConfig);
+    JettySolrRunner jetty = new JettySolrRunner(runnerPath.toString(), nodeProps, newConfig);
     jetty.start();
     jettys.add(jetty);
     synchronized (startupWait) {
@@ -968,41 +962,9 @@ public class MiniSolrCloudCluster {
     }
   }
 
-  public void dumpMetrics(Path outputDirectory, String fileName) throws IOException {
-    for (JettySolrRunner jetty : jettys) {
-      jetty.outputMetrics(outputDirectory, fileName);
-    }
-  }
-
   public void dumpCoreInfo(PrintStream pw) throws IOException {
     for (JettySolrRunner jetty : jettys) {
       jetty.dumpCoresInfo(pw);
-    }
-  }
-
-  /**
-   * @lucene.experimental
-   */
-  public static final class JettySolrRunnerWithMetrics extends JettySolrRunner {
-    public JettySolrRunnerWithMetrics(String solrHome, Properties nodeProps, JettyConfig config) {
-      super(solrHome, nodeProps, config);
-    }
-
-    private volatile MetricRegistry metricRegistry;
-
-    @Override
-    protected Handler.Wrapper injectJettyHandlers(Handler.Wrapper chain) {
-      metricRegistry = new MetricRegistry();
-      InstrumentedEE10Handler metrics = new InstrumentedEE10Handler(metricRegistry);
-      metrics.setHandler(chain);
-      return metrics;
-    }
-
-    /**
-     * @return optional subj. It may be null, if it's not yet created.
-     */
-    public MetricRegistry getMetricRegistry() {
-      return metricRegistry;
     }
   }
 

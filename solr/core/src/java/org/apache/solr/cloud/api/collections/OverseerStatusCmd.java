@@ -17,7 +17,6 @@
 
 package org.apache.solr.cloud.api.collections;
 
-import com.codahale.metrics.Timer;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
@@ -224,8 +223,10 @@ public class OverseerStatusCmd implements CollApiCmds.CollectionApiCommand {
         lst.add("requests", successes);
         lst.add("errors", errors);
       }
-      Timer timer = entry.getValue().requestTime;
-      MetricUtils.addMetrics(lst, timer);
+      // Timer timer = entry.getValue().requestTime;
+      // MetricUtils.addMetrics(lst, timer);
+      // NOCOMMIT: Add timing statistics back when we have an alternative to Dropwizard Timer
+      // The new Stats.TimingContext is designed for individual measurements, not accumulative stats
     }
 
     results.add("overseer_operations", overseerStats);

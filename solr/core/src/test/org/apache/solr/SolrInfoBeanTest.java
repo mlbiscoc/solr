@@ -37,6 +37,7 @@ import org.apache.solr.search.CaffeineCache;
 import org.junit.BeforeClass;
 
 /** A simple test used to increase code coverage for some standard things... */
+// NOCOMMIT: This test is getting removed and the handler
 public class SolrInfoBeanTest extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -59,14 +60,14 @@ public class SolrInfoBeanTest extends SolrTestCaseJ4 {
     int checked = 0;
     SolrMetricManager metricManager = h.getCoreContainer().getMetricManager();
     String registry = h.getCore().getCoreMetricManager().getRegistryName();
-    SolrMetricsContext solrMetricsContext = new SolrMetricsContext(metricManager, registry, "foo");
+    SolrMetricsContext solrMetricsContext = new SolrMetricsContext(metricManager, registry);
     String scope = TestUtil.randomSimpleString(random(), 2, 10);
     for (Class<?> clazz : classes) {
       if (SolrInfoBean.class.isAssignableFrom(clazz)) {
         try {
           SolrInfoBean info = clazz.asSubclass(SolrInfoBean.class).getConstructor().newInstance();
           // TODO SOLR-17458: Fix test later
-          info.initializeMetrics(solrMetricsContext, Attributes.empty(), scope);
+          info.initializeMetrics(solrMetricsContext, Attributes.empty());
 
           // System.out.println( info.getClass() );
           assertNotNull(info.getClass().getCanonicalName(), info.getName());

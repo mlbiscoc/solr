@@ -22,7 +22,6 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.Metric;
-import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
 import io.opentelemetry.exporter.prometheus.PrometheusMetricReader;
 import io.prometheus.metrics.model.snapshots.CounterSnapshot;
@@ -166,35 +165,6 @@ public class SolrCloudAuthTestCase extends SolrCloudTestCase {
         failWrongCredentials,
         failMissingCredentials,
         errors);
-  }
-
-  /**
-   * Common test method to be able to check security from any authentication plugin
-   *
-   * @param cluster the MiniSolrCloudCluster to fetch metrics from
-   * @param prefix the metrics key prefix, currently "SECURITY./authentication." for basic auth and
-   *     "SECURITY./authentication/pki." for PKI
-   * @param keys what keys to examine
-   */
-  Map<String, Long> countSecurityMetrics(
-      MiniSolrCloudCluster cluster, String prefix, List<String> keys) {
-    List<Map<String, Metric>> metrics = new ArrayList<>();
-    cluster
-        .getJettySolrRunners()
-        .forEach(
-            r -> {
-              MetricRegistry registry =
-                  r.getCoreContainer().getMetricManager().registry("solr.node");
-              assertNotNull(registry);
-              metrics.add(registry.getMetrics());
-            });
-
-    Map<String, Long> counts = new HashMap<>();
-    keys.forEach(
-        k -> {
-          counts.put(k, sumCount(prefix, k, metrics));
-        });
-    return counts;
   }
 
   /** Common test method to be able to check auth metrics from any authentication plugin */

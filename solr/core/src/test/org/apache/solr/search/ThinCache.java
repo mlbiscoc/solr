@@ -35,7 +35,6 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
 import org.apache.lucene.util.Accountable;
-import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.util.IOFunction;
 import org.slf4j.Logger;
@@ -277,7 +276,6 @@ public class ThinCache<S, K, V> extends SolrCacheBase
     return persistence;
   }
 
-  private MetricsMap cacheMap;
   private SolrMetricsContext solrMetricsContext;
 
   private final LongAdder hits = new LongAdder();
@@ -292,41 +290,8 @@ public class ThinCache<S, K, V> extends SolrCacheBase
   private long priorEvictions;
 
   @Override
-  public void initializeMetrics(
-      SolrMetricsContext parentContext, Attributes attributes, String scope) {
+  public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
     solrMetricsContext = parentContext.getChildContext(this);
-    cacheMap =
-        new MetricsMap(
-            map -> {
-              long hitCount = hits.sum();
-              long insertCount = inserts.sum();
-              long lookupCount = lookups.sum();
-              long evictionCount = evictions.sum();
-
-              map.put(LOOKUPS_PARAM, lookupCount);
-              map.put(HITS_PARAM, hitCount);
-              map.put(HIT_RATIO_PARAM, hitRate(hitCount, lookupCount));
-              map.put(INSERTS_PARAM, insertCount);
-              map.put(EVICTIONS_PARAM, evictionCount);
-              map.put(SIZE_PARAM, local.size());
-              map.put("warmupTime", warmupTimeMillis);
-              map.put(RAM_BYTES_USED_PARAM, ramBytesUsed());
-              map.put(MAX_RAM_MB_PARAM, getMaxRamMB());
-
-              long cumLookups = priorLookups + lookupCount;
-              long cumHits = priorHits + hitCount;
-              map.put("cumulative_lookups", cumLookups);
-              map.put("cumulative_hits", cumHits);
-              map.put("cumulative_hitratio", hitRate(cumHits, cumLookups));
-              map.put("cumulative_inserts", priorInserts + insertCount);
-              map.put("cumulative_evictions", priorEvictions + evictionCount);
-            });
-    solrMetricsContext.gauge(cacheMap, true, scope, getCategory().toString());
-  }
-
-  @VisibleForTesting
-  MetricsMap getMetricsMap() {
-    return cacheMap;
   }
 
   // TODO: refactor this common method out of here and `CaffeineCache`
@@ -370,7 +335,7 @@ public class ThinCache<S, K, V> extends SolrCacheBase
 
   @Override
   public String toString() {
-    return name() + (cacheMap != null ? cacheMap.getValue().toString() : "");
+    return name();
   }
 
   @Override
