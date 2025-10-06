@@ -18,7 +18,6 @@ package org.apache.solr.metrics;
 
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
-import io.opentelemetry.exporter.prometheus.PrometheusMetricReader;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -136,15 +135,6 @@ public class SolrCoreMetricManager implements Closeable {
         solrMetricsContext, attributes.toBuilder().putAll(core.getCoreAttributes()).build());
   }
 
-  /** Return the registry used by this SolrCore. */
-  public PrometheusMetricReader getMetricReader() {
-    if (solrMetricsContext != null) {
-      return metricManager.getPrometheusMetricReader(getRegistryName());
-    } else {
-      return null;
-    }
-  }
-
   /**
    * Closes reporters specific to this core and unregisters gauges with this core's instance tag.
    */
@@ -152,6 +142,7 @@ public class SolrCoreMetricManager implements Closeable {
   public void close() throws IOException {
     // NOCOMMIT: Do we not close gauges here then? Maybe store all core observables in
     // SolrCoreMetricManager instead of in the classes themselves?
+    solrMetricsContext.unregister();
   }
 
   public SolrMetricsContext getSolrMetricsContext() {

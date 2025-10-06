@@ -33,10 +33,13 @@ import io.opentelemetry.api.metrics.ObservableLongCounter;
 import io.opentelemetry.api.metrics.ObservableLongGauge;
 import io.opentelemetry.api.metrics.ObservableLongMeasurement;
 import io.opentelemetry.api.metrics.ObservableMeasurement;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.metrics.otel.OtelUnit;
 
 /**
@@ -50,6 +53,7 @@ public class SolrMetricsContext {
   private final String registryName;
   private final SolrMetricManager metricManager;
   private final Set<String> metricNames = ConcurrentHashMap.newKeySet();
+  private final List<AutoCloseable> closeables = new ArrayList<>();
 
   public SolrMetricsContext(SolrMetricManager metricManager, String registryName) {
     this.registryName = registryName;
@@ -164,7 +168,9 @@ public class SolrMetricsContext {
 
   public ObservableLongGauge observableLongGauge(
       String metricName, String description, Consumer<ObservableLongMeasurement> callback) {
-    return observableLongGauge(metricName, description, callback, null);
+    var observableLongGauge = observableLongGauge(metricName, description, callback, null);
+    closeables.add(observableLongGauge);
+    return observableLongGauge;
   }
 
   public ObservableLongGauge observableLongGauge(
@@ -177,7 +183,9 @@ public class SolrMetricsContext {
 
   public ObservableDoubleGauge observableDoubleGauge(
       String metricName, String description, Consumer<ObservableDoubleMeasurement> callback) {
-    return observableDoubleGauge(metricName, description, callback, null);
+    var observableDoubleGauge = observableDoubleGauge(metricName, description, callback, null);
+    closeables.add(observableDoubleGauge);
+    return observableDoubleGauge;
   }
 
   public ObservableDoubleGauge observableDoubleGauge(
@@ -191,7 +199,9 @@ public class SolrMetricsContext {
 
   public ObservableLongCounter observableLongCounter(
       String metricName, String description, Consumer<ObservableLongMeasurement> callback) {
-    return observableLongCounter(metricName, description, callback, null);
+    var observableLongCounter = observableLongCounter(metricName, description, callback, null);
+    closeables.add(observableLongCounter);
+    return observableLongCounter;
   }
 
   public ObservableLongCounter observableLongCounter(
@@ -205,7 +215,9 @@ public class SolrMetricsContext {
 
   public ObservableDoubleCounter observableDoubleCounter(
       String metricName, String description, Consumer<ObservableDoubleMeasurement> callback) {
-    return observableDoubleCounter(metricName, description, callback, null);
+    var observableDoubleCounter = observableDoubleCounter(metricName, description, callback, null);
+    closeables.add(observableDoubleCounter);
+    return observableDoubleCounter;
   }
 
   public ObservableDoubleCounter observableDoubleCounter(
@@ -258,6 +270,13 @@ public class SolrMetricsContext {
       Runnable callback,
       ObservableMeasurement measurement,
       ObservableMeasurement... additionalMeasurements) {
-    return metricManager.batchCallback(registryName, callback, measurement, additionalMeasurements);
+    var batchCallback =
+        metricManager.batchCallback(registryName, callback, measurement, additionalMeasurements);
+    closeables.add(batchCallback);
+    return batchCallback;
+  }
+
+  public void unregister() {
+    IOUtils.closeQuietly(closeables);
   }
 }
