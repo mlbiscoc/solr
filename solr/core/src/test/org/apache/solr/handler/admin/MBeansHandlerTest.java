@@ -176,8 +176,7 @@ public class MBeansHandlerTest extends SolrTestCaseJ4 {
           }
 
           @Override
-          public void initializeMetrics(
-              SolrMetricsContext parentContext, Attributes attributes, String scope) {
+          public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
             this.solrMetricsContext = parentContext.getChildContext(this);
           }
 
@@ -188,8 +187,7 @@ public class MBeansHandlerTest extends SolrTestCaseJ4 {
         };
     bean.initializeMetrics(
         new SolrMetricsContext(h.getCoreContainer().getMetricManager(), "testMetricsSnapshot"),
-        Attributes.empty(),
-        "foo");
+        Attributes.empty());
     runSnapshots = true;
     Thread modifier =
         new Thread(

@@ -222,8 +222,7 @@ public class DirectUpdateHandler2 extends UpdateHandler
   }
 
   @Override
-  public void initializeMetrics(
-      SolrMetricsContext parentContext, Attributes attributes, String scope) {
+  public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
     if (core.getSolrConfig().getUpdateHandlerInfo().aggregateNodeLevelMetricsEnabled) {
       // NOCOMMIT: SOLR-17865
       //      this.solrMetricsContext =

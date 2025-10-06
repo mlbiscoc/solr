@@ -33,10 +33,8 @@ import java.util.TreeMap;
 import java.util.function.BiConsumer;
 import java.util.regex.Pattern;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.CommonTestInjection;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.RequestHandlerBase;
@@ -71,7 +69,6 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
   private static final Set<String> labelFilterKeys =
       Set.of(CATEGORY_PARAM, CORE_PARAM, COLLECTION_PARAM, SHARD_PARAM, REPLICA_PARAM);
 
-  // NOCOMMIT: This wt=prometheus will be removed as it will become the default for /admin/metrics
   public static final String PROMETHEUS_METRICS_WT = "prometheus";
   public static final String OPEN_METRICS_WT = "openmetrics";
 
@@ -123,23 +120,12 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
   }
 
   private void handleRequest(SolrParams params, BiConsumer<String, Object> consumer) {
-    NamedList<Object> response;
-
     if (!enabled) {
       consumer.accept("error", "metrics collection is disabled");
       return;
     }
 
-    // NOCOMMIT SOLR-17458: Make this the default option after dropwizard removal
-    if (PROMETHEUS_METRICS_WT.equals(params.get(CommonParams.WT))
-        || OPEN_METRICS_WT.equals(params.get(CommonParams.WT))) {
-      handlePrometheusRequest(params, consumer);
-      return;
-    }
-
-    //    response = handleDropwizardRegistry(params);
-
-    consumer.accept("metrics", null);
+    handlePrometheusRequest(params, consumer);
   }
 
   private void handlePrometheusRequest(SolrParams params, BiConsumer<String, Object> consumer) {

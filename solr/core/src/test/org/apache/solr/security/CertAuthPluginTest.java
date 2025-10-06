@@ -61,7 +61,7 @@ public class CertAuthPluginTest extends SolrTestCaseJ4 {
     plugin = new CertAuthPlugin();
     SolrMetricsContext solrMetricsContext =
         new SolrMetricsContext(coreContainer.getMetricManager(), registryName);
-    plugin.initializeMetrics(solrMetricsContext, Attributes.empty(), null);
+    plugin.initializeMetrics(solrMetricsContext, Attributes.empty());
     plugin.init(Collections.emptyMap());
   }
 

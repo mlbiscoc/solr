@@ -92,9 +92,7 @@ public class TestSolrFieldCacheBean extends SolrTestCaseJ4 {
 
     try (SolrFieldCacheBean mbean = new SolrFieldCacheBean()) {
       mbean.initializeMetrics(
-          solrMetricsContext,
-          Attributes.of(CATEGORY_ATTR, SolrInfoBean.Category.CACHE.toString()),
-          null);
+          solrMetricsContext, Attributes.of(CATEGORY_ATTR, SolrInfoBean.Category.CACHE.toString()));
 
       var metrics = metricManager.getPrometheusMetricReader(registryName).collect();
 

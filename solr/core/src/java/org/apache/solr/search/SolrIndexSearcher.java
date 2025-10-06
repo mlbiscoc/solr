@@ -609,12 +609,14 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     }
     this.solrMetricsContext = core.getSolrMetricsContext().getChildContext(this);
     for (SolrCache<?, ?> cache : cacheList) {
-      cache.initializeMetrics(
-          solrMetricsContext,
-          core.getCoreAttributes().toBuilder().put(NAME_ATTR, cache.name()).build(),
-          "solr_searcher_cache");
+      if (cache instanceof CaffeineCache<?, ?> caffeineCache) {
+        caffeineCache.initializeMetrics(
+            solrMetricsContext,
+            core.getCoreAttributes().toBuilder().put(NAME_ATTR, cache.name()).build(),
+            "solr_searcher_cache");
+      }
     }
-    initializeMetrics(solrMetricsContext, core.getCoreAttributes(), STATISTICS_KEY);
+    initializeMetrics(solrMetricsContext, core.getCoreAttributes());
     registerTime = new Date();
   }
 
@@ -2614,8 +2616,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   }
 
   @Override
-  public void initializeMetrics(
-      SolrMetricsContext solrMetricsContext, Attributes attributes, String scope) {
+  public void initializeMetrics(SolrMetricsContext solrMetricsContext, Attributes attributes) {
     var baseAttributes =
         attributes.toBuilder().put(CATEGORY_ATTR, Category.SEARCHER.toString()).build();
 

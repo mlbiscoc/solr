@@ -290,8 +290,7 @@ public class ThinCache<S, K, V> extends SolrCacheBase
   private long priorEvictions;
 
   @Override
-  public void initializeMetrics(
-      SolrMetricsContext parentContext, Attributes attributes, String scope) {
+  public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
     solrMetricsContext = parentContext.getChildContext(this);
   }
 

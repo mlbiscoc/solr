@@ -20,10 +20,6 @@ package org.apache.solr.cloud;
 import static org.apache.solr.common.params.CollectionParams.SOURCE_NODE;
 import static org.apache.solr.common.params.CollectionParams.TARGET_NODE;
 
-import io.opentelemetry.exporter.prometheus.PrometheusMetricReader;
-import io.prometheus.metrics.model.snapshots.GaugeSnapshot;
-import io.prometheus.metrics.model.snapshots.Labels;
-import io.prometheus.metrics.model.snapshots.MetricSnapshots;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -45,8 +41,10 @@ import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.embedded.JettySolrRunner;
-import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.util.SolrMetricTestUtils;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -184,72 +182,25 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
         // No cores on this node, ignore it
         continue;
       }
-      SolrMetricManager metricManager = jetty.getCoreContainer().getMetricManager();
-      boolean foundReplicationMetrics = false;
+      CoreContainer coreContainer = jetty.getCoreContainer();
+      List<String> coreNames = jetty.getCoreContainer().getAllCoreNames();
+      for (String coreName : coreNames) {
+        try (var core = coreContainer.getCore(coreName)) {
+          var dp =
+              SolrMetricTestUtils.getGaugeDatapoint(
+                  core,
+                  "solr_replication_is_replicating",
+                  SolrMetricTestUtils.newCloudLabelsBuilder(core)
+                      .label("category", SolrInfoBean.Category.REPLICATION.toString())
+                      .label("handler", "/replication")
+                      .build());
+          if (dp == null) continue;
 
-      // Check each core registry for replication metrics
-      for (String registryName : metricManager.getPrometheusMetricReaders().keySet()) {
-        if (!registryName.startsWith("solr.core.")) {
-          continue;
+          double isReplicating = dp.getValue();
+          assertTrue(
+              "solr_replication_is_replicating should be 0 or 1, got: " + isReplicating,
+              isReplicating == 0.0 || isReplicating == 1.0);
         }
-
-        PrometheusMetricReader reader = metricManager.getPrometheusMetricReader(registryName);
-        if (reader == null) {
-          continue;
-        }
-
-        MetricSnapshots snapshots = reader.collect();
-
-        // Look for replication metrics
-        boolean hasReplicationMetrics =
-            snapshots.stream()
-                .anyMatch(
-                    snapshot ->
-                        snapshot.getMetadata().getPrometheusName().startsWith("solr_replication"));
-
-        if (!hasReplicationMetrics) {
-          continue;
-        }
-
-        foundReplicationMetrics = true;
-
-        // Find the isReplicating gauge metric and other replication metrics
-        snapshots.stream()
-            .filter(
-                snapshot ->
-                    "solr_replication_is_replicating"
-                        .equals(snapshot.getMetadata().getPrometheusName()))
-            .findFirst()
-            .ifPresent(
-                snapshot -> {
-                  if (snapshot instanceof GaugeSnapshot gaugeSnapshot) {
-                    // Check that the metric has valid data points
-                    assertFalse(
-                        "Replication metric should have datapoints",
-                        gaugeSnapshot.getDataPoints().isEmpty());
-
-                    for (var dataPoint : gaugeSnapshot.getDataPoints()) {
-                      Labels labels = dataPoint.getLabels();
-                      double value = dataPoint.getValue();
-
-                      // The value should be 0 (not replicating) or 1 (replicating)
-                      assertTrue(
-                          "isReplicating should be 0 or 1, got: " + value,
-                          value == 0.0 || value == 1.0);
-
-                      // Check that the labels contain expected replication category
-                      String category = labels.get("category");
-                      assertEquals(
-                          "Expected REPLICATION category in labels", "REPLICATION", category);
-                    }
-                  }
-                });
-      }
-
-      // Note: Not all jetties may have replication handlers configured, so we don't require
-      // finding metrics on every jetty, but if we do find them, they should be valid
-      if (foundReplicationMetrics) {
-        log.debug("Found and validated replication metrics on jetty: {}", jetty.getNodeName());
       }
     }
   }

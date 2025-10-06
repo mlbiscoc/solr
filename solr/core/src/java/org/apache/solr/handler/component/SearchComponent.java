@@ -106,8 +106,7 @@ public abstract class SearchComponent implements SolrInfoBean, NamedListInitiali
 
   // TODO SOLR-17458: Update with Otel
   @Override
-  public void initializeMetrics(
-      SolrMetricsContext parentContext, Attributes attributes, String scope) {
+  public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
     // By default don't register any metrics - but prepare a child context
     this.solrMetricsContext = parentContext.getChildContext(this);
   }

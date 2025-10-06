@@ -101,8 +101,7 @@ public class PeerSyncWithLeader implements SolrMetricProducer {
 
   // TODO SOLR-17458: Migrate to Otel
   @Override
-  public void initializeMetrics(
-      SolrMetricsContext parentContext, Attributes attributes, String scope) {
+  public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
     this.solrMetricsContext = parentContext.getChildContext(this);
     var baseAttributes =
         attributes.toBuilder()

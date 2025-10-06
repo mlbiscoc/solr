@@ -276,9 +276,8 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     }
 
     @Override
-    public void initializeMetrics(
-        SolrMetricsContext parentContext, Attributes attributes, String scope) {
-      super.initializeMetrics(parentContext, attributes, scope);
+    public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
+      super.initializeMetrics(parentContext, attributes);
     }
 
     @Override

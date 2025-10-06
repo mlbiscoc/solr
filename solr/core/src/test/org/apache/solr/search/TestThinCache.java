@@ -95,12 +95,12 @@ public class TestThinCache extends SolrTestCaseJ4 {
     ThinCache<Object, Integer, String> lfuCache = new ThinCache<>();
     lfuCache.setBacking(cacheScope, backing);
     SolrMetricsContext solrMetricsContext = new SolrMetricsContext(metricManager, registry);
-    lfuCache.initializeMetrics(solrMetricsContext, Attributes.empty(), scope + "-1");
+    lfuCache.initializeMetrics(solrMetricsContext, Attributes.empty());
 
     Object cacheScope2 = new Object();
     ThinCache<Object, Integer, String> newLFUCache = new ThinCache<>();
     newLFUCache.setBacking(cacheScope2, backing);
-    newLFUCache.initializeMetrics(solrMetricsContext, Attributes.empty(), scope + "-2");
+    newLFUCache.initializeMetrics(solrMetricsContext, Attributes.empty());
 
     Map<String, String> params = new HashMap<>();
     params.put("size", "100");
