@@ -194,11 +194,9 @@ public class MultiAuthPlugin extends AuthenticationPlugin
     }
   }
 
-  // TODO SOLR-17458: Migrate to Otel
   @Override
   public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
     for (AuthenticationPlugin plugin : pluginMap.values()) {
-      // TODO SOLR-17458: Add Otel
       plugin.initializeMetrics(parentContext, Attributes.empty());
     }
     super.initializeMetrics(parentContext, attributes);

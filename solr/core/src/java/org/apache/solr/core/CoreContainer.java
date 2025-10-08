@@ -893,12 +893,10 @@ public class CoreContainer {
 
     metricsHandler = new MetricsHandler(this);
     containerHandlers.put(METRICS_PATH, metricsHandler);
-    // TODO SOLR-17458: Add Otel
     metricsHandler.initializeMetrics(
         solrMetricsContext, Attributes.builder().put(HANDLER_ATTR, METRICS_PATH).build());
 
     containerHandlers.put(AUTHZ_PATH, securityConfHandler);
-    // TODO SOLR-17458: Add Otel
     securityConfHandler.initializeMetrics(
         solrMetricsContext, Attributes.builder().put(HANDLER_ATTR, AUTHZ_PATH).build());
     containerHandlers.put(AUTHC_PATH, securityConfHandler);

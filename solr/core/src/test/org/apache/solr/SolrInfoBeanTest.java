@@ -63,7 +63,6 @@ public class SolrInfoBeanTest extends SolrTestCaseJ4 {
       if (SolrInfoBean.class.isAssignableFrom(clazz)) {
         try {
           SolrInfoBean info = clazz.asSubclass(SolrInfoBean.class).getConstructor().newInstance();
-          // TODO SOLR-17458: Fix test later
           info.initializeMetrics(solrMetricsContext, Attributes.empty());
 
           // System.out.println( info.getClass() );

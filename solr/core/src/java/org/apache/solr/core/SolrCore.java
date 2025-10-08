@@ -1218,7 +1218,6 @@ public class SolrCore implements SolrInfoBean, Closeable {
       // Allow the directory factory to report metrics
       if (directoryFactory instanceof SolrMetricProducer) {
         ((SolrMetricProducer) directoryFactory)
-            // TODO SOLR-17458: Add Otel
             .initializeMetrics(solrMetricsContext, Attributes.empty());
       }
 

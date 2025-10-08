@@ -65,9 +65,6 @@ dependencies {
   implementation libs.slf4j.api
   implementation libs.apache.log4j.api
   implementation libs.apache.log4j.core
-  // TODO: Remove dropwizard dependencies
-  // implementation libs.dropwizard.metrics.core
-  // implementation libs.dropwizard.metrics.jetty12.ee10
   implementation libs.commonscli.commonscli
   permitUnusedDeclared libs.commonscli.commonscli
   implementation libs.apache.httpcomponents.httpclient
