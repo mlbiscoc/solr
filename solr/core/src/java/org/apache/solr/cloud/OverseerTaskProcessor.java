@@ -18,6 +18,7 @@ package org.apache.solr.cloud;
 
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonParams.ID;
+import static org.apache.solr.metrics.SolrMetricProducer.CATEGORY_ATTR;
 
 import com.codahale.metrics.Timer;
 import io.opentelemetry.api.common.Attributes;
@@ -150,10 +151,8 @@ public class OverseerTaskProcessor implements SolrInfoBean, Runnable, Closeable 
     this.failureMap = failureMap;
     this.runningTasks = new HashMap<>();
     thisNode = MDCLoggingContext.getNodeName();
-
-    this.overseerTaskProcessorMetricsContext = solrMetricsContext.getChildContext(this);
-    initializeMetrics(
-        solrMetricsContext, Attributes.of(CATEGORY_ATTR, getCategory().toString()), "");
+    this.overseerTaskProcessorMetricsContext = solrMetricsContext;
+    initializeMetrics(solrMetricsContext, Attributes.of(CATEGORY_ATTR, getCategory().toString()));
   }
 
   @Override
@@ -407,8 +406,7 @@ public class OverseerTaskProcessor implements SolrInfoBean, Runnable, Closeable 
   }
 
   @Override
-  public void initializeMetrics(
-      SolrMetricsContext parentContext, Attributes attributes, String scope) {
+  public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
     this.toClose =
         parentContext.observableLongGauge(
             "solr_overseer_collection_work_queue_size",

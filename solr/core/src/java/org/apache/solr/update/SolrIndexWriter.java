@@ -163,7 +163,7 @@ public class SolrIndexWriter extends IndexWriter {
     infoStream = getConfig().getInfoStream();
     this.directory = directory;
     numOpens.incrementAndGet();
-    solrMetricsContext = core.getSolrMetricsContext().getChildContext(this);
+    solrMetricsContext = core.getSolrMetricsContext();
     if (config.metricsInfo != null && config.metricsInfo.initArgs != null) {
       Object v = config.metricsInfo.initArgs.get("majorMergeDocs");
       if (v != null) {
@@ -463,9 +463,6 @@ public class SolrIndexWriter extends IndexWriter {
         directoryFactory.release(directory);
       }
       IOUtils.closeQuietly(mergeStats);
-      if (solrMetricsContext != null) {
-        solrMetricsContext.unregister();
-      }
     }
   }
 }

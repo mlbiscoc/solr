@@ -219,7 +219,7 @@ public class MirroringUpdateRequestProcessorFactory extends UpdateRequestProcess
     Closer closer = new Closer(sink);
     core.addCloseHook(new MyCloseHook(closer));
 
-    producerMetrics = new ProducerMetrics(core.getSolrMetricsContext().getChildContext(this), core);
+    producerMetrics = new ProducerMetrics(core.getSolrMetricsContext(), core);
     mirroringHandler = new KafkaRequestMirroringHandler(sink);
   }
 

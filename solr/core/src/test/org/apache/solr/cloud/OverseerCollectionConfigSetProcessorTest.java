@@ -710,9 +710,6 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     zkClientData.put("/configs/" + CONFIG_NAME, new byte[1]);
     zkClientData.put("/configs/" + CONFIG_NAME + "/solrconfig.xml", new byte[1]);
 
-    when(solrMetricsContextMock.getChildContext(any(Object.class)))
-        .thenReturn(solrMetricsContextMock);
-
     return liveNodes;
   }
 
