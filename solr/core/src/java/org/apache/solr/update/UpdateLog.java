@@ -629,7 +629,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   @Override
   public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
     final List<AutoCloseable> observables = new ArrayList<>();
-    solrMetricsContext = parentContext.getChildContext(this);
+    solrMetricsContext = parentContext;
 
     var baseAttributes =
         attributes.toBuilder().put(CATEGORY_ATTR, SolrInfoBean.Category.TLOG.toString()).build();

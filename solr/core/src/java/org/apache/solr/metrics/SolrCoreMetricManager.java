@@ -140,8 +140,6 @@ public class SolrCoreMetricManager implements Closeable {
    */
   @Override
   public void close() throws IOException {
-    // NOCOMMIT: Do we not close gauges here then? Maybe store all core observables in
-    // SolrCoreMetricManager instead of in the classes themselves?
     solrMetricsContext.unregister();
   }
 
@@ -170,10 +168,6 @@ public class SolrCoreMetricManager implements Closeable {
    */
   public String getRegistryName() {
     return solrMetricsContext != null ? solrMetricsContext.getRegistryName() : null;
-  }
-
-  public static String createRegistryName(SolrCore core) {
-    return SolrMetricManager.getRegistryName(core);
   }
 
   public static String createRegistryName(

@@ -35,16 +35,12 @@ import io.prometheus.metrics.model.snapshots.HistogramSnapshot;
 import io.prometheus.metrics.model.snapshots.MetricSnapshot;
 import io.prometheus.metrics.model.snapshots.MetricSnapshots;
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.DoubleAdder;
 import java.util.concurrent.atomic.LongAdder;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.RetryUtil;
-import org.apache.solr.core.PluginInfo;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -69,60 +65,9 @@ public class SolrMetricManagerTest extends SolrTestCaseJ4 {
     super.tearDown();
   }
 
-  // NOCOMMIT COME BACKE TO THIS
-  //  @Test
-  //  public void testSimpleMetrics() {
-  //    Random r = random();
-  //
-  //    String registryName = TestUtil.randomSimpleString(r, 1, 10);
-  //
-  //    metricManager.counter(null, registryName, "simple_counter", "foo", "bar");
-  //    metricManager.timer(null, registryName, "simple_timer", "foo", "bar");
-  //    metricManager.meter(null, registryName, "simple_meter", "foo", "bar");
-  //    metricManager.histogram(null, registryName, "simple_histogram", "foo", "bar");
-  //    Map<String, Metric> metrics = metricManager.registry(registryName).getMetrics();
-  //    assertEquals(4, metrics.size());
-  //    for (Map.Entry<String, Metric> entry : metrics.entrySet()) {
-  //      assertTrue(entry.getKey().startsWith("foo.bar.simple_"));
-  //    }
-  //  }
-  //
-  //  @Test
-  //  public void testRegistryName() {
-  //    Random r = random();
-  //
-  //    String name = TestUtil.randomSimpleString(r, 1, 10);
-  //
-  //    String result = SolrMetricManager.getRegistryName(SolrInfoBean.Group.core, name,
-  // "collection1");
-  //    assertEquals("solr.core." + name + ".collection1", result);
-  //    // try it with already prefixed name - group will be ignored
-  //    result = SolrMetricManager.getRegistryName(SolrInfoBean.Group.core, result);
-  //    assertEquals("solr.core." + name + ".collection1", result);
-  //    // try it with already prefixed name but with additional segments
-  //    result =
-  //        SolrMetricManager.getRegistryName(SolrInfoBean.Group.core, result, "shard1",
-  // "replica1");
-  //    assertEquals("solr.core." + name + ".collection1.shard1.replica1", result);
-  //  }
-
   @Test
   public void testDefaultCloudReporterPeriodUnchanged() {
     assertEquals(60, SolrMetricManager.DEFAULT_CLOUD_REPORTER_PERIOD);
-  }
-
-  private PluginInfo createPluginInfo(String name, String group, String registry) {
-    Map<String, String> attrs = new HashMap<>();
-    attrs.put("name", name);
-    if (group != null) {
-      attrs.put("group", group);
-    }
-    if (registry != null) {
-      attrs.put("registry", registry);
-    }
-    NamedList<String> initArgs = new NamedList<>();
-    initArgs.add("configurable", "true");
-    return new PluginInfo("SolrMetricReporter", attrs, initArgs, null);
   }
 
   @Test

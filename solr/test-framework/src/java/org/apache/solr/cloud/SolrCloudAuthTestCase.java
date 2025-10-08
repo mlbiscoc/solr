@@ -19,10 +19,6 @@ package org.apache.solr.cloud;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-import com.codahale.metrics.Counter;
-import com.codahale.metrics.Meter;
-import com.codahale.metrics.Metric;
-import com.codahale.metrics.Timer;
 import io.opentelemetry.exporter.prometheus.PrometheusMetricReader;
 import io.prometheus.metrics.model.snapshots.CounterSnapshot;
 import io.prometheus.metrics.model.snapshots.DataPointSnapshot;
@@ -305,22 +301,6 @@ public class SolrCloudAuthTestCase extends SolrCloudTestCase {
       }
     }
     return metrics;
-  }
-
-  // Have to sum the metrics from all three shards/nodes
-  private long sumCount(String prefix, String key, List<Map<String, Metric>> metrics) {
-    assertTrue(
-        "Metric " + prefix + key + " does not exist", metrics.get(0).containsKey(prefix + key));
-    if (AUTH_METRICS_METER_KEYS.contains(key))
-      return metrics.stream().mapToLong(l -> ((Meter) l.get(prefix + key)).getCount()).sum();
-    else if (AUTH_METRICS_TIMER_KEYS.contains(key))
-      return (long)
-          ((long) 1000
-              * metrics.stream()
-                  .mapToDouble(l -> ((Timer) l.get(prefix + key)).getMeanRate())
-                  .average()
-                  .orElse(0.0d));
-    else return metrics.stream().mapToLong(l -> ((Counter) l.get(prefix + key)).getCount()).sum();
   }
 
   public static void verifySecurityStatus(

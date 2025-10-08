@@ -173,7 +173,7 @@ public abstract class RequestHandlerBase
       //              SolrMetricProducer.getUniqueMetricTag(this, parentContext.getTag()),
       //              SolrMetricManager.getRegistryName(SolrInfoBean.Group.node));
     } else {
-      this.solrMetricsContext = parentContext.getChildContext(this);
+      this.solrMetricsContext = parentContext;
     }
 
     metrics =

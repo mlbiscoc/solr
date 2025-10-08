@@ -551,16 +551,6 @@ public class SolrMetricManager {
   }
 
   /**
-   * Helper method to construct a properly prefixed core registry name from a SolrCore.
-   *
-   * @param core the SolrCore instance
-   * @return fully-qualified and prefixed core registry name.
-   */
-  public static String getRegistryName(SolrCore core) {
-    return enforcePrefix(core.getName());
-  }
-
-  /**
    * Enforces the leading {@link #REGISTRY_NAME_PREFIX} in a name.
    *
    * @param name input name, possibly without the prefix

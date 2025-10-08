@@ -18,6 +18,7 @@ package org.apache.solr.cloud.overseer;
 
 import static java.util.Collections.singletonMap;
 
+import com.codahale.metrics.Timer;
 import java.lang.invoke.MethodHandles;
 import java.time.Instant;
 import java.util.HashMap;
@@ -256,7 +257,7 @@ public class ZkStateWriter {
       }
       return clusterState;
     }
-    Stats.TimingContext timerContext = stats.time("update_state");
+    Timer.Context timerContext = stats.time("update_state");
     boolean success = false;
     try {
       if (!updates.isEmpty()) {

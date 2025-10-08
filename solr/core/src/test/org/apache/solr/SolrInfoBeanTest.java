@@ -25,7 +25,6 @@ import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.stream.Stream;
-import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.handler.admin.LukeRequestHandler;
 import org.apache.solr.handler.component.SearchComponent;
@@ -37,7 +36,6 @@ import org.apache.solr.search.CaffeineCache;
 import org.junit.BeforeClass;
 
 /** A simple test used to increase code coverage for some standard things... */
-// NOCOMMIT: This test is getting removed and the handler
 public class SolrInfoBeanTest extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -61,7 +59,6 @@ public class SolrInfoBeanTest extends SolrTestCaseJ4 {
     SolrMetricManager metricManager = h.getCoreContainer().getMetricManager();
     String registry = h.getCore().getCoreMetricManager().getRegistryName();
     SolrMetricsContext solrMetricsContext = new SolrMetricsContext(metricManager, registry);
-    String scope = TestUtil.randomSimpleString(random(), 2, 10);
     for (Class<?> clazz : classes) {
       if (SolrInfoBean.class.isAssignableFrom(clazz)) {
         try {

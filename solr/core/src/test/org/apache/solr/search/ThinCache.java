@@ -20,6 +20,7 @@ import com.github.benmanes.caffeine.cache.RemovalCause;
 import com.github.benmanes.caffeine.cache.RemovalListener;
 import com.google.common.annotations.VisibleForTesting;
 import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.api.metrics.ObservableLongMeasurement;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.lang.ref.WeakReference;
@@ -35,7 +36,9 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
 import org.apache.lucene.util.Accountable;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.metrics.SolrMetricsContext;
+import org.apache.solr.metrics.otel.OtelUnit;
 import org.apache.solr.util.IOFunction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -74,6 +77,7 @@ import org.slf4j.LoggerFactory;
 public class ThinCache<S, K, V> extends SolrCacheBase
     implements SolrCache<K, V>, Accountable, RemovalListener<K, V> {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private AutoCloseable toClose;
 
   private static final class ScopedKey<S, K> {
     public final S scope;
@@ -291,12 +295,64 @@ public class ThinCache<S, K, V> extends SolrCacheBase
 
   @Override
   public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
-    solrMetricsContext = parentContext.getChildContext(this);
+    initializeMetrics(parentContext, attributes, "solr_thin_cache");
   }
 
-  // TODO: refactor this common method out of here and `CaffeineCache`
-  private static double hitRate(long hitCount, long lookupCount) {
-    return lookupCount == 0 ? 1.0 : (double) hitCount / lookupCount;
+  public void initializeMetrics(
+      SolrMetricsContext solrMetricsContext, Attributes attributes, String metricName) {
+    Attributes cacheAttributes =
+        attributes.toBuilder().put(CATEGORY_ATTR, getCategory().toString()).build();
+    this.solrMetricsContext = solrMetricsContext;
+
+    ObservableLongMeasurement cacheLookupsMetric =
+        solrMetricsContext.longCounterMeasurement(
+            metricName + "_lookups", "Number of cumulative cache lookup results (hits and misses)");
+
+    ObservableLongMeasurement cacheOperationMetric =
+        solrMetricsContext.longCounterMeasurement(
+            metricName + "_ops", "Number of cumulative cache operations (inserts and evictions)");
+
+    ObservableLongMeasurement sizeMetric =
+        solrMetricsContext.longGaugeMeasurement(
+            metricName + "_size", "Current number cache entries");
+
+    ObservableLongMeasurement ramBytesUsedMetric =
+        solrMetricsContext.longGaugeMeasurement(
+            metricName + "_ram_used", "RAM bytes used by cache", OtelUnit.BYTES);
+
+    ObservableLongMeasurement warmupTimeMetric =
+        solrMetricsContext.longGaugeMeasurement(
+            metricName + "_warmup_time", "Cache warmup time (most recent)", OtelUnit.MILLISECONDS);
+
+    this.toClose =
+        solrMetricsContext.batchCallback(
+            () -> {
+              long hitCount = hits.sum();
+              long lookupCount = lookups.sum();
+              long insertCount = inserts.sum();
+              sizeMetric.record(local.size(), cacheAttributes);
+              ramBytesUsedMetric.record(ramBytesUsed(), cacheAttributes);
+              warmupTimeMetric.record(warmupTimeMillis, cacheAttributes);
+              long cumLookups = priorLookups + lookupCount;
+              long cumHits = priorHits + hitCount;
+
+              cacheLookupsMetric.record(
+                  cumHits, cacheAttributes.toBuilder().put(RESULT_ATTR, "hit").build());
+              cacheLookupsMetric.record(
+                  cumLookups - cumHits,
+                  cacheAttributes.toBuilder().put(RESULT_ATTR, "miss").build());
+              cacheOperationMetric.record(
+                  priorInserts + insertCount,
+                  cacheAttributes.toBuilder().put(OPERATION_ATTR, "inserts").build());
+              cacheOperationMetric.record(
+                  priorEvictions + evictions.sum(),
+                  cacheAttributes.toBuilder().put(OPERATION_ATTR, "evictions").build());
+            },
+            cacheLookupsMetric,
+            cacheOperationMetric,
+            sizeMetric,
+            ramBytesUsedMetric,
+            warmupTimeMetric);
   }
 
   @Override
@@ -307,6 +363,7 @@ public class ThinCache<S, K, V> extends SolrCacheBase
   @Override
   public void close() throws IOException {
     backing.unregister(scope);
+    IOUtils.closeQuietly(toClose);
     SolrCache.super.close();
   }
 
@@ -335,7 +392,8 @@ public class ThinCache<S, K, V> extends SolrCacheBase
 
   @Override
   public String toString() {
-    return name();
+    String cacheName = name();
+    return cacheName != null ? cacheName : getClass().getSimpleName();
   }
 
   @Override

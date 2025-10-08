@@ -47,8 +47,7 @@ dependencies {
 
   implementation libs.apache.lucene.core
   implementation libs.commonsio.commonsio
-  // TODO: Remove dropwizard dependencies
-  // implementation libs.dropwizard.metrics.core
+  implementation libs.dropwizard.metrics.core
   implementation libs.apache.commons.math3
   implementation libs.jctools.core
   implementation libs.quicktheories.quicktheories

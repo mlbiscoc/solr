@@ -18,6 +18,7 @@ package org.apache.solr.cloud;
 
 import static org.apache.solr.common.params.CommonParams.ID;
 
+import com.codahale.metrics.Timer;
 import io.opentelemetry.api.common.Attributes;
 import java.io.Closeable;
 import java.io.IOException;
@@ -214,8 +215,7 @@ public class Overseer implements SolrCloseable {
       this.reader = reader;
       this.minStateByteLenForCompression = minStateByteLenForCompression;
       this.compressor = compressor;
-
-      this.clusterStateUpdaterMetricContext = solrMetricsContext.getChildContext(this);
+      this.clusterStateUpdaterMetricContext = solrMetricsContext;
       initializeMetrics(solrMetricsContext, Attributes.of(CATEGORY_ATTR, getCategory().toString()));
     }
 
@@ -445,7 +445,7 @@ public class Overseer implements SolrCloseable {
             "Message missing " + QUEUE_OPERATION + ":" + message);
       }
       List<ZkWriteCommand> zkWriteCommands = null;
-      final Stats.TimingContext timerContext = stats.time(operation);
+      final Timer.Context timerContext = stats.time(operation);
       try {
         zkWriteCommands = processMessage(clusterState, message, operation);
         stats.success(operation);
@@ -613,7 +613,7 @@ public class Overseer implements SolrCloseable {
     }
 
     private LeaderStatus amILeader() {
-      Stats.TimingContext timerContext = stats.time("am_i_leader");
+      Timer.Context timerContext = stats.time("am_i_leader");
       boolean success = true;
       String propsId = null;
       try {

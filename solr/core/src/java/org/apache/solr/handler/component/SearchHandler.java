@@ -122,8 +122,6 @@ public class SearchHandler extends RequestHandlerBase
       Boolean.getBoolean("solr.disableRequestId");
 
   private HandlerMetrics metricsShard = HandlerMetrics.NO_OP;
-  // NOCOMMIT: what is this?
-  //  private final Map<String, Counter> shardPurposes = new ConcurrentHashMap<>();
 
   protected volatile List<SearchComponent> components;
   private ShardHandlerFactory shardHandlerFactory;
@@ -399,13 +397,6 @@ public class SearchHandler extends RequestHandlerBase
 
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    if (req.getParams().getBool(ShardParams.IS_SHARD, false)) {
-      int purpose = req.getParams().getInt(ShardParams.SHARDS_PURPOSE, 0);
-      // NOCOMMIT: what is this?
-      //      SolrPluginUtils.forEachRequestPurpose(
-      //          purpose, n -> shardPurposes.computeIfAbsent(n, name -> new Counter()).inc());
-    }
-
     List<SearchComponent> components = getComponents();
     ResponseBuilder rb = newResponseBuilder(req, rsp, components);
     if (rb.requestInfo != null) {

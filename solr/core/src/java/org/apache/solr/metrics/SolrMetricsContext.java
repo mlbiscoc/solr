@@ -35,9 +35,6 @@ import io.opentelemetry.api.metrics.ObservableLongMeasurement;
 import io.opentelemetry.api.metrics.ObservableMeasurement;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.metrics.otel.OtelUnit;
@@ -52,7 +49,6 @@ import org.apache.solr.metrics.otel.OtelUnit;
 public class SolrMetricsContext {
   private final String registryName;
   private final SolrMetricManager metricManager;
-  private final Set<String> metricNames = ConcurrentHashMap.newKeySet();
   private final List<AutoCloseable> closeables = new ArrayList<>();
 
   public SolrMetricsContext(SolrMetricManager metricManager, String registryName) {
@@ -68,37 +64,6 @@ public class SolrMetricsContext {
   /** Return the instance of {@link SolrMetricManager} used in this context. */
   public SolrMetricManager getMetricManager() {
     return metricManager;
-  }
-
-  /**
-   * Get a context with the same registry name but a tag that represents a parent-child
-   * relationship. Since it's a different tag than the parent's context it is assumed that the
-   * life-cycle of the parent and child are different.
-   *
-   * @param child child object that produces metrics with a different life-cycle than the parent.
-   */
-  // TODO This might not be needed anymore with OTeL?
-  public SolrMetricsContext getChildContext(Object child) {
-    SolrMetricsContext childContext = new SolrMetricsContext(metricManager, registryName);
-    return childContext;
-  }
-
-  /**
-   * Register a metric name that this component reports. This method is called by various metric
-   * registration methods in {@link org.apache.solr.metrics.SolrMetricManager} in order to capture
-   * what metric names are reported from this component (which in turn is called from {@link
-   * SolrMetricProducer#initializeMetrics(SolrMetricsContext,
-   * io.opentelemetry.api.common.Attributes)}).
-   */
-  // TODO We can continue to register metric names
-  public void registerMetricName(String name) {
-    metricNames.add(name);
-  }
-
-  /** Return a snapshot of metric values that this component reports. */
-  // NOCOMMIT Remove this after merging SOLR-17853
-  public Map<String, Object> getMetricsSnapshot() {
-    return null;
   }
 
   public LongCounter longCounter(String metricName, String description) {

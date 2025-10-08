@@ -40,7 +40,6 @@ public class TestHttpSolrClientProvider extends SolrTestCase {
     parentSolrMetricCtx = Mockito.mock(SolrMetricsContext.class);
     SolrMetricsContext childContext = Mockito.mock(SolrMetricsContext.class);
     LongHistogram mockHistogram = Mockito.mock(LongHistogram.class);
-    Mockito.when(parentSolrMetricCtx.getChildContext(any())).thenReturn(childContext);
     Mockito.when(childContext.longHistogram(any(), any(), any())).thenReturn(mockHistogram);
   }
 

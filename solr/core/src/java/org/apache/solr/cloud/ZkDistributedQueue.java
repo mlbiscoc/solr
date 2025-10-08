@@ -16,6 +16,7 @@
  */
 package org.apache.solr.cloud;
 
+import com.codahale.metrics.Timer;
 import com.google.common.annotations.VisibleForTesting;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -144,7 +145,7 @@ public class ZkDistributedQueue implements DistributedQueue {
    */
   @Override
   public byte[] peek() throws KeeperException, InterruptedException {
-    Stats.TimingContext time = stats.time(dir + "_peek");
+    Timer.Context time = stats.time(dir + "_peek");
     try {
       return firstElement();
     } finally {
@@ -176,7 +177,7 @@ public class ZkDistributedQueue implements DistributedQueue {
     if (wait < 0) {
       throw new IllegalArgumentException("Wait must be greater than 0. Wait was " + wait);
     }
-    Stats.TimingContext time;
+    Timer.Context time;
     if (wait == Long.MAX_VALUE) {
       time = stats.time(dir + "_peek_wait_forever");
     } else {
@@ -206,7 +207,7 @@ public class ZkDistributedQueue implements DistributedQueue {
    */
   @Override
   public byte[] poll() throws KeeperException, InterruptedException {
-    Stats.TimingContext time = stats.time(dir + "_poll");
+    Timer.Context time = stats.time(dir + "_poll");
     try {
       return removeFirst();
     } finally {
@@ -221,7 +222,7 @@ public class ZkDistributedQueue implements DistributedQueue {
    */
   @Override
   public byte[] remove() throws NoSuchElementException, KeeperException, InterruptedException {
-    Stats.TimingContext time = stats.time(dir + "_remove");
+    Timer.Context time = stats.time(dir + "_remove");
     try {
       byte[] result = removeFirst();
       if (result == null) {
@@ -274,7 +275,7 @@ public class ZkDistributedQueue implements DistributedQueue {
   @Override
   public byte[] take() throws KeeperException, InterruptedException {
     // Same as for element. Should refactor this.
-    Stats.TimingContext timer = stats.time(dir + "_take");
+    Timer.Context timer = stats.time(dir + "_take");
     updateLock.lockInterruptibly();
     try {
       while (true) {
@@ -296,7 +297,7 @@ public class ZkDistributedQueue implements DistributedQueue {
    */
   @Override
   public void offer(byte[] data) throws KeeperException, InterruptedException {
-    Stats.TimingContext time = stats.time(dir + "_offer");
+    Timer.Context time = stats.time(dir + "_offer");
     try {
       while (true) {
         try {

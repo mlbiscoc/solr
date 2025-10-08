@@ -18,7 +18,9 @@ package org.apache.solr.cloud;
 
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonParams.ID;
+import static org.apache.solr.metrics.SolrMetricProducer.CATEGORY_ATTR;
 
+import com.codahale.metrics.Timer;
 import io.opentelemetry.api.common.Attributes;
 import java.io.Closeable;
 import java.lang.invoke.MethodHandles;
@@ -149,8 +151,7 @@ public class OverseerTaskProcessor implements SolrInfoBean, Runnable, Closeable 
     this.failureMap = failureMap;
     this.runningTasks = new HashMap<>();
     thisNode = MDCLoggingContext.getNodeName();
-
-    this.overseerTaskProcessorMetricsContext = solrMetricsContext.getChildContext(this);
+    this.overseerTaskProcessorMetricsContext = solrMetricsContext;
     initializeMetrics(solrMetricsContext, Attributes.of(CATEGORY_ATTR, getCategory().toString()));
   }
 
@@ -423,6 +424,7 @@ public class OverseerTaskProcessor implements SolrInfoBean, Runnable, Closeable 
   @Override
   public void close() {
     isClosed = true;
+    overseerTaskProcessorMetricsContext.unregister();
     if (tpe != null) {
       if (!ExecutorUtil.isShutdown(tpe)) {
         ExecutorUtil.shutdownAndAwaitTermination(tpe);
@@ -469,7 +471,7 @@ public class OverseerTaskProcessor implements SolrInfoBean, Runnable, Closeable 
 
   protected LeaderStatus amILeader() {
     String statsName = "collection_am_i_leader";
-    Stats.TimingContext timerContext = stats.time(statsName);
+    Timer.Context timerContext = stats.time(statsName);
     boolean success = true;
     String propsId = null;
     try {
@@ -551,7 +553,7 @@ public class OverseerTaskProcessor implements SolrInfoBean, Runnable, Closeable 
     @Override
     public void run() {
       String statsName = messageHandler.getTimerName(operation);
-      final Stats.TimingContext timerContext = stats.time(statsName);
+      final Timer.Context timerContext = stats.time(statsName);
 
       boolean success = false;
       final String asyncId = message.getStr(ASYNC);

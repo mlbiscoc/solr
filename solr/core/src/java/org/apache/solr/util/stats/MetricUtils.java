@@ -16,14 +16,16 @@
  */
 package org.apache.solr.util.stats;
 
+import com.codahale.metrics.Snapshot;
+import com.codahale.metrics.Timer;
 import java.beans.BeanInfo;
 import java.lang.invoke.MethodHandles;
-import java.lang.management.OperatingSystemMXBean;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.slf4j.Logger;
@@ -88,16 +90,23 @@ public class MetricUtils {
   }
 
   /**
-   * These are well-known implementations of {@link java.lang.management.OperatingSystemMXBean}.
-   * Some of them provide additional useful properties beyond those declared by the interface.
+   * Adds metrics from a Timer to a NamedList, using well-known back-compat names.
+   *
+   * @param lst The NamedList to add the metrics data to
+   * @param timer The Timer to extract the metrics from
    */
-  public static String[] OS_MXBEAN_CLASSES =
-      new String[] {
-        OperatingSystemMXBean.class.getName(),
-        "com.sun.management.OperatingSystemMXBean",
-        "com.sun.management.UnixOperatingSystemMXBean",
-        "com.ibm.lang.management.OperatingSystemMXBean"
-      };
+  public static void addMetrics(NamedList<Object> lst, Timer timer) {
+    Snapshot snapshot = timer.getSnapshot();
+    lst.add("avgRequestsPerSecond", timer.getMeanRate());
+    lst.add("5minRateRequestsPerSecond", timer.getFiveMinuteRate());
+    lst.add("15minRateRequestsPerSecond", timer.getFifteenMinuteRate());
+    lst.add("avgTimePerRequest", nsToMs(snapshot.getMean()));
+    lst.add("medianRequestTime", nsToMs(snapshot.getMedian()));
+    lst.add("75thPcRequestTime", nsToMs(snapshot.get75thPercentile()));
+    lst.add("95thPcRequestTime", nsToMs(snapshot.get95thPercentile()));
+    lst.add("99thPcRequestTime", nsToMs(snapshot.get99thPercentile()));
+    lst.add("999thPcRequestTime", nsToMs(snapshot.get999thPercentile()));
+  }
 
   /** Returns an instrumented wrapper over the given executor service. */
   public static ExecutorService instrumentedExecutorService(

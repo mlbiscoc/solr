@@ -80,11 +80,7 @@ public interface SolrMetricProducer extends AutoCloseable {
   @Override
   default void close() throws IOException {
     SolrMetricsContext context = getSolrMetricsContext();
-    if (context == null) {
-      return;
-    } else {
-      // NOCOMMIT: Unregister of a context was only unregistering gauges to aovid memory leak. Do we
-      // need to do the same for OTEL?
+    if (context != null) {
       context.unregister();
     }
   }

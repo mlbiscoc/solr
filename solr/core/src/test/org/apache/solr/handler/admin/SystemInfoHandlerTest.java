@@ -22,11 +22,11 @@ import org.apache.solr.SolrTestCase;
 
 public class SystemInfoHandlerTest extends SolrTestCase {
 
+  // NOCOMMIT: This is broken
   public void testMagickGetter() {
 
     OperatingSystemMXBean os = ManagementFactory.getOperatingSystemMXBean();
 
-    // NOCOMMIT FIX LATER
     // make one directly
     //    SimpleOrderedMap<Object> info = new SimpleOrderedMap<>();
     //    info.add("name", os.getName());

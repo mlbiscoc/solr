@@ -128,7 +128,6 @@ public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
 
   private static void mockMetrics(MockPKIAuthenticationPlugin mock) {
     SolrMetricsContext smcMock = mock(SolrMetricsContext.class);
-    when(smcMock.getChildContext(any())).thenReturn(smcMock);
     LongCounter longCounterMock = mock(LongCounter.class);
     LongHistogram longHistogramMock = mock(LongHistogram.class);
     when(smcMock.longCounter(any(), any())).thenReturn(longCounterMock);
