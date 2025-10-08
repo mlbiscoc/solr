@@ -66,6 +66,18 @@ public class SolrMetricsContext {
     return metricManager;
   }
 
+  /**
+   * Get a context with the same registry name but a tag that represents a parent-child
+   * relationship. Since it's a different tag than the parent's context it is assumed that the
+   * life-cycle of the parent and child are different.
+   *
+   * @param child child object that produces metrics with a different life-cycle than the parent.
+   */
+  public SolrMetricsContext getChildContext(Object child) {
+    SolrMetricsContext childContext = new SolrMetricsContext(metricManager, registryName);
+    return childContext;
+  }
+
   public LongCounter longCounter(String metricName, String description) {
     return longCounter(metricName, description, null);
   }

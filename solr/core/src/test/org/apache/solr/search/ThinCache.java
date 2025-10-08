@@ -299,10 +299,10 @@ public class ThinCache<S, K, V> extends SolrCacheBase
   }
 
   public void initializeMetrics(
-      SolrMetricsContext solrMetricsContext, Attributes attributes, String metricName) {
+      SolrMetricsContext parentContext, Attributes attributes, String metricName) {
     Attributes cacheAttributes =
         attributes.toBuilder().put(CATEGORY_ATTR, getCategory().toString()).build();
-    this.solrMetricsContext = solrMetricsContext;
+    this.solrMetricsContext = parentContext.getChildContext(this);
 
     ObservableLongMeasurement cacheLookupsMetric =
         solrMetricsContext.longCounterMeasurement(

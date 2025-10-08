@@ -107,7 +107,7 @@ public abstract class SearchComponent implements SolrInfoBean, NamedListInitiali
   @Override
   public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
     // By default don't register any metrics - but prepare a child context
-    this.solrMetricsContext = parentContext;
+    this.solrMetricsContext = parentContext.getChildContext(this);
   }
 
   public static final Map<String, Class<? extends SearchComponent>> standard_components =

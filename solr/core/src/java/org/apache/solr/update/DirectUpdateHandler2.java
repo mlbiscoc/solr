@@ -232,7 +232,7 @@ public class DirectUpdateHandler2 extends UpdateHandler
       //              SolrMetricProducer.getUniqueMetricTag(this, parentContext.getTag()),
       //              SolrMetricManager.getRegistryName(SolrInfoBean.Group.node));
     } else {
-      this.solrMetricsContext = parentContext;
+      this.solrMetricsContext = parentContext.getChildContext(this);
     }
     final List<AutoCloseable> observables = new ArrayList<>();
 

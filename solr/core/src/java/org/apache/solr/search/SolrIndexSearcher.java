@@ -607,7 +607,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       cache.setState(SolrCache.State.LIVE);
       infoRegistry.put(cache.name(), cache);
     }
-    this.solrMetricsContext = core.getSolrMetricsContext();
+    this.solrMetricsContext = core.getSolrMetricsContext().getChildContext(this);
     for (SolrCache<?, ?> cache : cacheList) {
       if (cache instanceof CaffeineCache<?, ?> caffeineCache) {
         caffeineCache.initializeMetrics(

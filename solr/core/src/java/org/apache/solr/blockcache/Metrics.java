@@ -55,7 +55,7 @@ public class Metrics extends SolrCacheBase implements SolrInfoBean {
 
   @Override
   public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
-    solrMetricsContext = parentContext;
+    solrMetricsContext = parentContext.getChildContext(this);
     var baseAttributes =
         attributes.toBuilder().put(CATEGORY_ATTR, getCategory().toString()).build();
     var blockcacheStats =

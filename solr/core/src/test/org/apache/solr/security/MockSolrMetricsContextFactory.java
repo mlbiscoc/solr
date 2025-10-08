@@ -16,23 +16,26 @@ public final class MockSolrMetricsContextFactory {
 
   public static SolrMetricsContext create() {
     SolrMetricsContext mockParentContext = mock(SolrMetricsContext.class);
+    SolrMetricsContext mockChildContext = mock(SolrMetricsContext.class);
+
+    when(mockParentContext.getChildContext(any())).thenReturn(mockChildContext);
 
     LongCounter mockOtelLongCounter = mock(LongCounter.class);
-    when(mockParentContext.longCounter(anyString(), any())).thenReturn(mockOtelLongCounter);
+    when(mockChildContext.longCounter(anyString(), any())).thenReturn(mockOtelLongCounter);
 
     Timer mockTimer = mock(Timer.class);
     Timer.Context mockTimerContext = mock(Timer.Context.class);
     when(mockTimer.time()).thenReturn(mockTimerContext);
 
     LongHistogram mockLongHistogram = mock(LongHistogram.class);
-    when(mockParentContext.longHistogram(anyString(), anyString(), any(OtelUnit.class)))
+    when(mockChildContext.longHistogram(anyString(), anyString(), any(OtelUnit.class)))
         .thenReturn(mockLongHistogram);
 
-    when(mockParentContext.observableLongGauge(anyString(), anyString(), any())).thenReturn(null);
-    when(mockParentContext.observableLongCounter(anyString(), anyString(), any())).thenReturn(null);
+    when(mockChildContext.observableLongGauge(anyString(), anyString(), any())).thenReturn(null);
+    when(mockChildContext.observableLongCounter(anyString(), anyString(), any())).thenReturn(null);
 
     LongGauge mockLongGauge = mock(LongGauge.class);
-    when(mockParentContext.longGauge(anyString(), anyString())).thenReturn(mockLongGauge);
+    when(mockChildContext.longGauge(anyString(), anyString())).thenReturn(mockLongGauge);
 
     return mockParentContext;
   }

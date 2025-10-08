@@ -215,7 +215,8 @@ public class Overseer implements SolrCloseable {
       this.reader = reader;
       this.minStateByteLenForCompression = minStateByteLenForCompression;
       this.compressor = compressor;
-      this.clusterStateUpdaterMetricContext = solrMetricsContext;
+
+      this.clusterStateUpdaterMetricContext = solrMetricsContext.getChildContext(this);
       initializeMetrics(solrMetricsContext, Attributes.of(CATEGORY_ATTR, getCategory().toString()));
     }
 
