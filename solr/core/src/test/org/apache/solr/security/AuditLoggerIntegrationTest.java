@@ -608,8 +608,11 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
     }
 
     assertTrue(
-        String.format(
-            "Counter metric '%s' did not meet minimum %d after retry", metricName, expectedMinimum),
+        "Counter metric "
+            + metricName
+            + " did not meet minimum "
+            + expectedMinimum
+            + " after retry",
         success);
   }
 

@@ -30,6 +30,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.SolrTestCase;
+import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricsContext;
@@ -54,7 +56,11 @@ public class OtelInstrumentedExecutorServiceTest extends SolrTestCase {
 
   @Test
   public void taskCount() throws InterruptedException {
-    try (var exec = testExecutor("taskCount", Executors.newFixedThreadPool(PARALLELISM))) {
+    try (var exec =
+        testExecutor(
+            "taskCount",
+            ExecutorUtil.newMDCAwareFixedThreadPool(
+                PARALLELISM, new SolrNamedThreadFactory("OtelExecTest")))) {
       final int numTasks = 225;
       for (int i = 0; i < numTasks; ++i) {
         exec.submit(() -> {});
@@ -82,7 +88,11 @@ public class OtelInstrumentedExecutorServiceTest extends SolrTestCase {
 
   @Test
   public void taskRandomCount() throws InterruptedException {
-    try (var exec = testExecutor("taskRandomCount", Executors.newFixedThreadPool(PARALLELISM))) {
+    try (var exec =
+        testExecutor(
+            "taskRandomCount",
+            ExecutorUtil.newMDCAwareFixedThreadPool(
+                PARALLELISM, new SolrNamedThreadFactory("OtelExecTest")))) {
       final int numTasks = randomIntBetween(1, 500);
       for (int i = 0; i < numTasks; ++i) {
         exec.submit(() -> {});
@@ -110,7 +120,11 @@ public class OtelInstrumentedExecutorServiceTest extends SolrTestCase {
 
   @Test
   public void taskTimers() throws InterruptedException {
-    try (var exec = testExecutor("taskTimers", Executors.newFixedThreadPool(PARALLELISM))) {
+    try (var exec =
+        testExecutor(
+            "taskTimers",
+            ExecutorUtil.newMDCAwareFixedThreadPool(
+                PARALLELISM, new SolrNamedThreadFactory("OtelExecTest")))) {
       final long durationMs = 200;
       final double durationDeltaMs = 10.0;
       exec.submit(
@@ -150,7 +164,11 @@ public class OtelInstrumentedExecutorServiceTest extends SolrTestCase {
 
   @Test
   public void threadPoolTasks() throws InterruptedException {
-    try (var exec = testExecutor("threadPoolTasks", Executors.newFixedThreadPool(PARALLELISM))) {
+    try (var exec =
+        testExecutor(
+            "threadPoolTasks",
+            ExecutorUtil.newMDCAwareFixedThreadPool(
+                PARALLELISM, new SolrNamedThreadFactory("OtelExecTest")))) {
       final int numTasks = 225;
       for (int i = 0; i < numTasks; ++i) {
         exec.submit(() -> {});
