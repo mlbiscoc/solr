@@ -223,8 +223,8 @@ public class DirectUpdateHandler2 extends UpdateHandler
   }
 
   @Override
-  public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
-    this.solrMetricsContext = parentContext.getChildContext(this);
+  public void initializeMetrics(SolrMetricsContext solrMetricsContext, Attributes attributes) {
+    this.solrMetricsContext = solrMetricsContext;
 
     var baseAttributes =
         attributes.toBuilder()

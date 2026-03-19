@@ -38,9 +38,9 @@ final class HttpSolrClientProvider implements AutoCloseable {
 
   private final InstrumentedHttpListenerFactory trackHttpSolrMetrics;
 
-  HttpSolrClientProvider(UpdateShardHandlerConfig cfg, SolrMetricsContext parentContext) {
+  HttpSolrClientProvider(UpdateShardHandlerConfig cfg, SolrMetricsContext solrMetricsContext) {
     trackHttpSolrMetrics = new InstrumentedHttpListenerFactory(getNameStrategy(cfg));
-    initializeMetrics(parentContext);
+    initializeMetrics(solrMetricsContext);
 
     var httpClientBuilder =
         new HttpJettySolrClient.Builder().addListenerFactory(trackHttpSolrMetrics);
@@ -63,9 +63,11 @@ final class HttpSolrClientProvider implements AutoCloseable {
     return InstrumentedHttpListenerFactory.getNameStrategy(metricNameStrategy);
   }
 
-  private void initializeMetrics(SolrMetricsContext parentContext) {
-    var solrMetricsContext = parentContext.getChildContext(this);
-    trackHttpSolrMetrics.initializeMetrics(solrMetricsContext, Attributes.empty());
+  private void initializeMetrics(SolrMetricsContext solrMetricsContext) {
+    trackHttpSolrMetrics.initializeMetrics(
+        new SolrMetricsContext(
+            solrMetricsContext.getMetricManager(), solrMetricsContext.getRegistryName()),
+        Attributes.empty());
   }
 
   HttpJettySolrClient getSolrClient() {

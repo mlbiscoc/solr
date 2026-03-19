@@ -53,6 +53,8 @@ class SolrCores implements SolrInfoBean {
 
   private final CoreContainer container;
 
+  private SolrMetricsContext solrMetricsContext;
+
   private final Set<String> currentlyLoadingCores =
       Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
 
@@ -417,8 +419,9 @@ class SolrCores implements SolrInfoBean {
   }
 
   @Override
-  public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
-    parentContext.observableLongGauge(
+  public void initializeMetrics(SolrMetricsContext solrMetricsContext, Attributes attributes) {
+    this.solrMetricsContext = solrMetricsContext;
+    solrMetricsContext.observableLongGauge(
         "solr_cores_loaded",
         "Number of Solr cores loaded by CoreContainer",
         measurement -> {
@@ -432,7 +435,7 @@ class SolrCores implements SolrInfoBean {
 
   @Override
   public SolrMetricsContext getSolrMetricsContext() {
-    return this.container.solrMetricsContext;
+    return this.solrMetricsContext;
   }
 
   @Override

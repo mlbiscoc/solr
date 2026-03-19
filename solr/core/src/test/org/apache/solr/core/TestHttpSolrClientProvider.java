@@ -18,10 +18,12 @@ package org.apache.solr.core;
 
 import static org.apache.solr.SolrTestCaseJ4.assumeWorkingMockito;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 
 import io.opentelemetry.api.metrics.LongHistogram;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.impl.SolrHttpConstants;
+import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.update.UpdateShardHandlerConfig;
 import org.junit.Before;
@@ -37,11 +39,11 @@ public class TestHttpSolrClientProvider extends SolrTestCase {
   public void setUp() throws Exception {
     super.setUp();
     assumeWorkingMockito();
-    parentSolrMetricCtx = Mockito.mock(SolrMetricsContext.class);
-    SolrMetricsContext childContext = Mockito.mock(SolrMetricsContext.class);
+    SolrMetricManager mockMetricManager = Mockito.mock(SolrMetricManager.class);
     LongHistogram mockHistogram = Mockito.mock(LongHistogram.class);
-    Mockito.when(parentSolrMetricCtx.getChildContext(any())).thenReturn(childContext);
-    Mockito.when(childContext.longHistogram(any(), any(), any())).thenReturn(mockHistogram);
+    Mockito.when(mockMetricManager.longHistogram(anyString(), anyString(), anyString(), any()))
+        .thenReturn(mockHistogram);
+    parentSolrMetricCtx = new SolrMetricsContext(mockMetricManager, "solr.node");
   }
 
   @Test

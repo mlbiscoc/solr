@@ -154,9 +154,9 @@ public class ZkContainer {
 
               @Override
               public void initializeMetrics(
-                  SolrMetricsContext parentContext, Attributes attributes) {
+                  SolrMetricsContext solrMetricsContext, Attributes attributes) {
                 final List<AutoCloseable> observables = new ArrayList<>();
-                ctx = parentContext.getChildContext(this);
+                ctx = solrMetricsContext;
 
                 var metricsListener = zkController.getZkClient().getMetrics();
 

@@ -88,12 +88,12 @@ public class GpuMetricsService implements GpuMetricsProvider {
   }
 
   @Override
-  public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
-    this.metricsContext = parentContext;
+  public void initializeMetrics(SolrMetricsContext solrMetricsContext, Attributes attributes) {
+    this.metricsContext = solrMetricsContext;
 
     gpuCountGauge =
         metricManager.observableLongGauge(
-            parentContext.getRegistryName(),
+            solrMetricsContext.getRegistryName(),
             "gpu.count",
             "Number of available GPUs",
             measurement -> measurement.record(gpuCount.get()),
@@ -101,7 +101,7 @@ public class GpuMetricsService implements GpuMetricsProvider {
 
     gpuMemoryTotalGauge =
         metricManager.observableLongGauge(
-            parentContext.getRegistryName(),
+            solrMetricsContext.getRegistryName(),
             "gpu.memory.total",
             "Total GPU memory in bytes",
             measurement -> measurement.record(gpuMemoryTotal.get()),
@@ -109,7 +109,7 @@ public class GpuMetricsService implements GpuMetricsProvider {
 
     gpuMemoryUsedGauge =
         metricManager.observableLongGauge(
-            parentContext.getRegistryName(),
+            solrMetricsContext.getRegistryName(),
             "gpu.memory.used",
             "Used GPU memory in bytes",
             measurement -> measurement.record(gpuMemoryUsed.get()),
@@ -117,7 +117,7 @@ public class GpuMetricsService implements GpuMetricsProvider {
 
     gpuMemoryFreeGauge =
         metricManager.observableLongGauge(
-            parentContext.getRegistryName(),
+            solrMetricsContext.getRegistryName(),
             "gpu.memory.free",
             "Free GPU memory in bytes",
             measurement -> measurement.record(gpuMemoryFree.get()),

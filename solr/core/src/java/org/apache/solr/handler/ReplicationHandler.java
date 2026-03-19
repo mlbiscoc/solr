@@ -872,13 +872,13 @@ public class ReplicationHandler extends RequestHandlerBase
   }
 
   @Override
-  public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
+  public void initializeMetrics(SolrMetricsContext solrMetricsContext, Attributes attributes) {
     Attributes replicationAttributes =
         Attributes.builder()
             .putAll(attributes)
             .put(CATEGORY_ATTR, Category.REPLICATION.toString())
             .build();
-    super.initializeMetrics(parentContext, replicationAttributes);
+    super.initializeMetrics(solrMetricsContext, replicationAttributes);
 
     ObservableDoubleMeasurement indexSizeMetric =
         solrMetricsContext.doubleGaugeMeasurement(

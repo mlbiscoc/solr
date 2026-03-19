@@ -101,7 +101,8 @@ public class SolrCoreMetricManager implements Closeable {
     registeredProducers.forEach(
         metricProducer -> {
           metricProducer.producer.initializeMetrics(
-              solrMetricsContext,
+              new SolrMetricsContext(
+                  solrMetricsContext.getMetricManager(), solrMetricsContext.getRegistryName()),
               metricProducer.attributes.toBuilder().putAll(core.getCoreAttributes()).build());
         });
   }
@@ -131,7 +132,9 @@ public class SolrCoreMetricManager implements Closeable {
     // There is some possible improvement that can be done here to not have to duplicate code in
     // reregisterCoreMetrics
     producer.initializeMetrics(
-        solrMetricsContext, attributes.toBuilder().putAll(core.getCoreAttributes()).build());
+        new SolrMetricsContext(
+            solrMetricsContext.getMetricManager(), solrMetricsContext.getRegistryName()),
+        attributes.toBuilder().putAll(core.getCoreAttributes()).build());
   }
 
   /**

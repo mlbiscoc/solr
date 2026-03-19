@@ -32,45 +32,25 @@ public interface SolrMetricProducer extends AutoCloseable {
   public static final AttributeKey<String> PLUGIN_NAME_ATTR = AttributeKey.stringKey("plugin_name");
 
   /**
-   * Unique metric tag identifies components with the same life-cycle, which should be registered /
-   * unregistered together. It is in the format of A:B:C, where A is the parent of B is the parent
-   * of C and so on. If object "B" is unregistered C also must get unregistered. If object "A" is
-   * unregistered B and C also must get unregistered.
+   * Initialize all metrics to a {@link SolrMetricsContext} Registry/MeterProvider with {@link
+   * Attributes} as the common set of attributes that will be attached to every metric that is
+   * initialized for that class/component.
    *
-   * @param o object to create a tag for
-   * @param parentName parent object name, or null if no parent exists
-   */
-  static String getUniqueMetricTag(Object o, String parentName) {
-    String name = o.getClass().getSimpleName() + "@" + Integer.toHexString(o.hashCode());
-    if (parentName != null && parentName.contains(name)) {
-      throw new RuntimeException(
-          "Parent already includes this component! parent=" + parentName + ", this=" + name);
-    }
-    return parentName == null ? name : parentName + ":" + name;
-  }
-
-  /**
-   * Implementation should initialize all metrics to a {@link SolrMetricsContext}
-   * Registry/MeterProvider with {@link Attributes} as the common set of attributes that will be
-   * attached to every metric that is initialized for that class/component
-   *
-   * @param parentContext The registry that the component will initialize metrics to
+   * @param solrMetricsContext The context that this component will use for metric registration
    * @param attributes Base set of attributes that will be bound to all metrics for that component
    */
-  void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes);
+  void initializeMetrics(SolrMetricsContext solrMetricsContext, Attributes attributes);
 
   /**
    * Implementations should return the context used in {@link #initializeMetrics(SolrMetricsContext,
    * Attributes)} to ensure proper cleanup of metrics at the end of the life-cycle of this
-   * component. This should be the child context if one was created, or null if the parent context
-   * was used.
+   * component.
    */
   SolrMetricsContext getSolrMetricsContext();
 
   /**
    * Implementations should always call <code>SolrMetricProducer.super.close()</code> to ensure that
-   * metrics with the same life-cycle as this component are properly unregistered. This prevents
-   * obscure memory leaks.
+   * metrics with the same life-cycle as this component are properly unregistered.
    *
    * <p>from: https://docs.oracle.com/javase/8/docs/api/java/lang/AutoCloseable.html While this
    * interface method is declared to throw Exception, implementers are strongly encouraged to

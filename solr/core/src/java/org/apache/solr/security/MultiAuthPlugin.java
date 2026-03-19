@@ -190,11 +190,14 @@ public class MultiAuthPlugin extends AuthenticationPlugin
   }
 
   @Override
-  public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
+  public void initializeMetrics(SolrMetricsContext solrMetricsContext, Attributes attributes) {
+    super.initializeMetrics(solrMetricsContext, attributes);
     for (AuthenticationPlugin plugin : pluginMap.values()) {
-      plugin.initializeMetrics(parentContext, Attributes.empty());
+      plugin.initializeMetrics(
+          new SolrMetricsContext(
+              solrMetricsContext.getMetricManager(), solrMetricsContext.getRegistryName()),
+          Attributes.empty());
     }
-    super.initializeMetrics(parentContext, attributes);
   }
 
   private String getSchemeFromAuthHeader(final String authHeader) {

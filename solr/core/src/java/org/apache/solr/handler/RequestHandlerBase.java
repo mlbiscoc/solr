@@ -163,8 +163,8 @@ public abstract class RequestHandlerBase
   }
 
   @Override
-  public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
-    this.solrMetricsContext = parentContext.getChildContext(this);
+  public void initializeMetrics(SolrMetricsContext solrMetricsContext, Attributes attributes) {
+    this.solrMetricsContext = solrMetricsContext;
 
     metrics =
         new HandlerMetrics(

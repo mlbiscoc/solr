@@ -152,7 +152,6 @@ public class Overseer implements SolrCloseable {
   private final CopyOnWriteArrayList<Message> unprocessedMessages = new CopyOnWriteArrayList<>();
 
   private SolrMetricsContext solrMetricsContext;
-  private volatile String metricTag = SolrMetricProducer.getUniqueMetricTag(this, null);
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -177,7 +176,7 @@ public class Overseer implements SolrCloseable {
     // queue where everybody can throw tasks
     private final ZkDistributedQueue stateUpdateQueue;
 
-    private SolrMetricsContext clusterStateUpdaterMetricContext;
+    private SolrMetricsContext solrMetricsContext;
 
     private final int minStateByteLenForCompression;
 
@@ -200,14 +199,18 @@ public class Overseer implements SolrCloseable {
       this.minStateByteLenForCompression = minStateByteLenForCompression;
       this.compressor = compressor;
 
-      this.clusterStateUpdaterMetricContext = solrMetricsContext.getChildContext(this);
-      initializeMetrics(solrMetricsContext, Attributes.of(CATEGORY_ATTR, getCategory().toString()));
+      var ctx = Overseer.this.solrMetricsContext;
+      this.solrMetricsContext =
+          new SolrMetricsContext(ctx.getMetricManager(), ctx.getRegistryName());
+      initializeMetrics(
+          this.solrMetricsContext,
+          Attributes.of(CATEGORY_ATTR, getCategory().toString()));
     }
 
     @Override
-    public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
+    public void initializeMetrics(SolrMetricsContext solrMetricsContext, Attributes attributes) {
       this.toClose =
-          parentContext.observableLongGauge(
+          solrMetricsContext.observableLongGauge(
               "solr_overseer_state_update_queue_size",
               "Size of overseer's update queue",
               (observableLongMeasurement) -> {
@@ -218,7 +221,7 @@ public class Overseer implements SolrCloseable {
 
     @Override
     public SolrMetricsContext getSolrMetricsContext() {
-      return clusterStateUpdaterMetricContext;
+      return solrMetricsContext;
     }
 
     public Stats getStateUpdateQueueStats() {

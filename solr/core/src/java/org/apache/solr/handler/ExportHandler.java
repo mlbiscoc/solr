@@ -86,8 +86,8 @@ public class ExportHandler extends SearchHandler {
   }
 
   @Override
-  public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
-    super.initializeMetrics(parentContext, attributes);
+  public void initializeMetrics(SolrMetricsContext solrMetricsContext, Attributes attributes) {
+    super.initializeMetrics(solrMetricsContext, attributes);
     this.writerMetricsPath =
         SolrMetricManager.mkName("writer", getCategory().toString(), "/export");
   }

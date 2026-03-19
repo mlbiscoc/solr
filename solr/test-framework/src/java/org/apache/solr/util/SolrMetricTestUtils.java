@@ -272,8 +272,8 @@ public final class SolrMetricTestUtils {
     }
 
     @Override
-    public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
-      this.solrMetricsContext = parentContext;
+    public void initializeMetrics(SolrMetricsContext solrMetricsContext, Attributes attributes) {
+      this.solrMetricsContext = solrMetricsContext;
       for (Map.Entry<String, Long> entry : metrics.entrySet()) {
         String metricName = entry.getKey();
         Long incrementValue = entry.getValue();

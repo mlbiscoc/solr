@@ -386,8 +386,8 @@ public class SuggestComponent extends SearchComponent
   }
 
   @Override
-  public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
-    super.initializeMetrics(parentContext, attributes);
+  public void initializeMetrics(SolrMetricsContext solrMetricsContext, Attributes attributes) {
+    super.initializeMetrics(solrMetricsContext, attributes);
     var suggesterAttributes =
         attributes.toBuilder().put(CATEGORY_ATTR, getCategory().toString()).build();
     this.toClose =

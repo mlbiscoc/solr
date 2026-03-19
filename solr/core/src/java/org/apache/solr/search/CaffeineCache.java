@@ -471,15 +471,15 @@ public class CaffeineCache<K, V> extends SolrCacheBase
   }
 
   @Override
-  public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
-    initializeMetrics(parentContext, attributes, "solr_caffeine_cache");
+  public void initializeMetrics(SolrMetricsContext solrMetricsContext, Attributes attributes) {
+    initializeMetrics(solrMetricsContext, attributes, "solr_caffeine_cache");
   }
 
   public void initializeMetrics(
       SolrMetricsContext solrMetricsContext, Attributes attributes, String metricName) {
     Attributes cacheAttributes =
         attributes.toBuilder().put(CATEGORY_ATTR, getCategory().toString()).build();
-    this.solrMetricsContext = solrMetricsContext.getChildContext(this);
+    this.solrMetricsContext = solrMetricsContext;
 
     ObservableLongMeasurement cacheLookupsMetric =
         solrMetricsContext.longCounterMeasurement(

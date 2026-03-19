@@ -145,8 +145,8 @@ public class PeerSync implements SolrMetricProducer {
   }
 
   @Override
-  public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
-    this.solrMetricsContext = parentContext.getChildContext(this);
+  public void initializeMetrics(SolrMetricsContext solrMetricsContext, Attributes attributes) {
+    this.solrMetricsContext = solrMetricsContext;
     var baseAttributes =
         attributes.toBuilder()
             .put("category", SolrInfoBean.Category.REPLICATION.toString())

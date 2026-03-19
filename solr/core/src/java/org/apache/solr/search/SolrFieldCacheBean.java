@@ -56,8 +56,8 @@ public class SolrFieldCacheBean implements SolrInfoBean {
   }
 
   @Override
-  public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
-    this.solrMetricsContext = parentContext;
+  public void initializeMetrics(SolrMetricsContext solrMetricsContext, Attributes attributes) {
+    this.solrMetricsContext = solrMetricsContext;
     var solrCacheStats =
         solrMetricsContext.longGaugeMeasurement(
             "solr_core_field_cache_entries", "Number of field cache entries");

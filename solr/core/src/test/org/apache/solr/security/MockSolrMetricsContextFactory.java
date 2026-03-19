@@ -30,24 +30,21 @@ import org.apache.solr.metrics.otel.OtelUnit;
 public final class MockSolrMetricsContextFactory {
 
   public static SolrMetricsContext create() {
-    SolrMetricsContext mockParentContext = mock(SolrMetricsContext.class);
-    SolrMetricsContext mockChildContext = mock(SolrMetricsContext.class);
-
-    when(mockParentContext.getChildContext(any())).thenReturn(mockChildContext);
+    SolrMetricsContext mockContext = mock(SolrMetricsContext.class);
 
     LongCounter mockOtelLongCounter = mock(LongCounter.class);
-    when(mockChildContext.longCounter(anyString(), any())).thenReturn(mockOtelLongCounter);
+    when(mockContext.longCounter(anyString(), any())).thenReturn(mockOtelLongCounter);
 
     LongHistogram mockLongHistogram = mock(LongHistogram.class);
-    when(mockChildContext.longHistogram(anyString(), anyString(), any(OtelUnit.class)))
+    when(mockContext.longHistogram(anyString(), anyString(), any(OtelUnit.class)))
         .thenReturn(mockLongHistogram);
 
-    when(mockChildContext.observableLongGauge(anyString(), anyString(), any())).thenReturn(null);
-    when(mockChildContext.observableLongCounter(anyString(), anyString(), any())).thenReturn(null);
+    when(mockContext.observableLongGauge(anyString(), anyString(), any())).thenReturn(null);
+    when(mockContext.observableLongCounter(anyString(), anyString(), any())).thenReturn(null);
 
     LongGauge mockLongGauge = mock(LongGauge.class);
-    when(mockChildContext.longGauge(anyString(), anyString())).thenReturn(mockLongGauge);
+    when(mockContext.longGauge(anyString(), anyString())).thenReturn(mockLongGauge);
 
-    return mockParentContext;
+    return mockContext;
   }
 }

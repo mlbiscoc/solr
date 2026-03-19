@@ -160,7 +160,7 @@ public class SolrIndexWriter extends IndexWriter {
     infoStream = getConfig().getInfoStream();
     this.directory = directory;
     numOpens.incrementAndGet();
-    solrMetricsContext = core.getSolrMetricsContext().getChildContext(this);
+    solrMetricsContext = new SolrMetricsContext(core.getSolrMetricsContext().getMetricManager(), core.getSolrMetricsContext().getRegistryName());
     if (config.metricsInfo != null && config.metricsInfo.initArgs != null) {
       Object v = config.metricsInfo.initArgs.get("majorMergeDocs");
       if (v != null) {
@@ -243,7 +243,7 @@ public class SolrIndexWriter extends IndexWriter {
 
   private void initMetrics(final SolrCore core) {
     if (solrMetricsContext == null) {
-      solrMetricsContext = core.getSolrMetricsContext().getChildContext(this);
+      solrMetricsContext = new SolrMetricsContext(core.getSolrMetricsContext().getMetricManager(), core.getSolrMetricsContext().getRegistryName());
     }
 
     baseAttributes =

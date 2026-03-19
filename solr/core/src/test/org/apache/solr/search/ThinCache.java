@@ -294,15 +294,15 @@ public class ThinCache<S, K, V> extends SolrCacheBase
   private long priorEvictions;
 
   @Override
-  public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
-    initializeMetrics(parentContext, attributes, "solr_thin_cache");
+  public void initializeMetrics(SolrMetricsContext solrMetricsContext, Attributes attributes) {
+    initializeMetrics(solrMetricsContext, attributes, "solr_thin_cache");
   }
 
   public void initializeMetrics(
-      SolrMetricsContext parentContext, Attributes attributes, String metricName) {
+      SolrMetricsContext solrMetricsContext, Attributes attributes, String metricName) {
     Attributes cacheAttributes =
         attributes.toBuilder().put(CATEGORY_ATTR, getCategory().toString()).build();
-    this.solrMetricsContext = parentContext.getChildContext(this);
+    this.solrMetricsContext = solrMetricsContext;
 
     ObservableLongMeasurement cacheLookupsMetric =
         solrMetricsContext.longCounterMeasurement(

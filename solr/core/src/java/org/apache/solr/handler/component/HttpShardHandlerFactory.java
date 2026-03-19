@@ -434,9 +434,11 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory
   }
 
   @Override
-  public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
-    solrMetricsContext = parentContext.getChildContext(this);
-    httpListenerFactory.initializeMetrics(solrMetricsContext, Attributes.empty());
+  public void initializeMetrics(SolrMetricsContext solrMetricsContext, Attributes attributes) {
+    this.solrMetricsContext = solrMetricsContext;
+    httpListenerFactory.initializeMetrics(
+        new SolrMetricsContext(solrMetricsContext.getMetricManager(), solrMetricsContext.getRegistryName()),
+        Attributes.empty());
     commExecutor =
         solrMetricsContext.instrumentedExecutorService(
             commExecutor, "solr_core_executor", "httpShardExecutor", SolrInfoBean.Category.QUERY);

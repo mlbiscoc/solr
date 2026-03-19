@@ -54,8 +54,8 @@ public class Metrics extends SolrCacheBase implements SolrInfoBean {
   private AutoCloseable toClose;
 
   @Override
-  public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
-    solrMetricsContext = parentContext.getChildContext(this);
+  public void initializeMetrics(SolrMetricsContext solrMetricsContext, Attributes attributes) {
+    this.solrMetricsContext = solrMetricsContext;
     var baseAttributes =
         attributes.toBuilder().put(CATEGORY_ATTR, getCategory().toString()).build();
     var blockcacheStats =

@@ -44,6 +44,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CloseHook;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.crossdc.common.ConfUtil;
 import org.apache.solr.crossdc.common.ConfigProperty;
 import org.apache.solr.crossdc.common.KafkaCrossDcConf;
@@ -219,7 +220,10 @@ public class MirroringUpdateRequestProcessorFactory extends UpdateRequestProcess
     Closer closer = new Closer(sink);
     core.addCloseHook(new MyCloseHook(closer));
 
-    producerMetrics = new ProducerMetrics(core.getSolrMetricsContext().getChildContext(this), core);
+    var coreCtx = core.getSolrMetricsContext();
+    producerMetrics =
+        new ProducerMetrics(
+            new SolrMetricsContext(coreCtx.getMetricManager(), coreCtx.getRegistryName()), core);
     mirroringHandler = new KafkaRequestMirroringHandler(sink);
   }
 

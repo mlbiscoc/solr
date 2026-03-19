@@ -606,11 +606,13 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       cache.setState(SolrCache.State.LIVE);
       infoRegistry.put(cache.name(), cache);
     }
-    this.solrMetricsContext = core.getSolrMetricsContext().getChildContext(this);
+    var coreCtx = core.getSolrMetricsContext();
+    this.solrMetricsContext =
+        new SolrMetricsContext(coreCtx.getMetricManager(), coreCtx.getRegistryName());
     for (SolrCache<?, ?> cache : cacheList) {
       if (cache instanceof CaffeineCache<?, ?> caffeineCache) {
         caffeineCache.initializeMetrics(
-            solrMetricsContext,
+            new SolrMetricsContext(coreCtx.getMetricManager(), coreCtx.getRegistryName()),
             core.getCoreAttributes().toBuilder().put(NAME_ATTR, cache.name()).build(),
             "solr_core_indexsearcher_cache");
       }

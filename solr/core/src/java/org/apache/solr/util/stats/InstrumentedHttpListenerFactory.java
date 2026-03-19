@@ -124,8 +124,8 @@ public class InstrumentedHttpListenerFactory implements SolrMetricProducer, Http
   }
 
   @Override
-  public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
-    this.solrMetricsContext = parentContext;
+  public void initializeMetrics(SolrMetricsContext solrMetricsContext, Attributes attributes) {
+    this.solrMetricsContext = solrMetricsContext;
     this.requestTimer =
         new AttributedLongTimer(
             solrMetricsContext.longHistogram(

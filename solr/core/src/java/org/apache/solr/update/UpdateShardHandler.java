@@ -162,9 +162,11 @@ public class UpdateShardHandler implements SolrInfoBean {
   }
 
   @Override
-  public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
-    solrMetricsContext = parentContext.getChildContext(this);
-    trackHttpSolrMetrics.initializeMetrics(solrMetricsContext, Attributes.empty());
+  public void initializeMetrics(SolrMetricsContext solrMetricsContext, Attributes attributes) {
+    this.solrMetricsContext = solrMetricsContext;
+    trackHttpSolrMetrics.initializeMetrics(
+        new SolrMetricsContext(solrMetricsContext.getMetricManager(), solrMetricsContext.getRegistryName()),
+        Attributes.empty());
     updateExecutor =
         solrMetricsContext.instrumentedExecutorService(
             updateExecutor, "solr_core_executor", "updateOnlyExecutor", getCategory());

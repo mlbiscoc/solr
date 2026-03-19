@@ -92,7 +92,7 @@ public class OverseerTaskProcessor implements SolrInfoBean, Runnable, Closeable 
   private boolean isClosed;
 
   private final Stats stats;
-  private final SolrMetricsContext overseerTaskProcessorMetricsContext;
+  private SolrMetricsContext solrMetricsContext;
   private AutoCloseable toClose;
 
   /**
@@ -151,8 +151,10 @@ public class OverseerTaskProcessor implements SolrInfoBean, Runnable, Closeable 
     this.runningTasks = new HashMap<>();
     thisNode = MDCLoggingContext.getNodeName();
 
-    this.overseerTaskProcessorMetricsContext = solrMetricsContext.getChildContext(this);
-    initializeMetrics(solrMetricsContext, Attributes.of(CATEGORY_ATTR, getCategory().toString()));
+    this.solrMetricsContext =
+        new SolrMetricsContext(solrMetricsContext.getMetricManager(), solrMetricsContext.getRegistryName());
+    initializeMetrics(
+        this.solrMetricsContext, Attributes.of(CATEGORY_ATTR, getCategory().toString()));
   }
 
   @Override
@@ -406,9 +408,9 @@ public class OverseerTaskProcessor implements SolrInfoBean, Runnable, Closeable 
   }
 
   @Override
-  public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
+  public void initializeMetrics(SolrMetricsContext solrMetricsContext, Attributes attributes) {
     this.toClose =
-        parentContext.observableLongGauge(
+        solrMetricsContext.observableLongGauge(
             "solr_overseer_collection_work_queue_size",
             "Size of overseer's collection work queue",
             (observableLongMeasurement) -> {
@@ -418,13 +420,13 @@ public class OverseerTaskProcessor implements SolrInfoBean, Runnable, Closeable 
 
   @Override
   public SolrMetricsContext getSolrMetricsContext() {
-    return overseerTaskProcessorMetricsContext;
+    return solrMetricsContext;
   }
 
   @Override
   public void close() {
     isClosed = true;
-    overseerTaskProcessorMetricsContext.unregister();
+    getSolrMetricsContext().unregister();
     if (tpe != null) {
       if (!ExecutorUtil.isShutdown(tpe)) {
         ExecutorUtil.shutdownAndAwaitTermination(tpe);
