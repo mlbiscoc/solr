@@ -115,8 +115,7 @@ class CloudReplicaSource implements ReplicaSource {
               SolrException.ErrorCode.BAD_REQUEST,
               "Could not find collection to resolve replicas: " + builder.collection);
         }
-        replicas[i] =
-            findReplicas(builder, shardsParam, clusterState, coll.getSlice(sliceOrUrl));
+        replicas[i] = findReplicas(builder, shardsParam, clusterState, coll.getSlice(sliceOrUrl));
       } else {
         // this has urls
         this.replicas[i] = StrUtils.splitSmart(sliceOrUrl, "|", true);
@@ -194,7 +193,8 @@ class CloudReplicaSource implements ReplicaSource {
     DocCollection coll = state.getCollectionOrNull(collectionName, true);
     if (coll == null) {
       throw new SolrException(
-          SolrException.ErrorCode.BAD_REQUEST, "Could not find collection to add slices: " + collectionName);
+          SolrException.ErrorCode.BAD_REQUEST,
+          "Could not find collection to add slices: " + collectionName);
     }
     Collection<Slice> slices = coll.getRouter().getSearchSlices(shardKeys, params, coll);
     ClientUtils.addSlices(target, collectionName, slices, multiCollection);
