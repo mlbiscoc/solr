@@ -1,5 +1,5 @@
 title: Increased query throughput by removing a call to ZooKeeper for cluster state that should have been cached
-type: fixed
+type: changed
 authors:
   - name: Matthew Biscocho
 links:

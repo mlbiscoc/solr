@@ -24,15 +24,19 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.BaseDistributedSearchTestCase;
+import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.common.cloud.SolrZKMetricsListener;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -705,6 +709,55 @@ public class DistributedQueryComponentOptimizationTest extends SolrCloudTestCase
     }
 
     return response;
+  }
+
+  /**
+   * When a node resolves collection state for a collection it doesn't host, queries should use
+   * cached state and not make ZK calls on every query.
+   */
+  @Test
+  public void testDistributedQueryDoesNotReadFromZk() throws Exception {
+    final String testCollection = "testCollection";
+
+    // Create a collection on only 1 node so the other node uses LazyCollectionRef for state
+    List<JettySolrRunner> jettys = cluster.getJettySolrRunners();
+    CollectionAdminRequest.createCollection(testCollection, "conf", 1, 1)
+        .setCreateNodeSet(jettys.get(0).getNodeName())
+        .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
+    cluster
+        .getZkStateReader()
+        .waitForState(
+            testCollection,
+            DEFAULT_TIMEOUT,
+            TimeUnit.SECONDS,
+            (n, c) -> SolrCloudTestCase.replicasForCollectionAreFullyActive(n, c, 1, 1));
+
+    try {
+      // Node 1 hosts COLLECTION but not testCollection.
+      // Send a multi-collection query to trigger LazyCollectionRef get call
+      JettySolrRunner nodeWithoutOther = jettys.get(1);
+      try (SolrClient client =
+          new HttpJettySolrClient.Builder(nodeWithoutOther.getBaseUrl().toString()).build()) {
+
+        String collectionsParameter = COLLECTION + "," + testCollection;
+
+        // Warm up LazyCollectionRef state cache with query
+        client.query(COLLECTION, new SolrQuery("q", "*:*", "collection", collectionsParameter));
+
+        SolrZKMetricsListener metrics = cluster.getZkStateReader().getZkClient().getMetrics();
+        long existsBefore = metrics.getExistsChecks();
+
+        // Query again and assert that exists call is not made
+        client.query(COLLECTION, new SolrQuery("q", "*:*", "collection", collectionsParameter));
+        assertEquals(
+            "Query should not cause ZK exists checks as collection state should be cached",
+            existsBefore,
+            metrics.getExistsChecks());
+      }
+    } finally {
+      CollectionAdminRequest.deleteCollection(testCollection)
+          .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
+    }
   }
 
   private int getNumRequests(
