@@ -717,34 +717,40 @@ public class DistributedQueryComponentOptimizationTest extends SolrCloudTestCase
    */
   @Test
   public void testDistributedQueryDoesNotReadFromZk() throws Exception {
-    final String testCollection = "testCollection";
+    final String secondColl = "secondColl";
 
     // Create a collection on only 1 node so the other node uses LazyCollectionRef for state
     List<JettySolrRunner> jettys = cluster.getJettySolrRunners();
-    CollectionAdminRequest.createCollection(testCollection, "conf", 1, 1)
+    CollectionAdminRequest.createCollection(secondColl, "conf", 1, 1)
         .setCreateNodeSet(jettys.get(0).getNodeName())
         .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
     cluster
         .getZkStateReader()
         .waitForState(
-            testCollection,
+            secondColl,
             DEFAULT_TIMEOUT,
             TimeUnit.SECONDS,
             (n, c) -> SolrCloudTestCase.replicasForCollectionAreFullyActive(n, c, 1, 1));
 
     try {
-      // Node 1 hosts COLLECTION but not testCollection.
+      // Node 1 hosts COLLECTION but not secondColl.
       // Send a multi-collection query to trigger LazyCollectionRef get call
-      JettySolrRunner nodeWithoutOther = jettys.get(1);
+      JettySolrRunner nodeWithoutSecondColl = jettys.get(1);
       try (SolrClient client =
-          new HttpJettySolrClient.Builder(nodeWithoutOther.getBaseUrl().toString()).build()) {
+          new HttpJettySolrClient.Builder(nodeWithoutSecondColl.getBaseUrl().toString()).build()) {
 
-        String collectionsParameter = COLLECTION + "," + testCollection;
+        String collectionsParameter = COLLECTION + "," + secondColl;
 
         // Warm up LazyCollectionRef state cache with query
         client.query(COLLECTION, new SolrQuery("q", "*:*", "collection", collectionsParameter));
 
-        SolrZKMetricsListener metrics = cluster.getZkStateReader().getZkClient().getMetrics();
+        // Get ZK metrics from the coordinator node (the one we're querying)
+        SolrZKMetricsListener metrics =
+            nodeWithoutSecondColl
+                .getCoreContainer()
+                .getZkController()
+                .getZkClient()
+                .getMetrics();
         long existsBefore = metrics.getExistsChecks();
 
         // Query again and assert that exists call is not made
@@ -755,7 +761,7 @@ public class DistributedQueryComponentOptimizationTest extends SolrCloudTestCase
             metrics.getExistsChecks());
       }
     } finally {
-      CollectionAdminRequest.deleteCollection(testCollection)
+      CollectionAdminRequest.deleteCollection(secondColl)
           .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
     }
   }

@@ -1,7 +1,9 @@
-title: Increased query throughput by removing a call to ZooKeeper for cluster state that should have been cached
+title: Fix query throughput bottleneck caused by uncached ZooKeeper get calls for queries with explicit 'collection' parameter
 type: changed
 authors:
   - name: Matthew Biscocho
 links:
   - name: SOLR-18176
     url: https://issues.apache.org/jira/browse/SOLR-18176
+  - name: SOLR-15352
+    url: https://issues.apache.org/jira/browse/SOLR-15352
