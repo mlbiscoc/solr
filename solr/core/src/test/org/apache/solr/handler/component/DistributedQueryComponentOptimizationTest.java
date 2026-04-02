@@ -746,11 +746,7 @@ public class DistributedQueryComponentOptimizationTest extends SolrCloudTestCase
 
         // Get ZK metrics from the coordinator node (the one we're querying)
         SolrZKMetricsListener metrics =
-            nodeWithoutSecondColl
-                .getCoreContainer()
-                .getZkController()
-                .getZkClient()
-                .getMetrics();
+            nodeWithoutSecondColl.getCoreContainer().getZkController().getZkClient().getMetrics();
         long existsBefore = metrics.getExistsChecks();
 
         // Query again and assert that exists call is not made
