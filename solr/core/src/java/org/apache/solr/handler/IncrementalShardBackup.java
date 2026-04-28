@@ -23,15 +23,28 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.URI;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.commons.math3.util.Precision;
 import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.store.Directory;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.EnvUtils;
+import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.IndexDeletionPolicyWrapper;
 import org.apache.solr.core.SolrCore;
@@ -52,6 +65,15 @@ import org.slf4j.LoggerFactory;
  */
 public class IncrementalShardBackup {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  /**
+   * Maximum number of files to upload in parallel during backup. Can be configured via the system
+   * property {@code solr.backup.maxparalleluploads} or environment variable {@code
+   * SOLR_BACKUP_MAXPARALLELUPLOADS}.
+   */
+  private static final int DEFAULT_MAX_PARALLEL_UPLOADS =
+      EnvUtils.getPropertyAsInteger("solr.backup.maxparalleluploads", 1);
+
   private SolrCore solrCore;
 
   private BackupFilePaths incBackupFiles;
@@ -152,13 +174,36 @@ public class IncrementalShardBackup {
                 solrCore.getIndexDir(),
                 DirectoryFactory.DirContext.BACKUP,
                 solrCore.getSolrConfig().indexConfig.lockType);
+    ExecutorService executor = null;
     try {
-      BackupStats stats = incrementalCopy(files, dir);
-      details.indexFileCount = stats.fileCount;
-      details.uploadedIndexFileCount = stats.uploadedFileCount;
+      if (DEFAULT_MAX_PARALLEL_UPLOADS > 1) {
+        executor =
+            new ExecutorUtil.MDCAwareThreadPoolExecutor(
+                0,
+                DEFAULT_MAX_PARALLEL_UPLOADS,
+                60L,
+                TimeUnit.SECONDS,
+                new SynchronousQueue<>(),
+                new SolrNamedThreadFactory("IncrementalBackup"),
+                new ThreadPoolExecutor.CallerRunsPolicy());
+      }
+      BackupStats stats = incrementalCopy(files, dir, executor);
+      details.indexFileCount = stats.fileCount.get();
+      details.uploadedIndexFileCount = stats.uploadedFileCount.get();
       details.indexSizeMB = stats.getIndexSizeMB();
       details.uploadedIndexFileMB = stats.getTotalUploadedMB();
     } finally {
+      if (executor != null) {
+        executor.shutdown();
+        try {
+          if (!executor.awaitTermination(60, TimeUnit.SECONDS)) {
+            executor.shutdownNow();
+          }
+        } catch (InterruptedException e) {
+          executor.shutdownNow();
+          Thread.currentThread().interrupt();
+        }
+      }
       solrCore.getDirectoryFactory().release(dir);
     }
 
@@ -184,32 +229,87 @@ public class IncrementalShardBackup {
         backupRepo, incBackupFiles.getShardBackupMetadataDir(), prevShardBackupId);
   }
 
-  private BackupStats incrementalCopy(Collection<String> indexFiles, Directory dir)
-      throws IOException {
+  private BackupStats incrementalCopy(
+      Collection<String> indexFiles, Directory dir, ExecutorService executor) throws IOException {
     ShardBackupMetadata oldBackupPoint = getPrevBackupPoint();
     ShardBackupMetadata currentBackupPoint = ShardBackupMetadata.empty();
     URI indexDir = incBackupFiles.getIndexDir();
     BackupStats backupStats = new BackupStats();
+    List<Future<?>> uploadFutures = new ArrayList<>();
 
     for (String fileName : indexFiles) {
-      Optional<ShardBackupMetadata.BackedFile> opBackedFile = oldBackupPoint.getFile(fileName);
-      Checksum originalFileCS = backupRepo.checksum(dir, fileName);
+      Runnable uploadTask =
+          () -> {
+            try {
+              Optional<ShardBackupMetadata.BackedFile> opBackedFile =
+                  oldBackupPoint.getFile(fileName);
+              Checksum originalFileCS = backupRepo.checksum(dir, fileName);
 
-      if (opBackedFile.isPresent()) {
-        ShardBackupMetadata.BackedFile backedFile = opBackedFile.get();
-        Checksum existedFileCS = backedFile.fileChecksum;
-        if (existedFileCS.equals(originalFileCS)) {
-          currentBackupPoint.addBackedFile(opBackedFile.get());
-          backupStats.skippedUploadingFile(existedFileCS);
-          continue;
+              if (opBackedFile.isPresent()) {
+                Checksum existedFileCS = opBackedFile.get().fileChecksum;
+                if (existedFileCS.equals(originalFileCS)) {
+                  synchronized (currentBackupPoint) {
+                    currentBackupPoint.addBackedFile(opBackedFile.get());
+                  }
+                  backupStats.skippedUploadingFile(existedFileCS);
+                  return;
+                }
+              }
+
+              String backedFileName = UUID.randomUUID().toString();
+              backupRepo.copyIndexFileFrom(dir, fileName, indexDir, backedFileName);
+
+              synchronized (currentBackupPoint) {
+                currentBackupPoint.addBackedFile(backedFileName, fileName, originalFileCS);
+              }
+              backupStats.uploadedFile(originalFileCS);
+            } catch (IOException e) {
+              throw new RuntimeException("Failed to backup file: " + fileName, e);
+            }
+          };
+
+      if (executor != null) {
+        uploadFutures.add(executor.submit(uploadTask));
+      } else {
+        try {
+          uploadTask.run();
+        } catch (RuntimeException e) {
+          if (e.getCause() instanceof IOException) {
+            throw (IOException) e.getCause();
+          }
+          throw e;
         }
       }
+    }
 
-      String backedFileName = UUID.randomUUID().toString();
-      backupRepo.copyIndexFileFrom(dir, fileName, indexDir, backedFileName);
+    // Wait for all futures before throwing — ensures currentBackupPoint captures
+    // all successfully uploaded files even on partial failure
+    Throwable firstError = null;
+    for (Future<?> future : uploadFutures) {
+      try {
+        future.get();
+      } catch (ExecutionException e) {
+        if (firstError == null) {
+          firstError = e.getCause();
+        }
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        if (firstError == null) {
+          firstError = e;
+        }
+      }
+    }
 
-      currentBackupPoint.addBackedFile(backedFileName, fileName, originalFileCS);
-      backupStats.uploadedFile(originalFileCS);
+    if (firstError != null) {
+      if (firstError instanceof Error) {
+        throw (Error) firstError;
+      } else if (firstError instanceof IOException) {
+        throw (IOException) firstError;
+      } else if (firstError instanceof RuntimeException) {
+        throw (RuntimeException) firstError;
+      } else {
+        throw new IOException("Error during parallel backup upload", firstError);
+      }
     }
 
     currentBackupPoint.store(backupRepo, incBackupFiles.getShardBackupMetadataDir(), shardBackupId);
@@ -217,29 +317,29 @@ public class IncrementalShardBackup {
   }
 
   private static class BackupStats {
-    private int fileCount;
-    private int uploadedFileCount;
-    private long indexSize;
-    private long totalUploadedBytes;
+    private final AtomicInteger fileCount = new AtomicInteger();
+    private final AtomicInteger uploadedFileCount = new AtomicInteger();
+    private final AtomicLong indexSize = new AtomicLong();
+    private final AtomicLong totalUploadedBytes = new AtomicLong();
 
     public void uploadedFile(Checksum file) {
-      fileCount++;
-      uploadedFileCount++;
-      indexSize += file.size;
-      totalUploadedBytes += file.size;
+      fileCount.incrementAndGet();
+      uploadedFileCount.incrementAndGet();
+      indexSize.addAndGet(file.size);
+      totalUploadedBytes.addAndGet(file.size);
     }
 
     public void skippedUploadingFile(Checksum existedFile) {
-      fileCount++;
-      indexSize += existedFile.size;
+      fileCount.incrementAndGet();
+      indexSize.addAndGet(existedFile.size);
     }
 
     public double getIndexSizeMB() {
-      return Precision.round(indexSize / (1024.0 * 1024), 3);
+      return Precision.round(indexSize.get() / (1024.0 * 1024), 3);
     }
 
     public double getTotalUploadedMB() {
-      return Precision.round(totalUploadedBytes / (1024.0 * 1024), 3);
+      return Precision.round(totalUploadedBytes.get() / (1024.0 * 1024), 3);
     }
   }
 
